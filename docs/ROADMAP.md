@@ -84,4 +84,4 @@ This prevents feature sprawl and keeps audits explainable.
 ### Phase 4: Enterprise Scale
 
 - **Advanced Crawling**: WAF evasion, residential proxies, and unblocking infra
-- Agent Readiness Scan
+- Agent Readiness Scan (Optional)

@@ -51,7 +51,7 @@ Optimize for:
 
 You MAY:
 
-- Implement logic **inside an existing agent’s boundary**
+- Implement logic **inside an existing agent's boundary**
 - Add new diagnostic signals when scoped to an audit mode
 - Refactor for clarity when behavior is unchanged
 - Generate schemas, types, and data contracts
@@ -66,7 +66,7 @@ You MUST NOT:
 
 - Introduce new agent roles
 - Merge responsibilities across agents
-- Add mutation, execution, or “auto-fix” logic
+- Add mutation, execution, or "auto-fix" logic
 - Add scoring systems without explicit instruction
 - Introduce shared global state or memory
 - Optimize for performance unless requested
@@ -87,11 +87,11 @@ All code must live within one of these conceptual agents:
 
 Rules:
 
-- One file = one agent’s responsibility
+- One file = one agent's responsibility
 - No cross-agent imports unless explicitly designed
 - Data crosses boundaries only as structured output
 
-If logic spans agents, it belongs in orchestration — not duplication.
+If logic spans agents, it belongs in orchestration - not duplication.
 
 ---
 
@@ -217,7 +217,7 @@ Pause and ask before proceeding if:
 
 If you are unsure what to do next, ask yourself:
 
-**“Does this help a merch leader understand what is broken, why it matters, and what to do next — without changing anything?”**
+**Does this help a merch leader understand what is broken, why it matters, and what to do next - without changing anything?**
 
 If the answer is no, stop.
 
@@ -229,7 +229,7 @@ To prevent overengineering and enforce discipline, the following rules and workf
 
 ### Core Rules
 
-See [`docs/ANTIGRAVITY_RULES.md`](file:///c:/dev/merchGent/docs/ANTIGRAVITY_RULES.md) for the "Four Anti-Gravity Rules".
+See [`docs/ANTIGRAVITY_RULES.md`](docs/ANTIGRAVITY_RULES.md) for the "Four Anti-Gravity Rules".
 
 ### Slash Command Workflows
 
@@ -240,3 +240,4 @@ Use these commands to invoke specific operating modes:
 - `/spiker` - **The Spiker**: Builds quick prototypes (spike) before expansion.
 - `/redteamer` - **Red-Teamer**: Stress-tests plans for overengineering.
 - `/stakeholder-review` - **Stakeholder Review**: Sanity-check from a non-engineering perspective.
+

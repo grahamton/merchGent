@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuditMode, isModeEnabled } from '../types';
+import { AuditMode, ENABLED_MODES } from '../types';
 
 interface AuditSetupProps {
   url: string;
@@ -44,29 +44,20 @@ export const AuditSetup: React.FC<AuditSetupProps> = ({
             Select Audit Mode
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.values(AuditMode).map((mode) => {
-              const isEnabled = isModeEnabled(mode);
+            {ENABLED_MODES.map((mode) => {
               const isSelected = auditMode === mode;
               return (
                 <button
                   key={mode}
-                  onClick={() => isEnabled && onModeChange(mode)}
-                  disabled={!isEnabled}
+                  onClick={() => onModeChange(mode)}
                   className={`p-5 rounded-xl border text-left transition-all ${
                     isSelected
                       ? 'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500/30'
-                      : isEnabled
-                        ? 'bg-zinc-900 border-zinc-800 hover:border-blue-500/50 cursor-pointer'
-                        : 'bg-zinc-900/50 border-zinc-800 opacity-40 cursor-not-allowed'
+                      : 'bg-zinc-900 border-zinc-800 hover:border-blue-500/50 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="text-sm font-bold text-zinc-200">{mode}</div>
-                    {!isEnabled && (
-                      <div className="text-[10px] bg-zinc-800 text-zinc-600 px-2 py-0.5 rounded uppercase tracking-wider">
-                        Soon
-                      </div>
-                    )}
                   </div>
                   <div className="text-xs text-zinc-500">
                     {getModeDescription(mode)}

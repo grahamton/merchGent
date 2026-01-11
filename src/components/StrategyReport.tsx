@@ -16,7 +16,7 @@ export const StrategyReport: React.FC<StrategyReportProps> = ({ result, url }) =
       {/* Report Header */}
       <div className="border-b border-zinc-800 bg-zinc-900 p-6">
         <div className="max-w-[1800px] mx-auto">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start">
             <div>
               <h1 className="text-2xl font-bold text-zinc-200 mb-2">
                 Strategy Report
@@ -32,14 +32,6 @@ export const StrategyReport: React.FC<StrategyReportProps> = ({ result, url }) =
                 <span className="text-zinc-700">|</span>
                 <span className="text-zinc-500">Site Mode:</span>
                 <span className="text-emerald-400 font-mono">{result.siteMode}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
-                Report ID
-              </div>
-              <div className="text-xs font-mono text-zinc-500">
-                {Math.random().toString(36).substr(2, 9).toUpperCase()}
               </div>
             </div>
           </div>
