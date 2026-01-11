@@ -71,10 +71,10 @@ This prevents feature sprawl and keeps audits explainable.
 ### Phase 2: Expansion
 
 - [x] Add Knowledge Surface Audit (Active)
+- [ ] Hosting: Firebase Hosting (frontend) + Cloud Run (backend)
 - [ ] File ingestion support
 - [ ] Auth/Cookie Injection (High Priority - "Access First")
 - [ ] Dev Tools Network Helper (Copy as Node.js fetch)
-- [ ] File ingestion support
 
 ### Phase 3: Depth
 

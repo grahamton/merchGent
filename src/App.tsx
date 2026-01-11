@@ -5,7 +5,6 @@
  */
 import React, { useState } from 'react';
 import { AgentStatus, PageData, AnalysisResult, AuditMode } from './types';
-import { GeminiService } from './services/geminiService';
 import { AuditSetup } from './components/AuditSetup';
 // Use new LoadingAudit instead of LoadingView
 import { LoadingAudit } from './components/LoadingAudit';
@@ -15,6 +14,8 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { useTheme } from './hooks/useTheme';
 import { Settings } from 'lucide-react';
 import { Button } from './components/ui/button';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -28,7 +29,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<'main' | 'orchestrator'>('main');
 
   const performRealScrape = async (targetUrl: string): Promise<PageData> => {
-    const response = await fetch('http://localhost:3001/api/scrape', {
+    const response = await fetch(`${API_BASE_URL}/api/scrape`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: targetUrl })
@@ -39,6 +40,20 @@ const App: React.FC = () => {
     }
 
     return await response.json() as PageData;
+  };
+
+  const performAnalysis = async (pageData: PageData, mode: AuditMode): Promise<AnalysisResult> => {
+    const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageData, mode })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Analysis failed: ${response.statusText}`);
+    }
+
+    return await response.json() as AnalysisResult;
   };
 
   const handleStartAnalysis = async (e: React.FormEvent) => {
@@ -55,8 +70,7 @@ const App: React.FC = () => {
       // Update status to analyzing after scrape
       setStatus(AgentStatus.ANALYZING);
 
-      const service = new GeminiService();
-      const analysis = await service.analyzeMerchandising(data, auditMode);
+      const analysis = await performAnalysis(data, auditMode);
 
       setResult(analysis);
       setStatus(AgentStatus.COMPLETED);
