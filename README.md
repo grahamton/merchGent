@@ -110,7 +110,7 @@ All claims and recommendations are cited and traceable.
 
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — System design and agent definitions
 - **[PROMPTS.md](docs/PROMPTS.md)** — AI prompt engineering for Merch Agent
-- **[KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)** — Industry standards reference
+- **[KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)** — Comprehensive merchGent framework: UX standards (Baymard), procurement principles (CIPS), data standards (GS1), and strategic audit methodologies
 - **[ROADMAP.md](docs/ROADMAP.md)** — Development phases and audit mode roadmap
 
 **For AI coding assistants:** See **[AGENTS.md](AGENTS.md)** for contribution guidelines.
