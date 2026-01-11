@@ -8,6 +8,8 @@ These rules exist to ensure safety, consistency, trustworthiness, and merchandis
 This file is authoritative.
 If a conflict exists between agent reasoning and this document, **this document wins**.
 
+> **Note**: A machine-readable version of this ruleset is available at [`agent_ruleset.yaml`](file:///c:/dev/merchGent/docs/agent_ruleset.yaml) for runtime enforcement and prompt conditioning.
+
 ---
 
 ## 1. Core System Invariants (Applies to All Agents)

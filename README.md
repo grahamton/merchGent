@@ -124,6 +124,7 @@ All claims and recommendations are cited and traceable.
 ## Documentation
 
 - **[AGENT_RULES.md](docs/AGENT_RULES.md)** — Runtime agent behavior, constraints, and operating rules
+- **[agent_ruleset.yaml](docs/agent_ruleset.yaml)** — Machine-readable ruleset for runtime enforcement
 - **[KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)** — Comprehensive merchGent framework: UX standards (Baymard), procurement principles (CIPS), data standards (GS1), and strategic audit methodologies
 - **[ROADMAP.md](docs/ROADMAP.md)** — Development phases and audit mode roadmap
 

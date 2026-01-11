@@ -4,6 +4,8 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import AGENT_RULES_MD from '../../docs/AGENT_RULES.md?raw';
 // @ts-ignore
 import KNOWLEDGE_BASE_MD from '../../docs/KNOWLEDGE_BASE.md?raw';
+// @ts-ignore
+import AGENT_RULESET_YAML from '../../docs/agent_ruleset.yaml?raw';
 import { PageData, AnalysisResult, AuditMode, isModeEnabled } from "../types";
 
 export class GeminiService {
@@ -59,6 +61,9 @@ export class GeminiService {
       ${globalGovernance}
       ${KNOWLEDGE_BASE_MD}
       ${agentPersona}
+
+      ## Runtime Enforcement Rules (YAML)
+      ${AGENT_RULESET_YAML}
     `;
 
     const userPrompt = `
