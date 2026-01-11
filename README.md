@@ -89,7 +89,22 @@ merchGent is built as a **team of specialized agents**:
 - **Merch Agent** — Analyzes intent, coherence, and merchandising logic
 - **Data Agent** — Inspects account state and transaction readiness (future)
 
-For full details, see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+### Design Principles
+
+Every change must reinforce at least one:
+
+1. **Diagnostic Integrity**
+   Findings must be explainable, attributable, and reproducible.
+
+2. **Merchandising Clarity**
+   Outputs must map directly to merch decisions, not abstract UX theory.
+
+3. **Scoped Execution**
+   Each audit run activates only the agents required for that audit mode.
+
+If a change increases ambiguity, feature sprawl, or agent overlap, it should not ship.
+
+For full details, see **[docs/AGENT_RULES.md](docs/AGENT_RULES.md)** and **[docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)**.
 
 ---
 
@@ -108,8 +123,7 @@ All claims and recommendations are cited and traceable.
 
 ## Documentation
 
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — System design and agent definitions
-- **[PROMPTS.md](docs/PROMPTS.md)** — AI prompt engineering for Merch Agent
+- **[AGENT_RULES.md](docs/AGENT_RULES.md)** — Runtime agent behavior, constraints, and operating rules
 - **[KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)** — Comprehensive merchGent framework: UX standards (Baymard), procurement principles (CIPS), data standards (GS1), and strategic audit methodologies
 - **[ROADMAP.md](docs/ROADMAP.md)** — Development phases and audit mode roadmap
 

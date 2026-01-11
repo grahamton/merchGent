@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 // @ts-ignore
-import PROMPTS_MD from '../../docs/PROMPTS.md?raw';
+import AGENT_RULES_MD from '../../docs/AGENT_RULES.md?raw';
 // @ts-ignore
 import KNOWLEDGE_BASE_MD from '../../docs/KNOWLEDGE_BASE.md?raw';
 import { PageData, AnalysisResult, AuditMode, isModeEnabled } from "../types";
@@ -20,19 +20,19 @@ export class GeminiService {
       throw new Error(`Audit mode "${mode}" is not yet implemented. Only enabled modes can be executed.`);
     }
 
-    // Validate that PROMPTS.md contains the mission for this mode
+    // Validate that AGENT_RULES.md contains the mission for this mode
     const missionHeader = `## Mission: ${mode}`;
-    if (!PROMPTS_MD.includes(missionHeader)) {
-      throw new Error(`Mission not found in PROMPTS.md for mode: "${mode}". Please ensure PROMPTS.md is properly configured.`);
+    if (!AGENT_RULES_MD.includes(missionHeader)) {
+      throw new Error(`Mission not found in AGENT_RULES.md for mode: "${mode}". Please ensure AGENT_RULES.md is properly configured.`);
     }
 
-    // Split PROMPTS.md to extract sections
-    const sections = PROMPTS_MD.split('---');
+    // Split AGENT_RULES.md to extract sections
+    const sections = AGENT_RULES_MD.split('---');
     const globalGovernance = sections[0] || '';
     const agentPersona = sections[1] || '';
 
     // Extract the specific mission based on the mode
-    const missionSplit = PROMPTS_MD.split(missionHeader);
+    const missionSplit = AGENT_RULES_MD.split(missionHeader);
     const specificMission = missionSplit[1] ? missionSplit[1].split('## ')[0] : '';
 
     if (!specificMission.trim()) {
