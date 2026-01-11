@@ -220,3 +220,23 @@ If you are unsure what to do next, ask yourself:
 **“Does this help a merch leader understand what is broken, why it matters, and what to do next — without changing anything?”**
 
 If the answer is no, stop.
+
+---
+
+## Anti-Gravity Rules & Workflows
+
+To prevent overengineering and enforce discipline, the following rules and workflows are available.
+
+### Core Rules
+
+See [`docs/ANTIGRAVITY_RULES.md`](file:///c:/dev/merchGent/docs/ANTIGRAVITY_RULES.md) for the "Four Anti-Gravity Rules".
+
+### Slash Command Workflows
+
+Use these commands to invoke specific operating modes:
+
+- `/fixer` - **Local Fixer**: Edits existing code in place. No new systems.
+- `/ticketbrain` - **Ticket Brain**: Breaks ideas into atomic tickets.
+- `/spiker` - **The Spiker**: Builds quick prototypes (spike) before expansion.
+- `/redteamer` - **Red-Teamer**: Stress-tests plans for overengineering.
+- `/stakeholder-review` - **Stakeholder Review**: Sanity-check from a non-engineering perspective.
