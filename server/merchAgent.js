@@ -8,15 +8,15 @@ import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 
 const AGENT_RULES_MD = fs.readFileSync(
-  path.join(process.cwd(), 'docs', 'AGENT_RULES.md'),
+  path.join(process.cwd(), 'server', 'prompts', 'SYSTEM_PROMPT.md'),
   'utf8'
 );
 const KNOWLEDGE_BASE_MD = fs.readFileSync(
-  path.join(process.cwd(), 'docs', 'KNOWLEDGE_BASE.md'),
+  path.join(process.cwd(), 'docs', 'VISION.md'),
   'utf8'
 );
 const AGENT_RULESET_YAML = fs.readFileSync(
-  path.join(process.cwd(), 'docs', 'agent_ruleset.yaml'),
+  path.join(process.cwd(), 'server', 'prompts', 'agent_ruleset.yaml'),
   'utf8'
 );
 
@@ -302,6 +302,26 @@ export function registerMerchAgentRoutes(app) {
 
     if (!isValidPageData(pageData) || !isValidHttpUrl(pageData.url)) {
       return res.status(400).json({ error: 'Valid page data with an http/https URL is required.' });
+    }
+
+    // --- ESCAPE HATCH (Optimization) ---
+    // If we have 0 products, the prompt will likely hallucinate.
+    // We fail fast here to save tokens and prevent bad data.
+    if (!pageData.products || pageData.products.length === 0) {
+      console.log('[Merch Agent] Escape Hatch Triggered: 0 products found.');
+      return res.json({
+        trustTrace: 'SCRAPE FAILED (Pre-Check): The Web Agent found 0 products. Diagnosis aborted to prevent hallucination.',
+        merchGentScore: { total: 0, status: 'needs-attention' },
+        diagnosis: {
+            title: 'Technical Audit Failure (Scrape Blocked)',
+            description: 'The system was unable to extract structured product data. Zero products were detected.',
+        },
+        recommendations: [],
+        mode,
+        siteMode: 'Unknown',
+        hybridTrapCheck: 'Not applicable',
+        standardsCheck: []
+      });
     }
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;

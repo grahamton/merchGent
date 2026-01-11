@@ -368,7 +368,29 @@ Your mission is to:
 
 ### 10.4 Required Output Format
 
-Provide your response in the following JSON structure (do not use markdown formatting for the JSON itself, just raw JSON):
+**CRITICAL: SCAPE FAILURE ESCAPE HATCH**
+If the input data shows `Product Sample Count: 0` or if the `products` array is empty, you **MUST** return the following failure state immediately. Do not attempt to diagnose or hallucinate products.
+
+Failure Scenarios:
+
+- `Product Sample Count: 0`
+- `structure.confidence` is very low (< 20) AND `products` size is < 2
+
+**Failure JSON Response:**
+
+```json
+{
+  "trustTrace": "SCRAPE FAILED: No effective products were found in the page data. The Web Agent did not detect valid grids or cards.",
+  "siteMode": "Hybrid",
+  "diagnosisTitle": "Technical Audit Failure (Scrape Blocked)",
+  "diagnosisDescription": "The system was unable to extract structured product data from this page. This may be due to bot protection, Shadow DOM, or canvas-based rendering.",
+  "hybridTrapCheck": "Not applicable",
+  "standardsCheck": [],
+  "recommendations": []
+}
+```
+
+If data IS present, provide your response in the following JSON structure (do not use markdown formatting for the JSON itself, just raw JSON):
 
 ```json
 {
@@ -469,4 +491,3 @@ Provide your response in the following JSON structure (do not use markdown forma
 ---
 
 ## Final Rule
-
