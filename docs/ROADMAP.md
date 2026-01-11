@@ -66,7 +66,7 @@ This prevents feature sprawl and keeps audits explainable.
 - [ ] Agent boundaries enforced (Audit Mode selection logic)
 - [x] One audit mode end-to-end (Hybrid Experience) _Refining/Refactoring needed_
 - [ ] Responsive layout (needs mobile testing)
-- [ ] End-to-end test with real site (Ready for User Test)
+- [x] End-to-end test with real site (Attempted - Insight.com WAF Blocked)
 
 ### Phase 2: Expansion
 
@@ -79,6 +79,7 @@ This prevents feature sprawl and keeps audits explainable.
 - Logged-in vs logged-out comparisons
 - State divergence reporting
 
-### Phase 4: Forward Scan
+### Phase 4: Enterprise Scale
 
+- **Advanced Crawling**: WAF evasion, residential proxies, and unblocking infra
 - Agent Readiness Scan
