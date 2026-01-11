@@ -18,7 +18,7 @@ const App: React.FC = () => {
 
   const performRealScrape = async (targetUrl: string): Promise<PageData> => {
     // Call our local proxy server
-    const response = await fetch('http://localhost:3000/api/scrape', {
+    const response = await fetch('http://localhost:3001/api/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: targetUrl })
