@@ -16,6 +16,11 @@ export interface PageData {
   metaDescription: string | null;
   screenshotPath: string;
   viewportWidth: number;
+  structure?: {
+    gridSelector: string | null;
+    cardSelector: string | null;
+    confidence: number;
+  };
 }
 
 export interface TrustTraceEntry {

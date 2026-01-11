@@ -1,10 +1,7 @@
 /// <reference types="vite/client" />
 import { GoogleGenAI, Type } from "@google/genai";
-// @ts-ignore
 import AGENT_RULES_MD from '../../docs/AGENT_RULES.md?raw';
-// @ts-ignore
 import KNOWLEDGE_BASE_MD from '../../docs/KNOWLEDGE_BASE.md?raw';
-// @ts-ignore
 import AGENT_RULESET_YAML from '../../docs/agent_ruleset.yaml?raw';
 import { PageData, AnalysisResult, AuditMode, isModeEnabled, TrustTraceEntry, MerchGentScore, Recommendation } from "../types";
 
@@ -12,7 +9,11 @@ export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("VITE_GEMINI_API_KEY is not defined. Please check your .env file.");
+    }
+    this.ai = new GoogleGenAI({ apiKey });
   }
 
   private calculateMerchGentScore(rawAnalysis: any, pageData: PageData): MerchGentScore {
@@ -113,11 +114,6 @@ export class GeminiService {
       throw new Error(`Mission not found in AGENT_RULES.md for mode: "${mode}". Please ensure AGENT_RULES.md is properly configured.`);
     }
 
-    // Split AGENT_RULES.md to extract sections
-    const sections = AGENT_RULES_MD.split('---');
-    const globalGovernance = sections[0] || '';
-    const agentPersona = sections[1] || '';
-
     // Extract the specific mission based on the mode
     const missionSplit = AGENT_RULES_MD.split(missionHeader);
     const specificMission = missionSplit[1] ? missionSplit[1].split('## ')[0] : '';
@@ -134,6 +130,11 @@ export class GeminiService {
       Meta: ${pageData.metaDescription || "N/A"}
       Product Sample Count: ${pageData.products.length}
 
+      ## Structural Scout Report
+      Grid Selector: ${pageData.structure?.gridSelector || "N/A"}
+      Card Selector: ${pageData.structure?.cardSelector || "N/A"}
+      Confidence Score: ${pageData.structure?.confidence || "N/A"}
+
       Raw Product Data samples:
       ${JSON.stringify(pageData.products.slice(0, 3), null, 2)}
 
@@ -143,9 +144,8 @@ export class GeminiService {
     `;
 
     const systemInstruction = `
-      ${globalGovernance}
+      ${AGENT_RULES_MD}
       ${KNOWLEDGE_BASE_MD}
-      ${agentPersona}
 
       ## Runtime Enforcement Rules (YAML)
       ${AGENT_RULESET_YAML}

@@ -6,14 +6,13 @@ merchGent audits e-commerce experiences across content, UX, and customer intent�
 
 ---
 
-## What It Does
+## 🚀 Key Features (v2.0)
 
-merchGent deploys specialized AI agents to analyze your commerce site and deliver:
-
-- **Hybrid Trap Detection** — Identifies conflicting B2B/B2C signals that confuse buyers
-- **merchGent Score** — A holistic measure of merchandising effectiveness (Intent, Knowledge, Transaction)
-- **Trust-Traced Findings** — Every recommendation cites the specific signals used
-- **Agent Orchestrator** — Visualizes live agent thinking and boundaries
+- **🕵️ Smart Structural Scout**: The Web Agent heuristically scans pages to detect product grids and cards, even on sites without standard markup.
+- **⚖️ Anti-Gravity Governance**: Built-in rules and workflows (`/fixer`, `/ticketbrain`) that prevent scope creep and over-engineering.
+- **🔍 Hybrid Trap Detection**: Identifies conflicting B2B/B2C signals that confuse buyers.
+- **📊 merchGent Score**: A holistic measure of merchandising effectiveness (Intent, Knowledge, Transaction).
+- **🛡️ Trust-Traced Findings**: Every recommendation cites the specific signals used.
 
 **Read-only by design.** merchGent never modifies your site or executes transactions.
 
@@ -36,7 +35,7 @@ npm install
 
 ### Configuration
 
-Create `.env.local` in the project root:
+Create `.env` in the project root:
 
 ```env
 VITE_GEMINI_API_KEY=your_api_key_here
@@ -44,7 +43,11 @@ VITE_GEMINI_API_KEY=your_api_key_here
 
 ### Running Locally
 
-You'll need **two terminal windows**:
+You can use the helper script to start everything at once:
+
+- **Windows**: Double-click `restart_all.bat`
+
+Or run manually in two terminals:
 
 **Terminal 1** — Backend (Web Agent & API):
 
@@ -52,7 +55,7 @@ You'll need **two terminal windows**:
 npm run server
 ```
 
-_Runs on `http://localhost:3000` (or 3001 if blocked)_
+_Runs on `http://localhost:3001`_
 
 **Terminal 2** — Frontend (Agent Dashboard):
 
@@ -60,27 +63,44 @@ _Runs on `http://localhost:3000` (or 3001 if blocked)_
 npm run dev
 ```
 
-_Runs on `http://localhost:5173`_
+_Runs on `http://localhost:3000`_
 
-Open the URL, select an audit mode, and click **Settings (⚙️)** to explore the Agent Orchestrator.
+Open `http://localhost:3000` to access the dashboard.
 
-_Runs on `http://localhost:5173`_
+---
 
-Open the URL, select an audit mode, enter a target site, and run your first diagnostic.
+## 🧠 Anti-Gravity Governance
+
+This project enforces strict discipline to prevent "Feature Factory" bloat.
+
+### Core Rules
+
+See [`docs/ANTIGRAVITY_RULES.md`](docs/ANTIGRAVITY_RULES.md).
+
+1.  **Level 1 Only**: Solving problems at the lowest effective layer.
+2.  **No Scope Creep**: One ticket, one goal.
+3.  **Evidence First**: Prototypes before abstractions.
+4.  **Guardrail Lead**: Safety checks before code.
+
+### Workflow Personas
+
+Use slash commands to invoke specific modes:
+
+- `/fixer` - **Local Fixer**: Edits existing code in place.
+- `/ticketbrain` - **Ticket Brain**: Breaks ideas into atomic tickets.
+- `/spiker` - **The Spiker**: Builds quick prototypes.
+- `/redteamer` - **Red-Teamer**: Stress-tests plans.
+- `/stakeholder-review` - **Stakeholder Review**: Sanity-check from a customer perspective.
 
 ---
 
 ## Audit Modes
 
-merchGent operates in distinct **audit modes**, each answering a specific merchandising question:
-
 | Mode                        | Question                                        | Focus                                |
 | --------------------------- | ----------------------------------------------- | ------------------------------------ |
-| **Hybrid Experience Audit** | Is this site accidentally serving two masters?  | B2B/B2C signal conflicts, mixed CTAs |
+| **Hybrid Experience Audit** | Is this site serving two masters?               | B2B/B2C signal conflicts, mixed CTAs |
 | **Knowledge Surface Audit** | Can customers find and trust product knowledge? | Content quality, findability, gaps   |
-| _Logged-In vs Logged-Out_   | Does account state hurt intent or conversion?   | Coming in Phase 3                    |
-| _Merchandising Coherence_   | Do navigation, PDPs, and CTAs tell one story?   | Coming in Phase 3                    |
-| _Agent Readiness Scan_      | Is this site ready for agent-led commerce?      | Coming in Phase 4                    |
+| _Logged-In vs Logged-Out_   | Does account state hurt intent?                 | _Planned: Phase 3_                   |
 
 ---
 
@@ -89,55 +109,16 @@ merchGent operates in distinct **audit modes**, each answering a specific mercha
 merchGent is built as a **team of specialized agents**:
 
 - **Client Agent** — Orchestrates audits and synthesizes findings
-- **Web Agent** — Crawls and extracts surface-level signals (Playwright-based)
+- **Web Agent** — Crawls and extracts signals using **Puppeteer Stealth** + **Dynamic Scout**.
 - **Merch Agent** — Analyzes intent, coherence, and merchandising logic
-- **Data Agent** — Inspects account state and transaction readiness (future)
-
-### Design Principles
-
-Every change must reinforce at least one:
-
-1. **Diagnostic Integrity**
-   Findings must be explainable, attributable, and reproducible.
-
-2. **Merchandising Clarity**
-   Outputs must map directly to merch decisions, not abstract UX theory.
-
-3. **Scoped Execution**
-   Each audit run activates only the agents required for that audit mode.
-
-If a change increases ambiguity, feature sprawl, or agent overlap, it should not ship.
+- **Data Agent** — Inspects account state and transaction readiness
 
 For full details, see **[docs/AGENT_RULES.md](docs/AGENT_RULES.md)** and **[docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)**.
 
 ---
 
-## Standards & Methodology
+## License
 
-merchGent audits are grounded in industry-recognized frameworks:
+Distributed under the MIT License. See `LICENSE` for more information.
 
-- **Baymard Institute** — UX and interface best practices
-- **Forrester Research** — B2B/B2C strategy and buyer behavior
-- **CIPS** — Procurement and compliance standards
-- **GS1** — Product data and identification standards
-
-All claims and recommendations are cited and traceable.
-
----
-
-## Documentation
-
-- **[AGENT_RULES.md](docs/AGENT_RULES.md)** — Runtime agent behavior, constraints, and operating rules
-- **[agent_ruleset.yaml](docs/agent_ruleset.yaml)** — Machine-readable ruleset for runtime enforcement
-- **[KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)** — Comprehensive merchGent framework: UX standards (Baymard), procurement principles (CIPS), data standards (GS1), and strategic audit methodologies
-- **[ROADMAP.md](docs/ROADMAP.md)** — Development phases and audit mode roadmap
-
-**For AI coding assistants:** See **[AGENTS.md](AGENTS.md)** for contribution guidelines.
-
----
-
-## License & Disclaimer
-
-merchGent is a **diagnostic tool**. It observes and reports—humans make the final decisions.
-
-This is alpha software. Use in production at your own risk.
+> **Disclaimer**: merchGent is a diagnostic tool. It observes and reports—humans make the final decisions. Use in production at your own risk.

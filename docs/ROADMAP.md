@@ -63,16 +63,18 @@ This prevents feature sprawl and keeps audits explainable.
 ### Phase 1: Foundation (In Progress)
 
 - [x] PageData schema
-- [ ] Agent boundaries enforced (Audit Mode selection logic)
-- [x] One audit mode end-to-end (Hybrid Experience) _Refining/Refactoring needed_
+- [x] Agent boundaries enforced (Audit Mode selection logic & Governance checks)
+- [x] One audit mode end-to-end (Hybrid Experience)
 - [ ] Responsive layout (needs mobile testing)
-- [x] End-to-end test with real site (Attempted - Insight.com WAF Blocked)
+- [x] End-to-end test with real site (Verified with example.com)
 
 ### Phase 2: Expansion
 
-- Add Knowledge Surface Audit
-- File ingestion support
-- Auth crawl support
+- [x] Add Knowledge Surface Audit (Active)
+- [ ] File ingestion support
+- [ ] Auth/Cookie Injection (High Priority - "Access First")
+- [ ] Dev Tools Network Helper (Copy as Node.js fetch)
+- [ ] File ingestion support
 
 ### Phase 3: Depth
 
