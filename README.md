@@ -11,9 +11,9 @@ merchGent audits e-commerce experiences across content, UX, and customer intent�
 merchGent deploys specialized AI agents to analyze your commerce site and deliver:
 
 - **Hybrid Trap Detection** — Identifies conflicting B2B/B2C signals that confuse buyers
-- **Knowledge Surface Analysis** — Assesses content quality, findability, and completeness
+- **merchGent Score** — A holistic measure of merchandising effectiveness (Intent, Knowledge, Transaction)
 - **Trust-Traced Findings** — Every recommendation cites the specific signals used
-- **Merch-Ready Reports** — Outputs designed for merchandising decisions, not abstract theory
+- **Agent Orchestrator** — Visualizes live agent thinking and boundaries
 
 **Read-only by design.** merchGent never modifies your site or executes transactions.
 
@@ -24,7 +24,7 @@ merchGent deploys specialized AI agents to analyze your commerce site and delive
 ### Prerequisites
 
 - Node.js (v18+)
-- An API key for AI inference ([Gemini](https://ai.google.dev/), [OpenAI](https://platform.openai.com/), etc.)
+- An API key for AI inference ([Gemini](https://ai.google.dev/) recommended)
 
 ### Installation
 
@@ -46,19 +46,23 @@ VITE_GEMINI_API_KEY=your_api_key_here
 
 You'll need **two terminal windows**:
 
-**Terminal 1** — Web Agent (scraping service):
+**Terminal 1** — Backend (Web Agent & API):
 
 ```bash
 npm run server
 ```
 
-_Runs on `http://localhost:3000`_
+_Runs on `http://localhost:3000` (or 3001 if blocked)_
 
-**Terminal 2** — Client Agent (React UI):
+**Terminal 2** — Frontend (Agent Dashboard):
 
 ```bash
 npm run dev
 ```
+
+_Runs on `http://localhost:5173`_
+
+Open the URL, select an audit mode, and click **Settings (⚙️)** to explore the Agent Orchestrator.
 
 _Runs on `http://localhost:5173`_
 

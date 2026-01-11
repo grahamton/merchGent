@@ -35,13 +35,31 @@ app.post('/api/scrape', async (req, res) => {
   let browser;
 
   try {
-    browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    // Stealth: Launch with automation flags disabled
+    browser = await chromium.launch({
+        headless: true,
+        args: [
+            '--disable-blink-features=AutomationControlled',
+            '--no-sandbox',
+            '--disable-setuid-sandbox'
+        ]
+    });
 
-    await page.setViewportSize({ width: 1280, height: 800 });
+    // Stealth: Create context with realistic User-Agent and viewport
+    const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        viewport: { width: 1920, height: 1080 },
+        deviceScaleFactor: 1,
+        locale: 'en-US',
+        timezoneId: 'America/New_York'
+    });
+
+    const page = await context.newPage();
 
     // Spec Requirement: 3.1 "The component launches a headless Chromium browser instance"
-    await page.goto(url, { waitUntil: 'load', timeout: 60000 });
+    // Stealth: Add random delay to mimic human behavior
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(2000); // 2s "human" pause
 
     const title = await page.title();
 
