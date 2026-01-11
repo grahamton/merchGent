@@ -1,6 +1,10 @@
-
+/**
+ * CLIENT AGENT (Audit Orchestrator)
+ * Role: Audit planning, agent routing, synthesis.
+ * Forbidden: Direct crawling, UX judgments, Transaction inspection.
+ */
 import React, { useState, useCallback } from 'react';
-import { AgentStatus, PageData, AnalysisResult, Product } from './types';
+import { AgentStatus, PageData, AnalysisResult, Product, AuditMode, isModeEnabled } from './types';
 import { GeminiService } from './services/geminiService';
 import AnalysisDisplay from './components/AnalysisDisplay';
 
@@ -10,55 +14,25 @@ const App: React.FC = () => {
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [auditMode, setAuditMode] = useState<AuditMode>(AuditMode.HYBRID);
 
-  // Simulated Crawler (Since Playwright doesn't run in browser-only demos)
-  const simulateScrape = async (targetUrl: string): Promise<PageData> => {
-    // Mimics heuristic signal detection & extraction
-    await new Promise(r => setTimeout(r, 2000));
-    
-    const hostname = new URL(targetUrl).hostname;
-    const isLikelyB2B = hostname.includes('industrial') || hostname.includes('supply') || hostname.includes('parts');
-    
-    const mockProducts: Product[] = [
-      {
-        title: "Industrial Grade Actuator X-100",
-        price: isLikelyB2B ? null : "$1,299.00",
-        imageAlt: "Actuator",
-        imageSrc: "https://picsum.photos/200/200?random=1",
-        ctaText: isLikelyB2B ? "Request Quote" : "Add to Cart",
-        description: "Heavy duty precision actuator for automated lines.",
-        b2bIndicators: isLikelyB2B ? ["Request Quote", "Login for pricing"] : [],
-        b2cIndicators: isLikelyB2B ? [] : ["Add to Cart"]
-      },
-      {
-        title: "Standard Mounting Bracket",
-        price: "$45.00",
-        imageAlt: "Bracket",
-        imageSrc: "https://picsum.photos/200/200?random=2",
-        ctaText: "Add to Cart",
-        description: "Compatible with all X-series components.",
-        b2bIndicators: [],
-        b2cIndicators: ["Add to Cart"]
-      },
-       {
-        title: "Bulk Precision Screws (5000ct)",
-        price: null,
-        imageAlt: "Screws",
-        imageSrc: "https://picsum.photos/200/200?random=3",
-        ctaText: "Inquire Now",
-        description: "Bulk pack for manufacturing facilities.",
-        b2bIndicators: ["Inquire Now", "Contract Pricing"],
-        b2cIndicators: []
-      }
-    ];
+  const performRealScrape = async (targetUrl: string): Promise<PageData> => {
+    // Call our local proxy server
+    const response = await fetch('http://localhost:3000/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: targetUrl })
+    });
 
-    return {
-      url: targetUrl,
-      title: `${hostname} | Merchandising Interface`,
-      products: mockProducts,
-      metaDescription: "Professional supply chain and inventory management portal.",
-      viewportWidth: 1280
-    };
+    if (!response.ok) {
+      throw new Error(`Scraping failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Map the raw data to our PageData type if necessary,
+    // though the server should be returning a compatible structure.
+    return data as PageData;
   };
 
   const handleStartAnalysis = async (e: React.FormEvent) => {
@@ -70,13 +44,15 @@ const App: React.FC = () => {
     setStatus(AgentStatus.SCRAPING);
 
     try {
-      const data = await simulateScrape(url);
+      // Use the real scraping function now
+      const data = await performRealScrape(url);
       setPageData(data);
-      
+
       setStatus(AgentStatus.ANALYZING);
       const service = new GeminiService();
-      const analysis = await service.analyzeMerchandising(data);
-      
+      // Pass the selected Audit Mode
+      const analysis = await service.analyzeMerchandising(data, auditMode);
+
       setResult(analysis);
       setStatus(AgentStatus.COMPLETED);
     } catch (err: any) {
@@ -95,7 +71,7 @@ const App: React.FC = () => {
             <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
               <span className="text-white font-bold">M</span>
             </div>
-            <h1 className="font-bold text-slate-800 tracking-tight">Agent M <span className="text-slate-400 font-normal">| Merchandising Analyst (Alpha)</span></h1>
+            <h1 className="font-bold text-slate-800 tracking-tight">merchGent <span className="text-slate-400 font-normal">| Diagnostic System</span></h1>
           </div>
           <div className="hidden md:flex items-center space-x-4 text-xs font-mono text-slate-500">
             <span>A2A Enabled</span>
@@ -106,29 +82,58 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 mt-8">
+        {/* Mode Selector */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+           {Object.values(AuditMode).map((mode) => {
+             const isEnabled = isModeEnabled(mode);
+             return (
+               <button
+                 key={mode}
+                 onClick={() => isEnabled && setAuditMode(mode)}
+                 disabled={!isEnabled}
+                 className={`p-4 rounded-xl border text-left transition-all ${
+                   auditMode === mode
+                     ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-200'
+                     : isEnabled
+                       ? 'bg-white border-slate-200 hover:border-blue-300 cursor-pointer'
+                       : 'bg-white border-slate-200 opacity-60 cursor-not-allowed'
+                 }`}
+               >
+                 <div className="font-bold text-slate-800 text-sm">{mode}</div>
+                 <div className="text-xs text-slate-500 mt-1">
+                   {isEnabled ? (auditMode === mode ? 'Active' : 'Available') : 'Coming Soon'}
+                 </div>
+               </button>
+             );
+           })}
+        </div>
+
         {/* URL Input Area */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
           <form onSubmit={handleStartAnalysis} className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Initialize Site Audit</h2>
-            <p className="text-slate-500 mb-6">Input a target e-commerce URL to deploy Agent M for a strategic merchandising audit.</p>
-            
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Initialize {auditMode}</h2>
+            <p className="text-slate-500 mb-6">
+               {auditMode === AuditMode.HYBRID && "Question: Is this site accidentally serving two masters?"}
+               {auditMode === AuditMode.KNOWLEDGE && "Question: Can customers and agents actually find, trust, and understand product knowledge?"}
+            </p>
+
             <div className="flex flex-col md:flex-row gap-3">
-              <input 
-                type="url" 
+              <input
+                type="url"
                 placeholder="https://example-commerce-site.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               />
-              <button 
+              <button
                 type="submit"
                 disabled={status === AgentStatus.SCRAPING || status === AgentStatus.ANALYZING}
                 className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 disabled:bg-slate-300 transition-colors shadow-lg flex items-center justify-center min-w-[160px]"
               >
                 {status === AgentStatus.SCRAPING && "Deploying Scraper..."}
-                {status === AgentStatus.ANALYZING && "Analyzing Data..."}
-                {status !== AgentStatus.SCRAPING && status !== AgentStatus.ANALYZING && "Run Analyst"}
+                {status === AgentStatus.ANALYZING && "Running Diagnosis..."}
+                {status !== AgentStatus.SCRAPING && status !==AgentStatus.ANALYZING && "Run Audit"}
               </button>
             </div>
           </form>
@@ -152,7 +157,7 @@ const App: React.FC = () => {
           <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-center">
             <p className="text-red-700 font-bold mb-2">Audit Failed</p>
             <p className="text-red-600 text-sm">{error}</p>
-            <button 
+            <button
               onClick={() => setStatus(AgentStatus.IDLE)}
               className="mt-4 text-xs font-bold uppercase tracking-widest text-red-700 hover:underline"
             >
@@ -168,7 +173,7 @@ const App: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-800">Operational Intelligence Report</h2>
               <div className="text-xs text-slate-500 font-mono">ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
             </div>
-            
+
             <AnalysisDisplay result={result} />
           </div>
         )}
