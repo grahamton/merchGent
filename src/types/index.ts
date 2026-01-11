@@ -44,6 +44,12 @@ export interface Recommendation {
   agent: string;
 }
 
+export interface StandardsCheckItem {
+  criterion: string;
+  status: "pass" | "partial" | "fail" | "unknown";
+  evidence: string;
+}
+
 export interface AnalysisResult {
   trustTrace: TrustTraceEntry[];
   merchGentScore: MerchGentScore;
@@ -53,6 +59,9 @@ export interface AnalysisResult {
   };
   recommendations: Recommendation[];
   mode: string;
+  siteMode: "B2B" | "B2C" | "Hybrid";
+  hybridTrapCheck: string;
+  standardsCheck: StandardsCheckItem[];
 }
 
 export enum AgentStatus {

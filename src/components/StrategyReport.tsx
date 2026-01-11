@@ -3,6 +3,7 @@ import { AnalysisResult } from '../types';
 import { TrustTrace } from './TrustTrace';
 import { MerchGentScoreDisplay } from './MerchGentScoreDisplay';
 import { RecommendationsPanel } from './RecommendationsPanel';
+import { StandardsCheckPanel } from './StandardsCheckPanel';
 
 interface StrategyReportProps {
   result: AnalysisResult;
@@ -28,6 +29,9 @@ export const StrategyReport: React.FC<StrategyReportProps> = ({ result, url }) =
                 <span className="text-zinc-700">|</span>
                 <span className="text-zinc-500">Mode:</span>
                 <span className="text-purple-400 font-mono">{result.mode}</span>
+                <span className="text-zinc-700">|</span>
+                <span className="text-zinc-500">Site Mode:</span>
+                <span className="text-emerald-400 font-mono">{result.siteMode}</span>
               </div>
             </div>
             <div className="text-right">
@@ -67,6 +71,19 @@ export const StrategyReport: React.FC<StrategyReportProps> = ({ result, url }) =
                 <p className="text-sm text-zinc-400 leading-relaxed">
                   {result.diagnosis.description}
                 </p>
+              </div>
+
+              <div className="mt-6 bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                <div className="text-xs text-zinc-600 uppercase tracking-wider mb-2">
+                  Hybrid Trap Check
+                </div>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  {result.hybridTrapCheck}
+                </p>
+              </div>
+
+              <div className="mt-6">
+                <StandardsCheckPanel items={result.standardsCheck} />
               </div>
             </div>
           </div>

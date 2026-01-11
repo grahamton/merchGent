@@ -24,14 +24,12 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "lucide-react": "^0.562.0",
-    "playwright": "^1.57.0",
     "puppeteer": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "tailwind-merge": "^3.4.0",
-    "user-agents": "^1.1.669"
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

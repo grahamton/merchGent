@@ -166,13 +166,11 @@ audit_modes:
       - assume_primary_audience_without_signals
 
   knowledge_surface_audit:
-    status: inactive
-    guardrails:
-      MUST:
-        - acknowledge_mode_inactive_if_referenced
-      MUST_NOT:
-        - perform_content_quality_scoring
-        - issue_content_gap_recommendations_unrelated_to_hybrid
+    status: active
+    allowed:
+      - analyze_content_quality
+      - identify_knowledge_gaps
+      - assess_findability
 
   merchandising_coherence_audit:
     status: planned

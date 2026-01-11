@@ -28,8 +28,8 @@ merchGent organizes analysis into **Audit Modes**, each representing a cohesive 
 ### Current and Planned Modes
 
 - **Hybrid Experience Audit (Phase 1 – Active):** Detects B2B/B2C conflict and “Hybrid Traps.”
-- **Knowledge Surface Audit (Phase 2 – Coming Soon):** Audits content quality, completeness, and findability.
-  - **Activation milestone:** Becomes Active after successful beta testing on representative sites and finalization of content quality rules in the Governance Ingestion Engine.
+- **Knowledge Surface Audit (Phase 2 - Active):** Audits content quality, completeness, and findability.
+  - **Status:** Active with current heuristics; criteria will continue to evolve with live audits.
 - **Merchandising Coherence Audit (Planned):** Evaluates coherence and alignment across merchandising signals (taxonomy, cross-sell logic, promotions, consistency).
   - **Activation milestone:** Becomes Active after internal review of diagnostic criteria, calibration against real audits, and validation of recommendation templates and thresholds.
 
@@ -99,7 +99,7 @@ Each recommendation must include:
 
 ---
 
-## Knowledge Surface Audit (Phase 2 – Coming Soon)
+## Knowledge Surface Audit (Phase 2 - Active)
 
 ### Goal
 
@@ -117,12 +117,10 @@ Assess whether the site’s content and information architecture provide purchas
 - Standards check focused on content and findability
 - Up to three recommendations, each trust-traced to observed gaps
 
-### Activation Milestone
+### Calibration Notes
 
-Becomes Active after:
-
-- Beta validation on varied storefront types (B2B, B2C, hybrid)
-- Finalized governance rules for content quality scoring and evidence capture
+- Iterate content quality criteria as more sites are audited
+- Preserve evidence-first reasoning and conservative recommendations
 
 ---
 
