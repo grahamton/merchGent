@@ -65,6 +65,8 @@ This prevents feature sprawl and keeps audits explainable.
 - [x] PageData schema
 - [ ] Agent boundaries enforced (Audit Mode selection logic)
 - [x] One audit mode end-to-end (Hybrid Experience) _Refining/Refactoring needed_
+- [ ] Responsive layout (needs mobile testing)
+- [ ] End-to-end test with real site (Ready for User Test)
 
 ### Phase 2: Expansion
 
