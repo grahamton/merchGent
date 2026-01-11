@@ -3,21 +3,31 @@
  * Role: Audit planning, agent routing, synthesis.
  * Forbidden: Direct crawling, UX judgments, Transaction inspection.
  */
-import React, { useState, useCallback } from 'react';
-import { AgentStatus, PageData, AnalysisResult, Product, AuditMode, isModeEnabled } from './types';
+import React, { useState } from 'react';
+import { AgentStatus, PageData, AnalysisResult, AuditMode } from './types';
 import { GeminiService } from './services/geminiService';
-import AnalysisDisplay from './components/AnalysisDisplay';
+import { AuditSetup } from './components/AuditSetup';
+// Use new LoadingAudit instead of LoadingView
+import { LoadingAudit } from './components/LoadingAudit';
+import { StrategyReport } from './components/StrategyReport';
+import { AgentOrchestrator } from './components/AgentOrchestrator';
+import { ThemeToggle } from './components/ThemeToggle';
+import { useTheme } from './hooks/useTheme';
+import { Settings } from 'lucide-react';
+import { Button } from './components/ui/button';
 
 const App: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const [url, setUrl] = useState('');
   const [status, setStatus] = useState<AgentStatus>(AgentStatus.IDLE);
-  const [pageData, setPageData] = useState<PageData | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [auditMode, setAuditMode] = useState<AuditMode>(AuditMode.HYBRID);
 
+  // New State for Orchestrator View
+  const [view, setView] = useState<'main' | 'orchestrator'>('main');
+
   const performRealScrape = async (targetUrl: string): Promise<PageData> => {
-    // Call our local proxy server
     const response = await fetch('http://localhost:3001/api/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -28,11 +38,7 @@ const App: React.FC = () => {
       throw new Error(`Scraping failed: ${response.statusText}`);
     }
 
-    const data = await response.json();
-
-    // Map the raw data to our PageData type if necessary,
-    // though the server should be returning a compatible structure.
-    return data as PageData;
+    return await response.json() as PageData;
   };
 
   const handleStartAnalysis = async (e: React.FormEvent) => {
@@ -44,153 +50,132 @@ const App: React.FC = () => {
     setStatus(AgentStatus.SCRAPING);
 
     try {
-      // Use the real scraping function now
       const data = await performRealScrape(url);
-      setPageData(data);
 
+      // Update status to analyzing after scrape
       setStatus(AgentStatus.ANALYZING);
+
       const service = new GeminiService();
-      // Pass the selected Audit Mode
       const analysis = await service.analyzeMerchandising(data, auditMode);
 
       setResult(analysis);
       setStatus(AgentStatus.COMPLETED);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "An unexpected error occurred during analysis.");
+      setError(err.message || 'An unexpected error occurred during analysis.');
       setStatus(AgentStatus.ERROR);
     }
   };
 
+  const handleBackToSetup = () => {
+    setStatus(AgentStatus.IDLE);
+    setResult(null);
+    setError(null);
+  };
+
+  // Toggle between Main App and Orchestrator
+  const toggleOrchestrator = () => {
+    setView(prev => prev === 'main' ? 'orchestrator' : 'main');
+  };
+
+  if (view === 'orchestrator') {
+    return <AgentOrchestrator onBack={() => setView('main')} />;
+  }
+
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen relative">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white font-bold">M</span>
+      <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div className="max-w-[1800px] mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xl">M</span>
             </div>
-            <h1 className="font-bold text-slate-800 tracking-tight">merchGent <span className="text-slate-400 font-normal">| Diagnostic System</span></h1>
+            <div>
+              <h1 className="font-bold text-zinc-200 tracking-tight">
+                merchGent
+              </h1>
+              <div className="text-[10px] text-zinc-600 uppercase tracking-wider">
+                Diagnostic System
+              </div>
+            </div>
           </div>
-          <div className="hidden md:flex items-center space-x-4 text-xs font-mono text-slate-500">
-            <span>A2A Enabled</span>
-            <span>MCP Ready</span>
-            <span className="bg-slate-100 px-2 py-0.5 rounded">v0.1.0-alpha</span>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center space-x-4 text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+              <span>A2A Enabled</span>
+              <span>|</span>
+              <span>MCP Ready</span>
+              <span>|</span>
+              <span className="bg-zinc-800 px-2 py-1 rounded">v0.3.0-beta</span>
+            </div>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleOrchestrator}
+              className="text-zinc-400 hover:text-orange-500 hover:bg-orange-500/10"
+              title="Agent Orchestrator (Admin)"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 mt-8">
-        {/* Mode Selector */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-           {Object.values(AuditMode).map((mode) => {
-             const isEnabled = isModeEnabled(mode);
-             return (
-               <button
-                 key={mode}
-                 onClick={() => isEnabled && setAuditMode(mode)}
-                 disabled={!isEnabled}
-                 className={`p-4 rounded-xl border text-left transition-all ${
-                   auditMode === mode
-                     ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-200'
-                     : isEnabled
-                       ? 'bg-white border-slate-200 hover:border-blue-300 cursor-pointer'
-                       : 'bg-white border-slate-200 opacity-60 cursor-not-allowed'
-                 }`}
-               >
-                 <div className="font-bold text-slate-800 text-sm">{mode}</div>
-                 <div className="text-xs text-slate-500 mt-1">
-                   {isEnabled ? (auditMode === mode ? 'Active' : 'Available') : 'Coming Soon'}
-                 </div>
-               </button>
-             );
-           })}
-        </div>
+      {/* Main Content */}
+      {status === AgentStatus.IDLE && (
+        <AuditSetup
+          url={url}
+          auditMode={auditMode}
+          status={status}
+          onUrlChange={setUrl}
+          onModeChange={setAuditMode}
+          onSubmit={handleStartAnalysis}
+        />
+      )}
 
-        {/* URL Input Area */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
-          <form onSubmit={handleStartAnalysis} className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Initialize {auditMode}</h2>
-            <p className="text-slate-500 mb-6">
-               {auditMode === AuditMode.HYBRID && "Question: Is this site accidentally serving two masters?"}
-               {auditMode === AuditMode.KNOWLEDGE && "Question: Can customers and agents actually find, trust, and understand product knowledge?"}
-            </p>
+      {(status === AgentStatus.SCRAPING || status === AgentStatus.ANALYZING) && (
+        <LoadingAudit
+          url={url}
+          mode={auditMode}
+          // Optional: passing onComplete if we were simulating, but we drive via state
+        />
+      )}
 
-            <div className="flex flex-col md:flex-row gap-3">
-              <input
-                type="url"
-                placeholder="https://example-commerce-site.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                required
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              />
-              <button
-                type="submit"
-                disabled={status === AgentStatus.SCRAPING || status === AgentStatus.ANALYZING}
-                className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 disabled:bg-slate-300 transition-colors shadow-lg flex items-center justify-center min-w-[160px]"
-              >
-                {status === AgentStatus.SCRAPING && "Deploying Scraper..."}
-                {status === AgentStatus.ANALYZING && "Running Diagnosis..."}
-                {status !== AgentStatus.SCRAPING && status !==AgentStatus.ANALYZING && "Run Audit"}
-              </button>
+      {status === AgentStatus.ERROR && (
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-8">
+          <div className="bg-red-500/10 border border-red-500/30 p-8 rounded-2xl text-center max-w-2xl">
+            <div className="text-red-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
             </div>
-          </form>
-        </div>
-
-        {/* Loading / Status State */}
-        {(status === AgentStatus.SCRAPING || status === AgentStatus.ANALYZING) && (
-          <div className="flex flex-col items-center justify-center py-12 space-y-6">
-            <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <div className="text-center">
-              <p className="font-bold text-slate-800 text-lg">
-                {status === AgentStatus.SCRAPING ? "Capturing DOM & Product Heuristics..." : "Agent M is generating Strategy Report..."}
-              </p>
-              <p className="text-slate-500 text-sm mt-1">Grounding analysis in Baymard & Forrester frameworks</p>
-            </div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {status === AgentStatus.ERROR && (
-          <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-center">
-            <p className="text-red-700 font-bold mb-2">Audit Failed</p>
-            <p className="text-red-600 text-sm">{error}</p>
+            <h2 className="text-xl font-bold text-red-400 mb-3">Audit Failed</h2>
+            <p className="text-sm text-red-300 mb-6">{error}</p>
             <button
-              onClick={() => setStatus(AgentStatus.IDLE)}
-              className="mt-4 text-xs font-bold uppercase tracking-widest text-red-700 hover:underline"
+              onClick={handleBackToSetup}
+              className="bg-zinc-800 text-zinc-200 px-6 py-2 rounded-lg font-bold hover:bg-zinc-700 transition-colors"
             >
-              Retry Audit
+              Back to Setup
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Results Area */}
-        {result && (
-          <div className="space-y-8 pb-12">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <h2 className="text-xl font-bold text-slate-800">Operational Intelligence Report</h2>
-              <div className="text-xs text-slate-500 font-mono">ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
-            </div>
-
-            <AnalysisDisplay result={result} />
-          </div>
-        )}
-      </main>
-
-      {/* Persistent Call to Action / Info Bar */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 shadow-2xl z-40">
-        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center text-[10px] md:text-xs text-slate-400 font-mono uppercase tracking-tighter">
-          <div className="flex space-x-4">
-            <span>GOVERNANCE: COMPLIANT</span>
-            <span>TRUST: HIGH</span>
-          </div>
-          <div className="text-right">
-            <span>PROPRIETARY ALPHA // FOR INTERNAL USE ONLY</span>
+      {status === AgentStatus.COMPLETED && result && (
+        <div>
+          <StrategyReport result={result} url={url} />
+          <div className="fixed bottom-6 right-6">
+            <button
+              onClick={handleBackToSetup}
+              className="bg-zinc-800 border border-zinc-700 text-zinc-200 px-6 py-3 rounded-lg font-bold hover:bg-zinc-700 transition-colors shadow-2xl"
+            >
+              New Audit
+            </button>
           </div>
         </div>
-      </footer>
+      )}
     </div>
   );
 };
