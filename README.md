@@ -98,12 +98,12 @@ Use slash commands to invoke specific modes:
 
 ## Audit Modes
 
-| Mode                              | Question                                               | Focus                                              | Status             |
-| --------------------------------- | ------------------------------------------------------ | -------------------------------------------------- | ------------------ |
-| **Hybrid Experience Audit**       | Is this site serving two masters?                      | B2B/B2C signal conflicts, mixed CTAs               | Active (Phase 1)   |
-| **Knowledge Surface Audit**       | Can customers find and trust product knowledge?        | Content quality, findability, gaps                 | Active (Phase 2)   |
-| **Merchandising Coherence Audit** | Do navigation, PDPs, and CTAs tell a consistent story? | Category logic, product grouping, CTA consistency  | Planned            |
-| **Logged-In vs Logged-Out Audit** | Does account state hurt intent?                        | Content visibility, navigation shifts, CTA changes | Planned (Phase 3)  |
+| Mode                              | Question                                               | Focus                                              | Status                      |
+| --------------------------------- | ------------------------------------------------------ | -------------------------------------------------- | --------------------------- |
+| **Hybrid Experience Audit**       | Is this site serving two masters?                      | B2B/B2C signal conflicts, mixed CTAs               | Active (Phase 1)            |
+| **Knowledge Surface Audit**       | Can customers find and trust product knowledge?        | Content quality, findability, gaps                 | Active (Phase 2)            |
+| **Merchandising Coherence Audit** | Do navigation, PDPs, and CTAs tell a consistent story? | Category logic, product grouping, CTA consistency  | Planned                     |
+| **Logged-In vs Logged-Out Audit** | Does account state hurt intent?                        | Content visibility, navigation shifts, CTA changes | Planned (Phase 3)           |
 | **Agent Readiness Scan**          | Is this experience ready for agent-led commerce?       | Transaction clarity, intent signaling              | Planned (Phase 4, Optional) |
 
 ---
@@ -117,7 +117,7 @@ merchGent is built as a **team of specialized agents**:
 - **Merch Agent** - Analyzes intent signals and synthesizes merchandising findings
 - **Data Agent** - Analyzes patterns, trust gaps, and transaction readiness
 
-For full details, see **[docs/AGENT_RULES.md](docs/AGENT_RULES.md)** and **[docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)**.
+For full details, see **[server/prompts/SYSTEM_PROMPT.md](server/prompts/SYSTEM_PROMPT.md)** and **[docs/VISION.md](docs/VISION.md)**.
 
 ---
 

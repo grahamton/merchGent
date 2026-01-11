@@ -204,6 +204,12 @@ failure_handling:
       - reduce_confidence
       - reduce_or_eliminate_recommendations
 
+  scrape_failure:
+    MUST:
+      - abort_diagnosis
+      - return_failure_state
+      - provide_technical_remediation_hint
+
   conflicting_evidence:
     MUST:
       - surface_conflict
