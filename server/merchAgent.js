@@ -22,19 +22,6 @@ const AGENT_RULESET_YAML = fs.readFileSync(
 
 const ENABLED_MODES = new Set(['Hybrid Experience Audit', 'Knowledge Surface Audit']);
 
-const DEFAULT_STANDARDS_BY_MODE = {
-  'Hybrid Experience Audit': [
-    { criterion: 'Intent alignment' },
-    { criterion: 'Procurement readiness' },
-    { criterion: 'Product data structure' },
-  ],
-  'Knowledge Surface Audit': [
-    { criterion: 'Content completeness' },
-    { criterion: 'Findability' },
-    { criterion: 'Knowledge gaps' },
-  ],
-};
-
 const coerceStatus = (status) => {
   const normalized = String(status || '').toLowerCase();
   if (normalized === 'pass' || normalized === 'partial' || normalized === 'fail') {
@@ -43,25 +30,13 @@ const coerceStatus = (status) => {
   return 'unknown';
 };
 
-const normalizeStandardsCheck = (standardsCheck, mode) => {
+const normalizeStandardsCheck = (standardsCheck) => {
   if (!Array.isArray(standardsCheck)) {
-    return DEFAULT_STANDARDS_BY_MODE[mode].map((item) => ({
-      ...item,
-      status: 'unknown',
-      evidence: 'Insufficient evidence in sample.',
-    }));
+    return [];
   }
 
   const normalized = standardsCheck
     .map((item) => {
-      if (typeof item === 'string') {
-        return {
-          criterion: item,
-          status: 'unknown',
-          evidence: 'Insufficient evidence in sample.',
-        };
-      }
-
       return {
         criterion: String(item.criterion || item.label || 'Unnamed criterion').trim(),
         status: coerceStatus(item.status),
@@ -69,14 +44,6 @@ const normalizeStandardsCheck = (standardsCheck, mode) => {
       };
     })
     .filter((item) => item.criterion.length > 0);
-
-  if (normalized.length === 0) {
-    return DEFAULT_STANDARDS_BY_MODE[mode].map((item) => ({
-      ...item,
-      status: 'unknown',
-      evidence: 'Insufficient evidence in sample.',
-    }));
-  }
 
   return normalized.slice(0, 3);
 };
@@ -255,9 +222,59 @@ const normalizeAnalysis = (rawAnalysis, mode) => {
     diagnosisDescription,
     hybridTrapCheck,
     trustTrace,
-    standardsCheck: normalizeStandardsCheck(rawAnalysis.standardsCheck, mode),
+    standardsCheck: normalizeStandardsCheck(rawAnalysis.standardsCheck),
     recommendations,
   };
+};
+
+const allowedSiteModes = new Set(['B2B', 'B2C', 'Hybrid']);
+
+const isNonEmptyString = (value) =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const isValidStandardsCheck = (items) =>
+  Array.isArray(items) &&
+  items.every(
+    (item) =>
+      item &&
+      typeof item === 'object' &&
+      isNonEmptyString(item.criterion) &&
+      isNonEmptyString(item.status) &&
+      isNonEmptyString(item.evidence)
+  );
+
+const isValidRecommendations = (items) =>
+  Array.isArray(items) &&
+  items.length <= 3 &&
+  items.every((item) => isNonEmptyString(item));
+
+const validateAnalysisPayload = (analysis) => {
+  if (!analysis || typeof analysis !== 'object') {
+    return { isValid: false, reason: 'Response was not a JSON object.' };
+  }
+  if (!isNonEmptyString(analysis.trustTrace)) {
+    return { isValid: false, reason: 'Missing trustTrace.' };
+  }
+  if (!allowedSiteModes.has(analysis.siteMode)) {
+    return { isValid: false, reason: 'Invalid siteMode.' };
+  }
+  if (!isNonEmptyString(analysis.diagnosisTitle)) {
+    return { isValid: false, reason: 'Missing diagnosisTitle.' };
+  }
+  if (!isNonEmptyString(analysis.diagnosisDescription)) {
+    return { isValid: false, reason: 'Missing diagnosisDescription.' };
+  }
+  if (!isNonEmptyString(analysis.hybridTrapCheck)) {
+    return { isValid: false, reason: 'Missing hybridTrapCheck.' };
+  }
+  if (!isValidStandardsCheck(analysis.standardsCheck)) {
+    return { isValid: false, reason: 'Invalid standardsCheck.' };
+  }
+  if (!isValidRecommendations(analysis.recommendations)) {
+    return { isValid: false, reason: 'Invalid recommendations.' };
+  }
+
+  return { isValid: true, reason: '' };
 };
 
 const isValidPageData = (pageData) =>
@@ -353,7 +370,14 @@ ${mission}
       try {
         rawAnalysis = JSON.parse(response.text || '{}');
       } catch (error) {
-        rawAnalysis = {};
+        console.error('[Merch Agent] Invalid JSON from model:', error.message);
+        return res.status(502).json({ error: 'Analysis failed: invalid model JSON.' });
+      }
+
+      const validation = validateAnalysisPayload(rawAnalysis);
+      if (!validation.isValid) {
+        console.error('[Merch Agent] Invalid model response:', validation.reason);
+        return res.status(502).json({ error: `Analysis failed: ${validation.reason}` });
       }
 
       const normalized = normalizeAnalysis(rawAnalysis, mode);

@@ -9,11 +9,8 @@ import { AuditSetup } from './components/AuditSetup';
 // Use new LoadingAudit instead of LoadingView
 import { LoadingAudit } from './components/LoadingAudit';
 import { StrategyReport } from './components/StrategyReport';
-import { AgentOrchestrator } from './components/AgentOrchestrator';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useTheme } from './hooks/useTheme';
-import { Settings } from 'lucide-react';
-import { Button } from './components/ui/button';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -25,8 +22,18 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [auditMode, setAuditMode] = useState<AuditMode>(AuditMode.HYBRID);
 
-  // New State for Orchestrator View
-  const [view, setView] = useState<'main' | 'orchestrator'>('main');
+  const getErrorMessage = async (response: Response) => {
+    try {
+      const payload = await response.json();
+      if (payload && typeof payload.error === 'string') {
+        return payload.error;
+      }
+    } catch {
+      // fall through to status text
+    }
+
+    return `Request failed: ${response.status} ${response.statusText}`;
+  };
 
   const performRealScrape = async (targetUrl: string): Promise<PageData> => {
     const response = await fetch(`${API_BASE_URL}/api/scrape`, {
@@ -36,7 +43,7 @@ const App: React.FC = () => {
     });
 
     if (!response.ok) {
-      throw new Error(`Scraping failed: ${response.statusText}`);
+      throw new Error(await getErrorMessage(response));
     }
 
     return await response.json() as PageData;
@@ -50,7 +57,7 @@ const App: React.FC = () => {
     });
 
     if (!response.ok) {
-      throw new Error(`Analysis failed: ${response.statusText}`);
+      throw new Error(await getErrorMessage(response));
     }
 
     return await response.json() as AnalysisResult;
@@ -87,15 +94,6 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  // Toggle between Main App and Orchestrator
-  const toggleOrchestrator = () => {
-    setView(prev => prev === 'main' ? 'orchestrator' : 'main');
-  };
-
-  if (view === 'orchestrator') {
-    return <AgentOrchestrator onBack={() => setView('main')} />;
-  }
-
   return (
     <div className="min-h-screen relative">
       {/* Header */}
@@ -116,23 +114,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center space-x-4 text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
-              <span>A2A Enabled</span>
-              <span>|</span>
-              <span>MCP Ready</span>
-              <span>|</span>
-              <span className="bg-zinc-800 px-2 py-1 rounded">v0.3.0-beta</span>
-            </div>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleOrchestrator}
-              className="text-zinc-400 hover:text-orange-500 hover:bg-orange-500/10"
-              title="Agent Orchestrator (Admin)"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
           </div>
         </div>
       </header>
@@ -153,7 +135,7 @@ const App: React.FC = () => {
         <LoadingAudit
           url={url}
           mode={auditMode}
-          // Optional: passing onComplete if we were simulating, but we drive via state
+          status={status}
         />
       )}
 

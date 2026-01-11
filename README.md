@@ -6,7 +6,7 @@ merchGent audits e-commerce experiences across content, UX, and customer intent,
 
 ---
 
-## Key Features (v2.0)
+## Key Features
 
 - **Smart Structural Scout**: The Web Agent heuristically scans pages to detect product grids and cards, even on sites without standard markup.
 - **Anti-Gravity Governance**: Built-in rules and workflows (`/fixer`, `/ticketbrain`) that prevent scope creep and over-engineering.
@@ -98,11 +98,13 @@ Use slash commands to invoke specific modes:
 
 ## Audit Modes
 
-| Mode                        | Question                                        | Focus                                |
-| --------------------------- | ----------------------------------------------- | ------------------------------------ |
-| **Hybrid Experience Audit** | Is this site serving two masters?               | B2B/B2C signal conflicts, mixed CTAs |
-| **Knowledge Surface Audit** | Can customers find and trust product knowledge? | Content quality, findability, gaps   |
-| _Logged-In vs Logged-Out_   | Does account state hurt intent?                 | _Planned: Phase 3_                   |
+| Mode                              | Question                                               | Focus                                              | Status             |
+| --------------------------------- | ------------------------------------------------------ | -------------------------------------------------- | ------------------ |
+| **Hybrid Experience Audit**       | Is this site serving two masters?                      | B2B/B2C signal conflicts, mixed CTAs               | Active (Phase 1)   |
+| **Knowledge Surface Audit**       | Can customers find and trust product knowledge?        | Content quality, findability, gaps                 | Active (Phase 2)   |
+| **Merchandising Coherence Audit** | Do navigation, PDPs, and CTAs tell a consistent story? | Category logic, product grouping, CTA consistency  | Planned            |
+| **Logged-In vs Logged-Out Audit** | Does account state hurt intent?                        | Content visibility, navigation shifts, CTA changes | Planned (Phase 3)  |
+| **Agent Readiness Scan**          | Is this experience ready for agent-led commerce?       | Transaction clarity, intent signaling              | Planned (Phase 4, Optional) |
 
 ---
 
@@ -112,8 +114,8 @@ merchGent is built as a **team of specialized agents**:
 
 - **Client Agent** - Orchestrates audits and synthesizes findings
 - **Web Agent** - Crawls and extracts signals using **Puppeteer Stealth** + **Dynamic Scout**.
-- **Merch Agent** - Analyzes intent, coherence, and merchandising logic
-- **Data Agent** - Inspects account state and transaction readiness
+- **Merch Agent** - Analyzes intent signals and synthesizes merchandising findings
+- **Data Agent** - Analyzes patterns, trust gaps, and transaction readiness
 
 For full details, see **[docs/AGENT_RULES.md](docs/AGENT_RULES.md)** and **[docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)**.
 

@@ -1,6 +1,6 @@
 # AGENT_RULES.md
 
-merchGent — Agent Behavior, Constraints, and Operating Rules
+merchGent - Agent Behavior, Constraints, and Operating Rules
 
 This document defines **non-negotiable rules** governing all AI agents operating within the merchGent system.
 These rules exist to ensure safety, consistency, trustworthiness, and merchandising relevance.
@@ -8,7 +8,7 @@ These rules exist to ensure safety, consistency, trustworthiness, and merchandis
 This file is authoritative.
 If a conflict exists between agent reasoning and this document, **this document wins**.
 
-> **Note**: A machine-readable version of this ruleset is available at [`agent_ruleset.yaml`](file:///c:/dev/merchGent/docs/agent_ruleset.yaml) for runtime enforcement and prompt conditioning.
+> **Note**: A machine-readable version of this ruleset is available at [`agent_ruleset.yaml`](docs/agent_ruleset.yaml) for runtime enforcement and prompt conditioning.
 
 ---
 
@@ -89,7 +89,7 @@ Agents may not reorder or omit sections.
 
 ## 3. Agent-Specific Rules
 
-### 3.1 Agent M — The Strategist
+### 3.1 Agent M - The Strategist
 
 **Primary Role:** Orchestration, synthesis, and final judgment.
 
@@ -115,7 +115,7 @@ Agent M is responsible for:
 
 ---
 
-### 3.2 Web Agent — The Data Collector
+### 3.2 Web Agent - The Data Collector
 
 **Primary Role:** Evidence gathering from the website.
 
@@ -137,7 +137,7 @@ Web Agent outputs **signals only**, not conclusions.
 
 ---
 
-### 3.3 Data Agent — The Analyzer
+### 3.3 Data Agent - The Analyzer
 
 **Primary Role:** Pattern detection and signal validation.
 
@@ -170,8 +170,8 @@ A signal is:
 
 Examples:
 
-- “Request a Quote” button
-- “Add to Cart” CTA
+- "Request a Quote" button
+- "Add to Cart" CTA
 - PO Number field
 - Product spec table
 - Review module
@@ -221,6 +221,20 @@ Agents must:
 
 - Treat this mode as non-existent for execution
 - Avoid coherence judgments unless directly relevant to Hybrid conflicts
+
+### 5.4 Logged-In vs Logged-Out Audit (Planned - Phase 3)
+
+Agents must:
+
+- Treat this mode as non-existent for execution
+- Avoid account-state comparisons unless explicitly activated by governance
+
+### 5.5 Agent Readiness Scan (Planned - Phase 4, Optional)
+
+Agents must:
+
+- Treat this mode as non-existent for execution
+- Avoid readiness judgments unless explicitly activated by governance
 
 ---
 
@@ -317,8 +331,6 @@ When in doubt: stop, explain the limitation, and defer.
 ### 10.2 Agent M Mission: Hybrid Experience Audit (Active)
 
 **Question:** Is this site accidentally serving two masters?
-
-You are **Agent M** (The Strategist) for the **merchGent** system, running in **Hybrid Experience Audit** mode. You are provided with a structured context block containing scraped data from an e-commerce site.
 
 ## Mission: Hybrid Experience Audit
 
@@ -457,3 +469,4 @@ Provide your response in the following JSON structure (do not use markdown forma
 ---
 
 ## Final Rule
+

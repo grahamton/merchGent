@@ -2,7 +2,7 @@
 
 ## Overview of merchGent
 
-**merchGent** is a read-only merchandising diagnostic system for modern commerce. It uses a team of specialized AI agents to audit an online commerce site’s content, user experience, and alignment with customer intent. The goal is actionable insights for merchandising leaders managing **B2B**, **B2C**, or **hybrid** storefronts.
+**merchGent** is a read-only merchandising diagnostic system for modern commerce. It uses a team of specialized AI agents to audit an online commerce site's content, user experience, and alignment with customer intent. The goal is actionable insights for merchandising leaders managing **B2B**, **B2C**, or **hybrid** storefronts.
 
 **Read-only by design:** merchGent never modifies the target site, submits forms, or executes transactions.
 
@@ -27,21 +27,23 @@ merchGent organizes analysis into **Audit Modes**, each representing a cohesive 
 
 ### Current and Planned Modes
 
-- **Hybrid Experience Audit (Phase 1 – Active):** Detects B2B/B2C conflict and “Hybrid Traps.”
+- **Hybrid Experience Audit (Phase 1 - Active):** Detects B2B/B2C conflict and "Hybrid Traps."
 - **Knowledge Surface Audit (Phase 2 - Active):** Audits content quality, completeness, and findability.
   - **Status:** Active with current heuristics; criteria will continue to evolve with live audits.
 - **Merchandising Coherence Audit (Planned):** Evaluates coherence and alignment across merchandising signals (taxonomy, cross-sell logic, promotions, consistency).
   - **Activation milestone:** Becomes Active after internal review of diagnostic criteria, calibration against real audits, and validation of recommendation templates and thresholds.
+- **Logged-In vs Logged-Out Audit (Planned - Phase 3):** Compares account-state experiences for intent and conversion impact.
+- **Agent Readiness Scan (Planned - Phase 4, Optional):** Checks transaction clarity and intent signaling for agent-led commerce readiness.
 
 ---
 
-## Hybrid Experience Audit (Phase 1 – Active)
+## Hybrid Experience Audit (Phase 1 - Active)
 
 ### Goal
 
 Identify whether the target site falls into a **Hybrid Trap** by sending mixed signals meant for both B2B and B2C audiences. Hybrid traps occur when a site tries to serve two different buyer types with one blended, compromised experience.
 
-### The Hybrid Trap: “Serving Two Masters”
+### The Hybrid Trap: "Serving Two Masters"
 
 A Hybrid Trap is flagged when the experience presents conflicting workflows or cues, such as:
 
@@ -65,9 +67,9 @@ The Hybrid Experience Audit uses a **signal model**: agents detect evidence of B
 
 - Instant checkout patterns (add to cart prominence, guest checkout flows)
 - Lifestyle persuasion (aspirational imagery, emotional brand storytelling)
-- Social proof (ratings, reviews, “trending” modules)
+- Social proof (ratings, reviews, "trending" modules)
 - Promotion mechanics (coupon prompts, free-shipping thresholds, flash-sale banners)
-- Discovery-first UX (heavy browsing funnels, “you may also like,” curated collections)
+- Discovery-first UX (heavy browsing funnels, "you may also like," curated collections)
 
 ### Diagnosis Output
 
@@ -88,7 +90,7 @@ The Hybrid Experience Audit includes a compact standards check using internalize
 
 ### Actionable Recommendations (Strict Constraint)
 
-The final section lists the top recommended actions to take. We are **strictly constrained to a maximum of three key recommendations** to maintain the framework’s emphasis on clarity and focus and to avoid overwhelming the Merch Leader.
+The final section lists the top recommended actions to take. We are **strictly constrained to a maximum of three key recommendations** to maintain the framework's emphasis on clarity and focus and to avoid overwhelming the Merch Leader.
 
 Each recommendation must include:
 
@@ -103,7 +105,7 @@ Each recommendation must include:
 
 ### Goal
 
-Assess whether the site’s content and information architecture provide purchase readiness and decision enablement for the intended buyer.
+Assess whether the site's content and information architecture provide purchase readiness and decision enablement for the intended buyer.
 
 ### What It Evaluates
 
@@ -153,9 +155,44 @@ Becomes Active after:
 
 ---
 
+## Logged-In vs Logged-Out Audit (Planned - Phase 3)
+
+### Goal
+
+Assess whether account state changes the experience in ways that hurt intent or conversion.
+
+### What It Evaluates
+
+- Content visibility changes
+- Navigation shifts
+- CTA changes
+
+### Activation Milestone
+
+Planned for Phase 3. Non-executable until governance criteria and evidence rules are defined.
+
+---
+
+## Agent Readiness Scan (Planned - Phase 4, Optional)
+
+### Goal
+
+Assess whether the experience is structurally ready for agent-led commerce.
+
+### What It Evaluates
+
+- Transaction clarity
+- Intent signaling
+
+### Activation Milestone
+
+Planned for Phase 4. Non-executable until governance criteria and evidence rules are defined.
+
+---
+
 ## Governance and System Architecture
 
-These components are system-level controls. They enforce rules and maintain the “source of truth.” They are not agents.
+These components are system-level controls. They enforce rules and maintain the "source of truth." They are not agents.
 
 ### Governance Ingestion Engine
 
@@ -192,7 +229,7 @@ Responsibilities:
 
 ## Agent Roles and Orchestrator Back-End
 
-### Agent M – The Strategist
+### Agent M - The Strategist
 
 Responsibilities:
 
@@ -202,7 +239,7 @@ Responsibilities:
 - Ensure every conclusion is trust-traced and evidence-backed
 - Enforce the max-three recommendation constraint
 
-### Web Agent – The Data Collector
+### Web Agent - The Data Collector
 
 Responsibilities:
 
@@ -211,7 +248,7 @@ Responsibilities:
 - Capture UI text, button labels, navigation structures, and visible commerce flows
 - Never submit forms, never transact, never modify state
 
-### Data Agent – The Analyzer
+### Data Agent - The Analyzer
 
 Responsibilities:
 
@@ -261,3 +298,4 @@ Think of the system like a restaurant workflow:
   - The Web Agent and Data Agent act as **Line Cooks**, gathering and preparing ingredients (site evidence).
   - Governance components act as the **Health Inspector**, enforcing boundaries and preventing unsafe inputs.
 - The output is the plated dish: a clean Strategy Report with trust-traced evidence and a strict limit on recommendations.
+

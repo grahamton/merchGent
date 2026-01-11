@@ -1,58 +1,30 @@
-import { useEffect, useState } from "react";
-import { Activity, Globe, Brain, Database, CheckCircle2 } from "lucide-react";
-import { Progress } from "./ui/progress";
+import { Globe, Brain, CheckCircle2 } from "lucide-react";
+import { AgentStatus } from "../types";
 
 interface LoadingAuditProps {
   url: string;
   mode: string;
-  onComplete?: () => void;
+  status: AgentStatus;
 }
 
-export function LoadingAudit({ url, mode, onComplete }: LoadingAuditProps) {
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState(0);
-
+export function LoadingAudit({ url, mode, status }: LoadingAuditProps) {
   const steps = [
-    { agent: "Client Agent", action: "Initializing audit framework...", icon: Activity },
-    { agent: "Web Agent", action: "Crawling public pages...", icon: Globe },
-    { agent: "Web Agent", action: "Extracting commerce signals...", icon: Globe },
-    { agent: "Merch Agent", action: "Analyzing intent patterns...", icon: Brain },
-    { agent: "Merch Agent", action: "Detecting hybrid traps...", icon: Brain },
-    { agent: "Data Agent", action: "Validating data standards...", icon: Database },
-    { agent: "Client Agent", action: "Synthesizing findings...", icon: Activity },
-    { agent: "Client Agent", action: "Generating report...", icon: CheckCircle2 },
+    {
+      key: AgentStatus.SCRAPING,
+      agent: "Web Agent",
+      action: "Scraping public pages",
+      icon: Globe,
+    },
+    {
+      key: AgentStatus.ANALYZING,
+      agent: "Merch Agent",
+      action: "Analyzing extracted signals",
+      icon: Brain,
+    },
   ];
 
-  useEffect(() => {
-    // Faster animation for demo feel, but we can sync with real status
-    const stepDuration = 500;
-    const totalDuration = steps.length * stepDuration;
-
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + (100 / (totalDuration / 50));
-        return next >= 100 ? 100 : next;
-      });
-    }, 50);
-
-    const stepInterval = setInterval(() => {
-      setCurrentStep((prev) => {
-        if (prev >= steps.length - 1) {
-          clearInterval(stepInterval);
-          if (onComplete) onComplete();
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, stepDuration);
-
-    return () => {
-      clearInterval(progressInterval);
-      clearInterval(stepInterval);
-    };
-  }, [steps.length, onComplete]);
-
-  const CurrentIcon = steps[currentStep].icon;
+  const isAnalyzing = status === AgentStatus.ANALYZING;
+  const isScraping = status === AgentStatus.SCRAPING;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex items-center justify-center p-8">
@@ -63,7 +35,9 @@ export function LoadingAudit({ url, mode, onComplete }: LoadingAuditProps) {
             <div className="w-1 h-8 bg-blue-500" />
             <h1 className="text-3xl font-bold tracking-tight">merchGent</h1>
           </div>
-          <p className="text-zinc-400 font-mono text-sm">Running Audit...</p>
+          <p className="text-zinc-400 font-mono text-sm">
+            {isScraping ? "Scraping target site..." : "Analyzing signals..."}
+          </p>
         </div>
 
         {/* Loading Card */}
@@ -79,44 +53,28 @@ export function LoadingAudit({ url, mode, onComplete }: LoadingAuditProps) {
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-mono text-zinc-400">Progress</span>
-              <span className="text-xs font-mono text-zinc-400">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-
-          {/* Current Step */}
-          <div className="flex items-start gap-4 mb-6">
-            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 animate-pulse">
-              <CurrentIcon className="w-5 h-5 text-blue-500" />
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-mono text-blue-400 mb-1 font-bold">
-                [{steps[currentStep].agent}]
-              </div>
-              <div className="text-sm font-mono text-zinc-300">{steps[currentStep].action}</div>
-            </div>
-          </div>
-
-          {/* Step History */}
+          {/* Live Steps */}
           <div className="border-t border-zinc-800 pt-4">
             <div className="text-xs font-mono text-zinc-500 mb-3 uppercase tracking-wider">Audit Log</div>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-              {steps.slice(0, currentStep + 1).reverse().map((step, index) => {
+              {steps.map((step) => {
                 const StepIcon = step.icon;
-                const isLatest = index === 0;
+                const isActive = step.key === status;
+                const isDone = isAnalyzing && step.key === AgentStatus.SCRAPING;
+
                 return (
                   <div
-                    key={index}
+                    key={step.key}
                     className={`flex items-center gap-3 text-xs font-mono p-2 rounded ${
-                      isLatest ? "bg-zinc-800/50 text-zinc-200" : "text-zinc-600"
+                      isActive ? "bg-zinc-800/50 text-zinc-200" : "text-zinc-600"
                     }`}
                   >
-                    <CheckCircle2 className={`w-3 h-3 ${isLatest ? "text-blue-500" : "text-zinc-700"}`} />
-                    <span>{step.action}</span>
+                    {isDone ? (
+                      <CheckCircle2 className="w-3 h-3 text-blue-500" />
+                    ) : (
+                      <StepIcon className="w-3 h-3 text-blue-500" />
+                    )}
+                    <span>[{step.agent}] {step.action}</span>
                   </div>
                 );
               })}
