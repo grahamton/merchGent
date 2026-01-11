@@ -1,145 +1,265 @@
-# The merchGent Agent's Knowledge Base: A Guide to Diagnosing and Optimizing Modern Commerce Experiences
+# merchGent Strategic Audit Knowledge Base
 
-## Introduction: The merchGent Philosophy
+## Overview of merchGent
 
-This document serves as the core knowledge base for all merchGent agents. Your primary role is not merely to find faults, but to act as a strategic diagnostician who identifies structural risks and opportunities within a client's commerce experience. Every analysis and recommendation you provide must be grounded in the foundational principle of the merchGent framework: **"Diagnosis first. Opinion where it helps. Restraint everywhere else."** This guide provides the foundational knowledge and audit methodologies required to deliver the precise, evidence-based analysis that helps our clients navigate the complexities of modern B2B, B2C, and eProcurement environments.
+**merchGent** is a read-only merchandising diagnostic system for modern commerce. It uses a team of specialized AI agents to audit an online commerce site’s content, user experience, and alignment with customer intent. The goal is actionable insights for merchandising leaders managing **B2B**, **B2C**, or **hybrid** storefronts.
 
----
+**Read-only by design:** merchGent never modifies the target site, submits forms, or executes transactions.
 
-## 1. The Unified B2B Commerce Standard Framework
+### What merchGent Delivers
 
-Before conducting any audit, an agent must master the "Unified B2B Commerce Standard Framework." This framework is not a single document but a synthesis of authoritative best practices from industry leaders like Baymard Institute, the Chartered Institute of Procurement & Supply (CIPS), and GS1. This section distills the non-negotiable standards for user experience, procurement, data structure, and technology that form the basis of every merchGent diagnosis. This framework provides the "authority" against which all client sites are measured.
+- **Hybrid Trap Detection:** Identifies conflicting B2B/B2C signals that confuse buyers
+- **Knowledge Surface Analysis:** Assesses content quality, findability, and completeness
+- **Trust-Traced Findings:** Every recommendation cites the specific signals used
+- **Merch-Ready Reports:** Outputs designed for merchandising decisions, not abstract theory
 
-### 1.1. The UX Standard: Baymard Institute Principles for Efficiency and Discovery
+### Design Philosophy
 
-These principles are not suggestions; they are data-backed benchmarks derived from Baymard Institute's extensive usability research. Non-compliance represents a direct, measurable risk to revenue and user retention.
-
-1. **Forgiving Search Autocomplete**: Autocomplete suggestions must handle minor misspellings and typos. Research shows that 69% of sites fail at this basic requirement. Non-compliance signals to users that their search will likely fail, causing them to abandon their product-finding strategy or the site entirely.
-
-2. **Unambiguous Mobile Navigation**: Each level of a mobile product catalog must include a "View All" option as the first item in the list. Currently, 33% of sites do not provide this, breaking with information architecture conventions. This omission makes it significantly harder for users to browse broadly and understand the full scope of a product category.
-
-3. **Consistent Product Attribute Display**: The same product attributes must be displayed consistently across all items within a product list. An alarming 68% of sites fail to do this, making direct comparison impossible without clicking into each product detail page. Users frequently dismiss items that lack the same attributes as others in the list, assuming the information is simply unavailable.
-
-4. **Clarity in Fulfillment Expectations**: Fulfillment information must be presented as a specific "Delivery Date" rather than a business-centric "Shipping Speed." While 37% of sites still use shipping speed, this approach forces users to calculate variables like order processing time, cutoff times, and business days. This cognitive load often leads to hesitation and cart abandonment when timeliness is critical.
-
-### 1.2. The Procurement Standard: CIPS Principles for Compliance and Control
-
-To prevent operational and financial leakage, platforms must adhere to procurement standards synthesized from CIPS principles for compliance and control. Professional buyers operate within strict workflows, and failure to support these processes results in uncontrolled spending and lost enterprise contracts.
-
-**Define "Maverick Spend"**: Maverick spend is the procurement of goods or services outside of established contracts. It is a critical risk, eroding up to 16% of negotiated savings and accounting for up to 80% of invoices in some organizations. B2B platforms must be architected to eliminate it.
-
-**Detail Punch-Out Catalog Requirements**: PunchOut connectivity via cXML or OCI is a core requirement for many enterprise buyers. This integration allows a buyer to browse a supplier's ecommerce site from within their eProcurement system (e.g., Ariba, Coupa). After selecting products, the buyer "punches out," transferring the shopping cart data back into their system to create a requisition for internal approval and purchase order generation.
-
-**Summarize Essential B2B Portal Features**: To support the full procurement lifecycle, B2B portals must offer a suite of robust self-service features. According to a study by TrustRadius, 100% of B2B buyers now want the option to self-serve. Critical capabilities include:
-
-- Management of complex internal approval workflows.
-- Support for account hierarchies (parent-child accounts) to reflect the buyer's organizational structure.
-- Role-based access control for requesters, managers, finance, and administrators.
-- Flexible payment options, including purchase orders (POs), net terms (e.g., Net 30), and credit lines.
-
-### 1.3. The Data Standard: GS1 Principles for Structure and Interoperability
-
-Effective data structure is governed by the GS1 principle of a single, interoperable source of truth. In the age of AI-led discovery, unstructured or siloed product data carries a direct cost. If product information is not machine-readable, it will not surface in modern discovery engines, resulting in lost revenue before a buyer ever reaches the client's site.
-
-**The Mandate for a Single Source of Truth**: Using multiple databases for product information creates a cascade of downstream errors, including order inaccuracies, pricing inconsistencies, and a severe degradation of the customer experience. A centralized Product Experience Management (PXM) or Product Information Management (PIM) system is the non-negotiable standard. It serves as a single source of truth that prevents errors, reduces manual work, and ensures data is consistent across all channels.
-
-**The Importance of Attribute Normalization**: Product attributes must be consistent, structured, and normalized. This means a technical specification like "voltage" or "material composition" is always a distinct, filterable field, not buried in a block of text. This is a prerequisite for effective faceted navigation and is essential for AI agents to understand, compare, and recommend products.
-
-**The Challenge of SKU Proliferation**: As product catalogs grow, managing tens of thousands of SKUs adds layers of complexity and increases the risk of data inconsistencies. This reality makes a centralized data management system even more critical for maintaining control and accuracy at scale.
-
-### 1.4. The Technology Standard: Composable and Unified Commerce
-
-The merchGent framework dismisses monolithic architectures as legacy liabilities. The 2026 operational standard is a composable and unified architecture, as this is the only model that provides the agility required to compete.
-
-**Composable (MACH) Architecture**: A MACH architecture (Microservices, API-first, Cloud-native, Headless) is the foundational design for an AI-ready enterprise. This approach allows a business to "compose" a best-in-class tech stack by connecting specialized solutions via APIs. This modularity makes the entire enterprise more adaptable to market changes and new technologies.
-
-**Unified Commerce**: Unified Commerce is the complete integration of all retail operations—ECOM, Warehouse Management Systems (WMS), CRM, ERP, and Point of Sale (POS)—into a single solution. This provides a single source of truth for all customer data, inventory, and orders, eliminating data silos and enabling a seamless, consistent omnichannel experience for every buyer.
-
-With this foundational framework of standards understood, agents are now equipped to perform specific, targeted diagnoses of a client's commerce experience.
+- **Audit modes, not features:** Users choose a mode. The system runs the appropriate checks.
+- **Restraint everywhere else:** The UI and outputs are intentionally surgical. No noisy control panels.
+- **Trust trace required:** Findings must be evidence-backed and reviewable.
 
 ---
 
-## 2. Executing the Hybrid Experience Audit
+## Audit Modes and Strategy
 
-The core purpose of the Hybrid Experience Audit is to answer a single critical question: **"Is this site accidentally serving two masters?"** This audit is specifically designed to detect conflicts between B2B and B2C signals that create a confusing and ineffective experience for both audiences—a situation we define as the "Hybrid Trap." The goal of this audit is to provide clear, actionable recommendations for aligning user journeys with business intent.
+merchGent organizes analysis into **Audit Modes**, each representing a cohesive diagnostic lens. Modes are intentionally limited to protect clarity and ensure consistent outputs.
 
-### 2.1. Identifying Conflicting Signals
+### Current and Planned Modes
 
-| Common B2B Signals That Create B2C Friction  | Common B2C Signals That Create B2B Friction              |
-| -------------------------------------------- | -------------------------------------------------------- |
-| Quote vs. cart incoherence                   | Lack of bulk ordering tools or quick order pads          |
-| Complex account setup for simple purchases   | Absence of faceted navigation with technical specs       |
-| Prominent display of PO numbers or Net Terms | Lifestyle imagery over technical drawings or spec sheets |
-| Gated pricing or "Contact Us for Price"      | Ambiguous or non-contract pricing visibility             |
-
-### 2.2. Assessing Risk and Formulating Recommendations
-
-Once conflicts are identified, the agent must diagnose the severity of the issue and formulate a strategic recommendation.
-
-1. **Diagnose the core architecture**: Conclusively identify if the site is a B2B platform compromised by B2C features, or a B2C site struggling to accommodate B2B workflows.
-
-2. **Evaluate the Severity**: The risk is highest when core transactional paths are compromised. For example, a procurement manager who cannot use a PO for a large order, or a one-time consumer who is forced into a complex quote workflow for a simple purchase, represents a critical failure.
-
-3. **Prescribe Journey Separation**: The only sustainable solution is the structural separation of these user journeys. Present the client with the two industry-standard models for achieving this:
-   - **Authenticated Portals**: Maintain a public-facing site optimized for discovery and shopper behavior. Behind a login, a password-protected portal serves the transactional needs of procurement buyers, complete with contract pricing, custom catalogs, and account-specific terms.
-   - **Headless Personalization**: Utilize a headless (or composable) architecture to serve entirely different front-end experiences based on a user's authentication status or account type, all while running on a single, unified back-end.
-
-With the user journey aligned, the audit's focus shifts from pathway clarity to structural readiness. The next scan assesses if the experience is prepared for the automated, agent-led commerce of 2026 and beyond.
+- **Hybrid Experience Audit (Phase 1 – Active):** Detects B2B/B2C conflict and “Hybrid Traps.”
+- **Knowledge Surface Audit (Phase 2 – Coming Soon):** Audits content quality, completeness, and findability.
+  - **Activation milestone:** Becomes Active after successful beta testing on representative sites and finalization of content quality rules in the Governance Ingestion Engine.
+- **Merchandising Coherence Audit (Planned):** Evaluates coherence and alignment across merchandising signals (taxonomy, cross-sell logic, promotions, consistency).
+  - **Activation milestone:** Becomes Active after internal review of diagnostic criteria, calibration against real audits, and validation of recommendation templates and thresholds.
 
 ---
 
-## 3. The 2026+ Strategic Landscape: Executing the Agent Readiness Scan
+## Hybrid Experience Audit (Phase 1 – Active)
 
-This final analysis combines an audit with strategic foresight. The "Agent Readiness Scan" is designed to answer the question: **"Is this experience structurally ready for agent-led commerce?"** This scan assesses a client's preparedness for the structural resets occurring in 2026, which are being driven by AI, data velocity, and fundamentally new buyer behaviors. The output of this scan is a forward-looking risk assessment that identifies missing capabilities.
+### Goal
 
-### 3.1. The New Reality: AI-Discovered vs. Contract Buyers
+Identify whether the target site falls into a **Hybrid Trap** by sending mixed signals meant for both B2B and B2C audiences. Hybrid traps occur when a site tries to serve two different buyer types with one blended, compromised experience.
 
-A critical divide is emerging between two primary buyer archetypes. The strategic "mistake in 2025" was attempting to force both through the same, undifferentiated experience.
+### The Hybrid Trap: “Serving Two Masters”
 
-**AI-Discovered Buyers**: This group consists of new or "long-tail" buyers who discover products through public channels like AI engines, marketplaces, and generative search. For these buyers, friction is fatal. If they are met with a quote wall, a complex registration form, or a slow-loading page, they will find an alternative from a competitor in seconds.
+A Hybrid Trap is flagged when the experience presents conflicting workflows or cues, such as:
 
-**Contract Buyers**: This group includes established customers with negotiated pricing, complex approval rules, and strict compliance needs. For them, the priority is not discovery but the automated enforcement of their specific entitlements and account-level pricing within a secure, efficient self-service portal.
+- Consumer checkout patterns adjacent to quote or procurement flows
+- Retail-style merchandising mixed with business procurement requirements
+- Content that alternates between lifestyle persuasion and spec-driven enablement without clear segmentation
 
-### 3.2. Assessing Structural Readiness: A Diagnostic Checklist
+### Signal Model: B2B vs B2C
 
-The following checklist provides a framework for evaluating a client's structural readiness for the demands of 2026 and beyond.
+The Hybrid Experience Audit uses a **signal model**: agents detect evidence of B2B and B2C intent, then evaluate whether the mix creates friction or ambiguity.
 
-- [ ] **API-First, Composable Architecture**: Is the platform built on a MACH foundation? This is no longer a forward-thinking choice but a core performance requirement for integrating AI agents, adapting to market volatility, and avoiding monolithic constraints.
+#### Common B2B Signals
 
-- [ ] **Unified Data Model**: Is there a single, real-time source of truth for product, inventory, and customer data? In 2026, stale or slow data is not a technical issue; it is a direct cost that is visible on the balance sheet.
+- Quote or bulk-order flows (request quote, tiered price tables, order pads)
+- Account-based pricing (login to see price, negotiated pricing)
+- Procurement support (PO number fields, invoicing language, payment terms, tax-exempt cues)
+- Spec-dense content (technical sheets, compliance docs, part numbers prominent)
+- Efficiency-first UX (known-item search prominence, reorder tools, low marketing overhead)
 
-- [ ] **Comprehensive Self-Service Portal**: Does the portal support the full procurement lifecycle, including easy reordering, invoice history, order tracking, and internal approval workflows? Data shows that 100% of B2B buyers now want this option.
+#### Common B2C Signals
 
-- [ ] **Clean and Structured Product Data (PXM)**: Is product data governed, normalized, and machine-readable? If it is not, AI discovery engines and conversational tools simply will not surface the products, rendering them invisible to a growing segment of the market.
+- Instant checkout patterns (add to cart prominence, guest checkout flows)
+- Lifestyle persuasion (aspirational imagery, emotional brand storytelling)
+- Social proof (ratings, reviews, “trending” modules)
+- Promotion mechanics (coupon prompts, free-shipping thresholds, flash-sale banners)
+- Discovery-first UX (heavy browsing funnels, “you may also like,” curated collections)
 
-- [ ] **Transparent Sustainability Data**: Can the platform surface auditable data on Scope 3 emissions, material origins, and eco-certifications? This is rapidly shifting from a marketing talking point to a critical, non-negotiable procurement requirement for enterprise buyers.
+### Diagnosis Output
 
-### 3.3. The Bottom Line: Speed is the New Benchmark
+The report produces a clear status, e.g.:
 
-The ultimate strategic takeaway for clients is that the fundamental nature of competition has changed. The new benchmark for success is not simply features or price, but agility. As Lance Owide, BigCommerce's GM of B2B, has stated: **"Ecommerce isn't getting harder. It's getting faster. The cost of slow is what changes in 2026."** The most important metric is now "time to change"—the speed at which a company can respond to supply chain disruptions, tariff adjustments, and new market dynamics. Those stuck on rigid, monolithic systems will lose years of competitiveness in a matter of months.
+- **DANGEROUS HYBRID DETECTED**: significant conflicting signals present
+- **B2B-OPTIMIZED** or **B2C-OPTIMIZED**: signals are coherent and aligned
+
+Diagnosis is always paired with a Trust Trace and evidence-backed recommendations.
+
+### Standards Check: Unified Criteria
+
+The Hybrid Experience Audit includes a compact standards check using internalized best-practice criteria (no proprietary framework names required):
+
+- **Intent alignment:** UX patterns match buyer intent (efficient known-item flows for B2B, discovery support for B2C)
+- **Procurement readiness:** expected business purchasing affordances exist when the site signals B2B intent
+- **Product data structure:** attributes are expressed as structured fields (filterable, comparable, consistent) rather than buried in prose
+
+### Actionable Recommendations (Strict Constraint)
+
+The final section lists the top recommended actions to take. We are **strictly constrained to a maximum of three key recommendations** to maintain the framework’s emphasis on clarity and focus and to avoid overwhelming the Merch Leader.
+
+Each recommendation must include:
+
+- The observed signal(s)
+- The user-impact rationale
+- The suggested remediation direction
+- The agent that flagged it
 
 ---
 
-## 4. Professional B2B Procurement Glossary
+## Knowledge Surface Audit (Phase 2 – Coming Soon)
 
-**cXML (Commerce eXtensible Markup Language)**: A standard protocol for B2B procurement data exchange, often used for punch-out catalogs.
+### Goal
 
-**OCI (Open Catalog Interface)**: An SAP standard for connecting external catalogs to procurement systems.
+Assess whether the site’s content and information architecture provide purchase readiness and decision enablement for the intended buyer.
 
-**Punch-Out**: A mechanism allowing a buyer to access a supplier's website from within their own procurement application.
+### What It Evaluates
 
-**Maverick Spend**: Unmanaged, ad-hoc spending that bypasses established procurement policies, often reducing profitability and eroding negotiated savings by up to 16%.
+- **Content completeness:** product descriptions, specs, images, policies, FAQs, support content
+- **Findability:** search quality, navigation clarity, filters/facets coverage, internal linking
+- **Knowledge gaps:** missing buyer-critical information that causes abandonment or escalations
 
-**SKU Proliferation**: The excessive growth of product variations, leading to inventory management issues and data consistency challenges.
+### Output
 
-**MACH Architecture**: Microservices, API-first, Cloud-native, Headless—the composable architecture standard for modern commerce.
+- Diagnosis (e.g., **CONTENT GAPS DETECTED** vs **KNOWLEDGE SURFACE HEALTHY**)
+- Standards check focused on content and findability
+- Up to three recommendations, each trust-traced to observed gaps
 
-**PXM/PIM**: Product Experience Management / Product Information Management—centralized systems that serve as the single source of truth for product data.
+### Activation Milestone
 
-**Unified Commerce**: The complete integration of all retail operations (ECOM, WMS, CRM, ERP, POS) into a single solution.
+Becomes Active after:
+
+- Beta validation on varied storefront types (B2B, B2C, hybrid)
+- Finalized governance rules for content quality scoring and evidence capture
 
 ---
 
-## Conclusion: The Agent's Role as a Strategic Partner
+## Merchandising Coherence Audit (Planned)
 
-The role of a merchGent agent is to provide clarity in a complex and rapidly changing commerce landscape. By mastering the Unified Standard Framework and the strategic audit modes outlined in this guide, you can deliver the diagnoses that allow clients to not only fix today's issues but also build a resilient and competitive foundation for the future of commerce.
+### Goal
+
+Evaluate whether merchandising signals across the site reinforce one coherent strategy rather than competing narratives.
+
+### What It Evaluates
+
+- **Taxonomy coherence:** category structure matches shopper mental models and catalog reality
+- **Merchandising logic coherence:** cross-sells, upsells, and recommendations are relevant and consistent
+- **Promotion coherence:** promotional placement aligns with priority products, inventory, and buyer intent
+- **Messaging coherence:** value proposition and tone remain consistent from entry to PDP to checkout
+
+### Output
+
+- Diagnosis (e.g., **COHERENCE ISSUES DETECTED** vs **STRATEGY COHERENT**)
+- Standards check focused on internal consistency and intent alignment
+- Up to three recommendations, evidence-backed
+
+### Activation Milestone
+
+Becomes Active after:
+
+- Internal review and approval of coherence criteria
+- Calibration using real audits (reduce false positives)
+- Validation of recommendation templates and thresholds
+
+---
+
+## Governance and System Architecture
+
+These components are system-level controls. They enforce rules and maintain the “source of truth.” They are not agents.
+
+### Governance Ingestion Engine
+
+Purpose: maintain authoritative, updateable audit guidance and scoring rules used by agents.
+
+Responsibilities:
+
+- Ingest and version knowledge modules (modes, criteria, thresholds, templates)
+- Maintain mappings between audit areas and internal rule sets
+- Enable controlled updates without changing core agent behavior
+
+### Agent Boundary Controller
+
+Purpose: enforce operational limits and safety constraints.
+
+Responsibilities:
+
+- Enforce read-only behavior (no form submissions, no transactions)
+- Restrict crawling scope (public only vs authenticated, when enabled later)
+- Limit sampling (page caps, product caps) to control load and prevent drift
+- Constrain outputs (analysis only, max recommendations, required trust trace)
+
+### Signal Processor (Operational Telemetry)
+
+Purpose: provide a transparent audit trail of what the system observed.
+
+Responsibilities:
+
+- Log key inputs (URL, page titles, viewport width, sampled pages)
+- Maintain signal counts (B2B vs B2C)
+- Record extracted evidence snippets used in Trust Trace
+
+---
+
+## Agent Roles and Orchestrator Back-End
+
+### Agent M – The Strategist
+
+Responsibilities:
+
+- Interpret the selected Audit Mode and enforce its scope
+- Orchestrate other agents and sampling plans
+- Synthesize signals into diagnosis, standards check, and recommendations
+- Ensure every conclusion is trust-traced and evidence-backed
+- Enforce the max-three recommendation constraint
+
+### Web Agent – The Data Collector
+
+Responsibilities:
+
+- Load and extract data from publicly accessible pages (Phase 1)
+- Follow targeted retrieval instructions (representative sampling, not full crawls)
+- Capture UI text, button labels, navigation structures, and visible commerce flows
+- Never submit forms, never transact, never modify state
+
+### Data Agent – The Analyzer
+
+Responsibilities:
+
+- Analyze extracted data for patterns, gaps, and inconsistencies
+- Quantify signals and compare against thresholds
+- Detect structured vs unstructured product data patterns
+- Support evidence capture for Trust Trace (what, where, why it matters)
+
+---
+
+## Strategy Report Format (Required)
+
+Every audit output uses the same structure.
+
+### 1) Trust Trace (The Why)
+
+A reviewable, human-readable log of:
+
+- What was sampled
+- What signals were detected
+- Which criteria were applied
+- Why the diagnosis follows from the evidence
+
+### 2) Diagnosis (The What)
+
+A single clear status aligned to the audit mode.
+
+### 3) Standards Check (The Authority)
+
+A compact grid of internal best-practice criteria with pass/fail or scored outcomes.
+
+### 4) Actionable Recommendations (The Next Steps)
+
+- **Maximum 3 recommendations**
+- Each tied to explicit evidence and named agent source
+- Written for merchandising leadership decision-making
+
+---
+
+## Summary Analogy
+
+Think of the system like a restaurant workflow:
+
+- The front-end is the menu: the Merch Leader chooses a dish (Audit Mode), not ingredients (features).
+- In the back-end kitchen:
+  - Agent M acts as the **Head Chef**, coordinating the work.
+  - The Web Agent and Data Agent act as **Line Cooks**, gathering and preparing ingredients (site evidence).
+  - Governance components act as the **Health Inspector**, enforcing boundaries and preventing unsafe inputs.
+- The output is the plated dish: a clean Strategy Report with trust-traced evidence and a strict limit on recommendations.
