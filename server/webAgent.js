@@ -139,6 +139,89 @@ const extractData = async (page) => {
   const structure = await heuristicElementDetection(page);
   console.log('[Scout] Detected Structure:', structure);
 
+  const intelligence = await page.evaluate(() => {
+    // --- 1. Data Layer Extraction ---
+    const getDataLayer = () => {
+        const layers = {};
+        if (window.dataLayer) layers.dataLayer = window.dataLayer;
+        if (window.digitalData) layers.digitalData = window.digitalData;
+        if (window.adobe) layers.adobe = window.adobe;
+        if (window.utag_data) layers.utag_data = window.utag_data;
+        return layers;
+    };
+
+    // --- 2. Interaction Map (What can the agent do?) ---
+    const getInteractables = () => {
+        const candidates = document.querySelectorAll('a, button, input[type="submit"], [role="button"]');
+        return Array.from(candidates).slice(0, 50).map(el => {
+            const rect = el.getBoundingClientRect();
+            // Filter invisible
+            if (rect.width === 0 || rect.height === 0) return null;
+
+            return {
+                type: el.tagName.toLowerCase(),
+                text: (el.innerText || el.value || el.getAttribute('aria-label') || '').slice(0, 50).trim(),
+                selector: el.id ? `#${el.id}` : el.className ? `.${el.className.split(' ').join('.')}` : el.tagName.toLowerCase(),
+                href: (el.href || '').slice(0, 100)
+            };
+        }).filter(item => item && item.text.length > 2); // Filter empty/junk
+    };
+
+    // --- 3. Findings Scout (Rule-Based Risks) ---
+    const getFindings = () => {
+        const findings = [];
+        const timestamp = new Date().toISOString();
+
+        // Rule: Missing Alt Text
+        const imagesWithoutAlt = document.querySelectorAll('img:not([alt]), img[alt=""]');
+        if (imagesWithoutAlt.length > 5) {
+            findings.push({
+                id: 'missing-alt-' + Math.random(),
+                severity: 'warning',
+                category: 'usability',
+                title: 'High Volume of Missing Alt Text',
+                description: `Detected ${imagesWithoutAlt.length} images without alt text, impacting accessibility and SEO.`,
+                timestamp
+            });
+        }
+
+        // Rule: Broken Links (Dummy check for empty hrefs)
+        const emptyLinks = document.querySelectorAll('a[href=""], a:not([href])');
+        if (emptyLinks.length > 0) {
+            findings.push({
+                 id: 'empty-links-' + Math.random(),
+                 severity: 'warning',
+                 category: 'technical',
+                 title: 'Empty/Broken Links Detected',
+                 description: `Found ${emptyLinks.length} anchor tags with no href attribute.`,
+                 timestamp
+            });
+        }
+
+        // Rule: Mixed Signals (Merch)
+        const text = document.body.innerText;
+        if (/Login for Pricing/i.test(text) && /Add to Cart/i.test(text)) {
+            findings.push({
+                id: 'mixed-signals-' + Math.random(),
+                severity: 'info',
+                category: 'merch',
+                title: 'Hybrid B2B/B2C Signals',
+                description: 'Page contains both "Login for Pricing" and "Add to Cart" calls to action.',
+                timestamp
+            });
+        }
+
+        return findings;
+    };
+
+    return {
+        dataLayers: getDataLayer(),
+        interactables: getInteractables(),
+        findings: getFindings()
+    };
+  });
+  console.log('[Scout] Intelligence:', Object.keys(intelligence.dataLayers));
+
   const products = await page.evaluate((structure) => {
     const fallbackSelectors = [
       '.product-tile',
@@ -219,18 +302,26 @@ const extractData = async (page) => {
     });
   }, structure);
 
-  return { title, metaDescription, products, structure };
+  return {
+    title,
+    metaDescription,
+    products,
+    structure,
+    dataLayers: intelligence.dataLayers,
+    interactables: intelligence.interactables,
+    findings: intelligence.findings
+  };
 };
 
 export function registerWebAgentRoutes(app) {
   app.post('/api/scrape', async (req, res) => {
-    const { url } = req.body;
+    const { url, cookies } = req.body;
 
     if (!url || !isValidHttpUrl(url)) {
       return res.status(400).json({ error: 'Valid http/https URL is required' });
     }
 
-    console.log(`[Scraper] Stealth analysis for: ${url}`);
+    console.log(`[Scraper] Stealth analysis for: ${url} (Cookies provided: ${cookies ? 'Yes' : 'No'})`);
     let browser;
 
     try {
@@ -248,12 +339,24 @@ export function registerWebAgentRoutes(app) {
       });
 
       const page = await browser.newPage();
-
       await page.setViewport({ width: 1920, height: 1080 });
+
+      // INJECT STATE (Cookies)
+      if (cookies && Array.isArray(cookies) && cookies.length > 0) {
+        try {
+            await page.setCookie(...cookies);
+        } catch (cookieError) {
+            console.warn('[Scraper] Cookie injection failed (non-fatal):', cookieError.message);
+        }
+      }
+
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await new Promise((r) => setTimeout(r, Math.random() * 1000 + 1000));
 
       const data = await extractData(page);
+
+      // EXTRACT STATE (Cookies)
+      const currentCookies = await page.cookies();
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const screenshotFilename = `screenshot-${timestamp}.png`;
@@ -265,6 +368,7 @@ export function registerWebAgentRoutes(app) {
       const result = {
         url,
         ...data,
+        cookies: currentCookies, // Return new state
         screenshotPath,
         viewportWidth: 1920,
       };

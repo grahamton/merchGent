@@ -1,0 +1,7 @@
+7	OPEN	Issue 7: Findings Register Output v1 (Markdown)		2026-01-12T07:06:49Z
+6	OPEN	Issue 6: Add “Agent Traversability” as a Visible Subscore		2026-01-12T07:06:30Z
+5	OPEN	Issue 5: Treat Journeys as First Class Assets (Save, Version, Replay)		2026-01-12T07:06:16Z
+4	OPEN	Issue 4: Add “Experience Walkthrough Audit” Mode (Phase 0)		2026-01-12T07:05:58Z
+3	OPEN	Issue 3: Build Interaction Map Extractor		2026-01-12T07:05:35Z
+2	OPEN	Issue 2: Implement DOM Pruning to “Visible + Interactive” Snapshot		2026-01-12T07:05:08Z
+1	OPEN	Issue 1: Persist Page State Bundles per Journey Step		2026-01-12T07:04:32Z

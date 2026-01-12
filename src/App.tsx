@@ -9,6 +9,7 @@ import { AuditSetup } from './components/AuditSetup';
 // Use new LoadingAudit instead of LoadingView
 import { LoadingAudit } from './components/LoadingAudit';
 import { StrategyReport } from './components/StrategyReport';
+import { ExperienceWalkthrough } from './components/ExperienceWalkthrough';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useTheme } from './hooks/useTheme';
 
@@ -72,6 +73,14 @@ const App: React.FC = () => {
     setStatus(AgentStatus.SCRAPING);
 
     try {
+      if (auditMode === AuditMode.WALKTHROUGH) {
+        // Special case for Walkthrough:
+        // We skip the standard specific scrape/analyze flow and jump straight to the interactive component
+        // The component itself will handle the API calls to start/manage the journey.
+        setStatus(AgentStatus.COMPLETED);
+        return;
+      }
+
       const data = await performRealScrape(url);
 
       // Update status to analyzing after scrape
@@ -159,7 +168,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {status === AgentStatus.COMPLETED && result && (
+      {status === AgentStatus.COMPLETED && result && auditMode !== AuditMode.WALKTHROUGH && (
         <div>
           <StrategyReport result={result} url={url} />
           <div className="fixed bottom-6 right-6">
@@ -172,6 +181,11 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {status === AgentStatus.COMPLETED && auditMode === AuditMode.WALKTHROUGH && (
+         <ExperienceWalkthrough url={url} onFinish={handleBackToSetup} />
+      )}
+
     </div>
   );
 };

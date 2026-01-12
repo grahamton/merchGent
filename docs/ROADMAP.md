@@ -60,7 +60,16 @@ This prevents feature sprawl and keeps audits explainable.
 
 ## v1 Build Phases
 
-### Phase 1: Foundation (In Progress)
+### Phase 0: Core Journey Infrastructure (High Priority)
+
+- [x] **Experience Walkthrough Mode** (Issue #4): The base "generic" audit that just walks and records.
+- [x] **Journey Assets** (Issue #5): Save/Replay capabilities for user journeys.
+- [x] **State Persistence** (Issue #1): Saving DOM/Screenshots per step.
+- [ ] **Smart Snapshots** (Issue #2, #3): DOM pruning and **Interaction Mapping** (Directly addresses "Smart Suggestions").
+- [ ] **Standardized Output** (Issue #7): Findings Register v1.
+- [ ] **Visual Signals** (Issue #6): Agent Traversability Subscore (Directly addresses "Visual Signals").
+
+### Phase 1: Foundation (Refined)
 
 - [x] PageData schema
 - [x] Agent boundaries enforced (Audit Mode selection logic & Governance checks)

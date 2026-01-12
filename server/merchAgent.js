@@ -19,6 +19,10 @@ const AGENT_RULESET_YAML = fs.readFileSync(
   path.join(process.cwd(), 'server', 'prompts', 'agent_ruleset.yaml'),
   'utf8'
 );
+const MERCH_AGENT_PERSONA_MD = fs.readFileSync(
+  path.join(process.cwd(), 'docs', 'MERCH_AGENT_PERSONA.md'),
+  'utf8'
+);
 
 const ENABLED_MODES = new Set(['Hybrid Experience Audit', 'Knowledge Surface Audit']);
 
@@ -180,6 +184,8 @@ Heuristic Signals:
 `;
 
 const buildSystemInstruction = () => `
+${MERCH_AGENT_PERSONA_MD}
+
 ${AGENT_RULES_MD}
 ${KNOWLEDGE_BASE_MD}
 
