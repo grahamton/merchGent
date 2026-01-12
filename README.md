@@ -6,19 +6,41 @@ merchGent audits e-commerce experiences across content, UX, and customer intent,
 
 ---
 
-## Key Features
+## 🚀 Key Features
 
-- **Smart Structural Scout**: The Web Agent heuristically scans pages to detect product grids and cards, even on sites without standard markup.
-- **Anti-Gravity Governance**: Built-in rules and workflows (`/fixer`, `/ticketbrain`) that prevent scope creep and over-engineering.
-- **Hybrid Trap Detection**: Identifies conflicting B2B/B2C signals that confuse buyers.
-- **merchGent Score**: A holistic measure of merchandising effectiveness (Intent, Knowledge, Transaction).
-- **Trust-Traced Findings**: Every recommendation cites the specific signals used.
+### 1. Interactive Experience Walkthrough (Phase 0)
 
-**Read-only by design.** merchGent never modifies your site or executes transactions.
+**Don't just scan; see.** The new Walkthrough mode allows you to "drive" the agent through a multi-step user journey (e.g., "Add to Cart", "Checkout flow").
+
+- **State Persistence**: The agent maintains a "cookie jar," allowing it to stay logged in or keep cart state across steps.
+- **Smart Snapshots**: At every step, the agent extracts:
+  - **Visuals**: High-res screenshots.
+  - **Data Layers**: Auto-detection of `dataLayer`, `digitalData`, `adobe`, etc.
+  - **Interaction Map**: Auto-suggested "Next Actions" (clickable buttons/links).
+
+### 2. The Merch Agent Persona
+
+**The Guardian of Catalog Integrity.** The agent is no longer a generic AI assistant. It embodies a specific persona:
+
+- **Role**: E-commerce Data Quality & Taxonomy Specialist.
+- **Obsession**: Fill Rates, Attribute Gaps, and Facet Hygiene.
+- **Voice**: "If a user can't filter by it, it doesn't exist."
+
+### 3. Smart Findings Register
+
+**Standardized Insights.** Issues are no longer random text; they are structured data (`Finding` objects) with:
+
+- **Severity**: Critical, Warning, Info, Success.
+- **Category**: Usability, Performance, Merch, Technical.
+- **Auto-Scouts**: Built-in rules automatically detect "Missing Alt Text", "Broken Links", and "Mixed B2B/B2C Signals".
+
+### 4. Hybrid Trap Detection
+
+**Is your site serving two masters?** Identifies conflicting signals (e.g., "Request Quote" vs "Buy Now" proximity) that confuse buyers and hurt conversion.
 
 ---
 
-## Quick Start
+## 🛠️ Quick Start
 
 ### Prerequisites
 
@@ -45,33 +67,47 @@ VITE_API_BASE_URL=http://localhost:3001
 
 ### Running Locally
 
-You can use the helper script to start everything at once:
-
-- **Windows**: Double-click `restart_all.bat`
-
-Or run manually in two terminals:
-
-**Terminal 1** - Backend (Agent Orchestrator):
+Run backend and frontend concurrently:
 
 ```bash
-npm run server
+# Windows
+restart_all.bat
+
+# Manual (Two Terminals)
+npm run server   # http://localhost:3001
+npm run dev      # http://localhost:3000
 ```
-
-_Runs on `http://localhost:3001`_
-
-**Terminal 2** - Frontend (Agent Dashboard):
-
-```bash
-npm run dev
-```
-
-_Runs on `http://localhost:3000`_
-
-Open `http://localhost:3000` to access the dashboard.
 
 ---
 
-## Anti-Gravity Governance
+## 📊 Audit Modes
+
+| Mode                        | Phase       | Focus                                                                              | Status        |
+| :-------------------------- | :---------- | :--------------------------------------------------------------------------------- | :------------ |
+| **Experience Walkthrough**  | **Phase 0** | **Journey Mapping**: Interactive recording of multi-step flows. State persistence. | ✅ **Active** |
+| **Hybrid Experience Audit** | **Phase 1** | **Conflict Detection**: B2B vs B2C signal conflicts.                               | ✅ **Active** |
+| **Knowledge Surface Audit** | **Phase 2** | **Content Quality**: Findability, completeness, and trust gaps.                    | ✅ **Active** |
+| **Merch Coherence Audit**   | Planned     | **Consistency**: Category logic, product grouping.                                 | 🚧 Planned    |
+
+---
+
+## 🧠 Architecture
+
+merchGent is built as a **team of specialized agents**:
+
+1.  **Client Agent (Orchestrator)**: The Frontend UI. Manages the audit lifecycle and presents the "Findings" timeline.
+2.  **Web Agent (The Body)**: A headless Chrome instance (Puppeteer) that:
+    - Navigates pages securely.
+    - Injects/Extracts cookies for persistence.
+    - Runs "Scouts" (JavaScript heuristics) to find grids, cards, and data layers.
+3.  **Merch Agent (The Brain)**: A Generative AI agent injected with the **Guardian Persona**. It:
+    - Ingests the raw PageData and Findings.
+    - Synthesizes a "Health Score" and "Strategy Report" based on strict merchandising rules.
+4.  **Journey Manager (The Memory)**: A backend service that persists user journeys, managing the transition from Step 1 -> Step N.
+
+---
+
+## 🛡️ Anti-Gravity Governance
 
 This project enforces strict discipline to prevent "Feature Factory" bloat.
 
@@ -82,42 +118,15 @@ See [`docs/ANTIGRAVITY_RULES.md`](docs/ANTIGRAVITY_RULES.md).
 1.  **Level 1 Only**: Solving problems at the lowest effective layer.
 2.  **No Scope Creep**: One ticket, one goal.
 3.  **Evidence First**: Prototypes before abstractions.
-4.  **Guardrail Lead**: Safety checks before code.
 
 ### Workflow Personas
 
 Use slash commands to invoke specific modes:
 
-- `/fixer` - **Local Fixer**: Edits existing code in place.
-- `/ticketbrain` - **Ticket Brain**: Breaks ideas into atomic tickets.
-- `/spiker` - **The Spiker**: Builds quick prototypes.
-- `/redteamer` - **Red-Teamer**: Stress-tests plans.
-- `/stakeholder-review` - **Stakeholder Review**: Sanity-check from a customer perspective.
-
----
-
-## Audit Modes
-
-| Mode                              | Question                                               | Focus                                              | Status                      |
-| --------------------------------- | ------------------------------------------------------ | -------------------------------------------------- | --------------------------- |
-| **Hybrid Experience Audit**       | Is this site serving two masters?                      | B2B/B2C signal conflicts, mixed CTAs               | Active (Phase 1)            |
-| **Knowledge Surface Audit**       | Can customers find and trust product knowledge?        | Content quality, findability, gaps                 | Active (Phase 2)            |
-| **Merchandising Coherence Audit** | Do navigation, PDPs, and CTAs tell a consistent story? | Category logic, product grouping, CTA consistency  | Planned                     |
-| **Logged-In vs Logged-Out Audit** | Does account state hurt intent?                        | Content visibility, navigation shifts, CTA changes | Planned (Phase 3)           |
-| **Agent Readiness Scan**          | Is this experience ready for agent-led commerce?       | Transaction clarity, intent signaling              | Planned (Phase 4, Optional) |
-
----
-
-## Architecture
-
-merchGent is built as a **team of specialized agents**:
-
-- **Client Agent** - Orchestrates audits and synthesizes findings
-- **Web Agent** - Crawls and extracts signals using **Puppeteer Stealth** + **Dynamic Scout**.
-- **Merch Agent** - Analyzes intent signals and synthesizes merchandising findings
-- **Data Agent** - Analyzes patterns, trust gaps, and transaction readiness
-
-For full details, see **[server/prompts/SYSTEM_PROMPT.md](server/prompts/SYSTEM_PROMPT.md)** and **[docs/VISION.md](docs/VISION.md)**.
+- `/fixer`: **Local Fixer** (Edit code in place)
+- `/ticketbrain`: **Ticket Brain** (Atomic planning)
+- `/spiker`: **The Spiker** (Quick prototyping)
+- `/stakeholder-review`: **The Roast** (Customer perspective check)
 
 ---
 
