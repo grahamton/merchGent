@@ -1,52 +1,20 @@
 /**
  * JOURNEY MANAGER
  * Role: Manages the lifecycle of multi-step user journeys.
- * Responsibilities:
- * - maintaining the "cookie jar" for active sessions
- * - persisting steps and screenshots to disk
- * - providing history for playback
+ * Refactored to use Persistence Adapter (Local/Cloud).
  */
-import fs from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-
-const DATA_DIR = path.join(process.cwd(), 'server', 'data', 'journeys');
-
-// In-memory "Cookie Jar" for active journeys
-// Key: journeyId, Value: { cookies: [], lastUrl: string, createdAt: number }
-const activeJourneys = new Map();
-
-// Ensure storage exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+import { Persistence } from '../adapters/persistence.js';
 
 export const journeyManager = {
   /**
    * Starts a new journey.
-   * @param {string} startUrl - The initial URL (optional, can be set on first step)
+   * @param {string} startUrl - The initial URL
    */
-  createJourney: (startUrl) => {
+  createJourney: async (startUrl) => {
     const journeyId = uuidv4();
-    const journey = {
-      id: journeyId,
-      createdAt: new Date().toISOString(),
-      startUrl,
-      steps: [],
-      cookies: [], // Initialize empty cookie jar
-      status: 'active'
-    };
-
-    // Save initial state to disk
-    saveJourneyToDisk(journey);
-
-    // Keep in memory for quick state access
-    activeJourneys.set(journeyId, {
-      cookies: [],
-      lastUrl: startUrl,
-      createdAt: Date.now()
-    });
-
+    // Persistence layer handles storage (File or Firestore)
+    const journey = await Persistence.createJourney(journeyId, startUrl);
     return journey;
   },
 
@@ -55,96 +23,58 @@ export const journeyManager = {
    * @param {string} journeyId
    * @param {object} stepData - { url, pageData, screenshotPath, cookies }
    */
-  addStep: (journeyId, stepData) => {
-    const journey = loadJourneyFromDisk(journeyId);
-    if (!journey) {
-      throw new Error(`Journey ${journeyId} not found.`);
-    }
-
+  addStep: async (journeyId, stepData) => {
     const { url, pageData, screenshotPath, cookies } = stepData;
-
-    // Update In-Memory State (Cookie Jar)
-    // We overwrite with the latest cookies from the browser
-    if (cookies) {
-      const activeState = activeJourneys.get(journeyId) || { createdAt: Date.now() };
-      activeState.cookies = cookies;
-      activeState.lastUrl = url;
-      activeJourneys.set(journeyId, activeState);
-    }
 
     const newStep = {
       id: uuidv4(),
-      sequence: journey.steps.length + 1,
+      sequence: 0, // Adapter/DB should assign sequence or we rely on array order.
+                   // Ideally we'd get the current count, but for now we let Adapter handle ordering.
       timestamp: new Date().toISOString(),
       url,
-      screenshotPath, // Relative or absolute path
-      // We don't save full page tokens/HTML to keep file size manageable for now,
-      // just the structured data we extracted.
+      screenshotPath,
       dataSummary: {
         productCount: pageData.products?.length || 0,
         title: pageData.title,
         dataLayers: pageData.dataLayers,
         interactables: pageData.interactables,
         findings: pageData.findings
-      }
+      },
+      cookies // Pass cookies to adapter so it can update the Journey state
     };
 
-    journey.steps.push(newStep);
+    // Save to persistence
+    // Note: The adapter is responsible for appending to the list or sub-collection
+    try {
+        await Persistence.addStep(journeyId, newStep);
+    } catch (e) {
+        console.error('[JourneyManager] Failed to persist step:', e);
+        throw e;
+    }
 
-    // Persist latest cookie state to the JSON file too, so we can resume later if server restarts
-    journey.cookies = cookies || journey.cookies;
-    journey.updatedAt = new Date().toISOString();
-
-    saveJourneyToDisk(journey);
     return newStep;
   },
 
   /**
    * Retrieves the current state (cookies) to inject into the browser.
    */
-  getJourneyState: (journeyId) => {
-    // Try memory first
-    if (activeJourneys.has(journeyId)) {
-      return activeJourneys.get(journeyId);
-    }
-
-    // Fallback to disk
-    const journey = loadJourneyFromDisk(journeyId);
+  getJourneyState: async (journeyId) => {
+    const journey = await Persistence.getJourney(journeyId);
     if (journey) {
+      // Get the latest URL from the last step, or startUrl
+      const lastStep = journey.steps && journey.steps.length > 0
+        ? journey.steps[journey.steps.length - 1]
+        : null;
+
       return {
         cookies: journey.cookies || [],
-        lastUrl: journey.steps[journey.steps.length - 1]?.url || journey.startUrl
+        lastUrl: lastStep ? lastStep.url : journey.startUrl
       };
     }
-
     return null;
   },
 
-  getJourney: (journeyId) => {
-    return loadJourneyFromDisk(journeyId);
+  getJourney: async (journeyId) => {
+    return await Persistence.getJourney(journeyId);
   }
 };
-
-// --- Helpers ---
-
-function getFilePath(journeyId) {
-  return path.join(DATA_DIR, `${journeyId}.json`);
-}
-
-function saveJourneyToDisk(journey) {
-  fs.writeFileSync(getFilePath(journey.id), JSON.stringify(journey, null, 2));
-}
-
-function loadJourneyFromDisk(journeyId) {
-  const filePath = getFilePath(journeyId);
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error(`Failed to load journey ${journeyId}:`, err);
-    return null;
-  }
-}

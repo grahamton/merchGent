@@ -7,6 +7,7 @@ export interface Product {
   description: string | null;
   b2bIndicators: string[];
   b2cIndicators: string[];
+  stockStatus: string;
 }
 
 export interface PageData {
@@ -16,6 +17,7 @@ export interface PageData {
   metaDescription: string | null;
   screenshotPath: string;
   viewportWidth: number;
+  cookies?: any[]; // Puppeteer cookie array
   structure?: {
     gridSelector: string | null;
     cardSelector: string | null;
@@ -47,12 +49,12 @@ export interface TrustTraceEntry {
   action: string;
 }
 
-export interface MerchGentScore {
-  total: number; // 0-100
-  intentClarity: number; // 0-33
-  knowledgeAccessibility: number; // 0-33
-  transactionReadiness: number; // 0-34
-  status: "needs-attention" | "improving" | "optimized";
+// Replaces numeric score with "Kill Sheet" Matrix
+export interface AuditMatrix {
+  trust: { status: "pass" | "fail" | "check"; finding: string };     // Data & Titles
+  guidance: { status: "pass" | "fail" | "check"; finding: string };  // Nav & Search
+  persuasion: { status: "pass" | "fail" | "check"; finding: string }; // PDP & Content
+  friction: { status: "pass" | "fail" | "check"; finding: string };   // Cart & Checkout
 }
 
 export interface Recommendation {
@@ -70,7 +72,7 @@ export interface StandardsCheckItem {
 
 export interface AnalysisResult {
   trustTrace: TrustTraceEntry[];
-  merchGentScore: MerchGentScore;
+  auditMatrix: AuditMatrix;
   diagnosis: {
     title: string;
     description: string;
@@ -93,6 +95,7 @@ export enum AgentStatus {
 export enum AuditMode {
   HYBRID = "Hybrid Experience Audit",
   KNOWLEDGE = "Knowledge Surface Audit",
+  TRANSACTION = "Transaction Friction Audit",
   LOGGED_IN = "Logged-In vs Logged-Out Audit",
   COHERENCE = "Merchandising Coherence Audit",
   READINESS = "Agent Readiness Scan",
@@ -122,6 +125,14 @@ export interface JourneyStep {
   dataSummary: {
     productCount: number;
     title: string;
+    dataLayers?: Record<string, any>;
+    interactables?: Array<{
+      type: string;
+      text: string;
+      selector: string;
+      href?: string;
+    }>;
+    findings?: Finding[];
   };
 }
 
@@ -134,3 +145,11 @@ export interface Journey {
 }
 
 export type Theme = "light" | "dark";
+
+export interface MerchGentScore {
+  total: number;
+  status: 'optimized' | 'improving' | 'needs-attention';
+  intentClarity: number;
+  knowledgeAccessibility: number;
+  transactionReadiness: number;
+}

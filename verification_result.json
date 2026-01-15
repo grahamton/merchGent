@@ -1,0 +1,70 @@
+{
+  "trustTrace": [
+    {
+      "timestamp": "2026-01-12T15:14:55.706Z",
+      "agent": "Web Agent",
+      "action": "Sampled 4 product cards from https://test.com/laptops. grid: .product-grid, card: .product-card."
+    },
+    {
+      "timestamp": "2026-01-12T15:14:55.706Z",
+      "agent": "Data Agent",
+      "action": "Signals detected: 2 B2B indicators, 2 B2C indicators. Descriptions present in 1/4 cards."
+    },
+    {
+      "timestamp": "2026-01-12T15:14:55.706Z",
+      "agent": "Merch Agent",
+      "action": "Observed both B2B (Request Quote) and B2C (Add to Cart, Buy Now) CTAs on the same product listing page. The presence of both types of CTAs indicates a potential hybrid experience. The product titles also suggest a mix of consumer and professional products (Alienware vs. Latitude, ZBook)."
+    }
+  ],
+  "merchGentScore": {
+    "total": 59,
+    "intentClarity": 17,
+    "knowledgeAccessibility": 8,
+    "transactionReadiness": 34,
+    "status": "improving"
+  },
+  "diagnosis": {
+    "title": "DANGEROUS HYBRID DETECTED: Conflicting B2B and B2C signals create buyer confusion.",
+    "description": "The site presents a mixed experience with both retail-style 'Add to Cart' options and B2B-oriented 'Request Quote' flows on the same product category page. This creates friction and dilutes the value proposition for both buyer types."
+  },
+  "recommendations": [
+    {
+      "title": "Recommendation 1",
+      "description": "Segment the product catalog by buyer type (B2B vs. B2C) and create distinct landing pages for each segment. This will allow for tailored messaging and purchase flows.",
+      "impact": "high",
+      "agent": "Merch Agent"
+    },
+    {
+      "title": "Recommendation 2",
+      "description": "Prioritize B2B procurement affordances (PO number fields, invoicing options, payment terms) for products targeted at business buyers.",
+      "impact": "medium",
+      "agent": "Merch Agent"
+    },
+    {
+      "title": "Recommendation 3",
+      "description": "Enrich product data to ensure complete and consistent attribute coverage. This will improve filter usability and enable better product comparisons.",
+      "impact": "low",
+      "agent": "Merch Agent"
+    }
+  ],
+  "mode": "Hybrid Experience Audit",
+  "siteMode": "Hybrid",
+  "hybridTrapCheck": "Hybrid trap detected. The Dell Latitude 5430, a business-focused laptop, features a 'Request Quote' CTA, while the Alienware m15 R7, a gaming laptop, has an 'Add to Cart' button. This juxtaposition of B2B and B2C purchase flows on the same page creates a confusing experience.",
+  "standardsCheck": [
+    {
+      "criterion": "Intent alignment",
+      "status": "fail",
+      "evidence": "The presence of both 'Request Quote' and 'Add to Cart' CTAs on the same product listing page indicates a lack of clear intent alignment."
+    },
+    {
+      "criterion": "Procurement readiness",
+      "status": "partial",
+      "evidence": "While 'Request Quote' is present, other B2B procurement affordances (PO number fields, invoicing options) are not evident in the scraped data."
+    },
+    {
+      "criterion": "Product data structure",
+      "status": "unknown",
+      "evidence": "Limited product data available. Description coverage is only 2/4, making it difficult to assess the consistency and structure of product attributes."
+    }
+  ]
+}
