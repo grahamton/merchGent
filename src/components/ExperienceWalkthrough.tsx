@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PageData, AnalysisResult, AuditMode } from '../types';
+import { PageData, AnalysisResult, AuditMode, Journey } from '../types';
 import { API_BASE_URL } from '../config';
 
 interface ExperienceWalkthroughProps {
@@ -18,7 +18,7 @@ export const ExperienceWalkthrough: React.FC<ExperienceWalkthroughProps> = ({
   auditMode,
   setAuditMode
 }) => {
-  const [journey, setJourney] = useState<any>(null); // TODO: Switch to Journey type after verifying full shape
+  const [journey, setJourney] = useState<Journey | null>(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);

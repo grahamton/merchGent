@@ -23,3 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 screenshots/
+
+# Credentials & Security
+service-account.json
+*.pem
+*.key
+
+# Test outputs
+validation_output.txt
+verification_result.json
+issues_list.txt
+
+# Journey test data
+server/data/journeys/*.json
