@@ -1,0 +1,1157 @@
+{
+  "id": "62067dc4-911d-42dc-86c0-219b8f2abcc2",
+  "createdAt": "2026-01-14T07:55:16.434Z",
+  "startUrl": "https://webscraper.io/test-sites/e-commerce/allinone",
+  "steps": [
+    {
+      "id": "a03cc1aa-527f-4328-ac18-399b07c7fe1b",
+      "sequence": 0,
+      "timestamp": "2026-01-14T07:55:20.902Z",
+      "url": "https://webscraper.io/test-sites/e-commerce/allinone",
+      "screenshotPath": "C:\\dev\\merchGent\\screenshots\\screenshot-interact-2026-01-14T07-55-20-422Z.jpg",
+      "dataSummary": {
+        "productCount": 3,
+        "title": "Allinone | Web Scraper Test Sites",
+        "dataLayers": {
+          "dataLayer": [
+            {
+              "gtm.start": 1768377319121,
+              "event": "gtm.js",
+              "gtm.uniqueEventId": 3
+            },
+            {
+              "event": "gtm.dom",
+              "gtm.uniqueEventId": 25
+            },
+            {
+              "event": "gtm.load",
+              "gtm.uniqueEventId": 27
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 50,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "9311205_114",
+              "gtm.uniqueEventId": 28
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 75,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "9311205_114",
+              "gtm.uniqueEventId": 29
+            }
+          ]
+        },
+        "interactables": [
+          {
+            "type": "a",
+            "text": "WEB SCRAPER",
+            "selector": ".nav-link.menuitm",
+            "href": "https://webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "CLOUD SCRAPER",
+            "selector": "#cloud-nav-link",
+            "href": "https://webscraper.io/cloud-scraper"
+          },
+          {
+            "type": "a",
+            "text": "PRICING",
+            "selector": "#pricing-nav-link",
+            "href": "https://webscraper.io/pricing"
+          },
+          {
+            "type": "button",
+            "text": "LEARN",
+            "selector": "#dropdownMenuLink",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Install",
+            "selector": ".nav-link.btn-menu1.install-extension",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Cloud Login",
+            "selector": ".nav-link.btn-menu2",
+            "href": "https://cloud.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "Home",
+            "selector": ".nav-link",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone"
+          },
+          {
+            "type": "a",
+            "text": "Computers",
+            "selector": ".category-link.nav-link.",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/computers"
+          },
+          {
+            "type": "a",
+            "text": "Phones",
+            "selector": ".category-link.nav-link.",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/phones"
+          },
+          {
+            "type": "a",
+            "text": "Aspire E1-510",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/32"
+          },
+          {
+            "type": "a",
+            "text": "Iphone",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/8"
+          },
+          {
+            "type": "a",
+            "text": "Acer Aspire ES...",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/75"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper browser extension",
+            "selector": ".install-extension",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper Cloud",
+            "selector": "a",
+            "href": "https://webscraper.io/cloud-scraper"
+          },
+          {
+            "type": "a",
+            "text": "About us",
+            "selector": "a",
+            "href": "https://webscraper.io/about-us"
+          },
+          {
+            "type": "a",
+            "text": "Contact",
+            "selector": "a",
+            "href": "https://webscraper.io/contact"
+          },
+          {
+            "type": "a",
+            "text": "Website Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/privacy-policy"
+          },
+          {
+            "type": "a",
+            "text": "Browser Extension Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/extension-privacy-policy"
+          },
+          {
+            "type": "a",
+            "text": "Media kit",
+            "selector": "a",
+            "href": "https://webscraper.io/downloads/Web_Scraper_Media_Kit.zip"
+          },
+          {
+            "type": "a",
+            "text": "Jobs",
+            "selector": "a",
+            "href": "https://webscraper.io/jobs"
+          },
+          {
+            "type": "a",
+            "text": "Blog",
+            "selector": "a",
+            "href": "https://webscraper.io/blog"
+          },
+          {
+            "type": "a",
+            "text": "Documentation",
+            "selector": "a",
+            "href": "https://webscraper.io/documentation"
+          },
+          {
+            "type": "a",
+            "text": "Video Tutorials",
+            "selector": "a",
+            "href": "https://webscraper.io/tutorials"
+          },
+          {
+            "type": "a",
+            "text": "Screenshots",
+            "selector": "a",
+            "href": "https://webscraper.io/screenshots"
+          },
+          {
+            "type": "a",
+            "text": "Test Sites",
+            "selector": "a",
+            "href": "https://webscraper.io/test-sites"
+          },
+          {
+            "type": "a",
+            "text": "Forum",
+            "selector": "a",
+            "href": "https://forum.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "Status",
+            "selector": "a",
+            "href": "https://status.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "info@webscraper.io",
+            "selector": "a",
+            "href": "mailto:info@webscraper.io"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on Facebook",
+            "selector": "a",
+            "href": "https://www.facebook.com/webscraperio/"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on LinkedIn",
+            "selector": "a",
+            "href": "https://lv.linkedin.com/company/web-scraper"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on Youtube",
+            "selector": "a",
+            "href": "https://youtube.com/@WebScraper/videos"
+          },
+          {
+            "type": "a",
+            "text": "Download the Web Scraper extension",
+            "selector": ".install-extension.browser-icon-dark",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/privacy-policy"
+          },
+          {
+            "type": "button",
+            "text": "Accept & Continue",
+            "selector": ".acceptCookies",
+            "href": ""
+          }
+        ],
+        "findings": [
+          {
+            "id": "empty-links-0.5318208836297468",
+            "severity": "warning",
+            "category": "technical",
+            "title": "Empty/Broken Links Detected",
+            "description": "Found 1 anchor tags with no href attribute.",
+            "timestamp": "2026-01-14T07:55:20.418Z"
+          }
+        ]
+      },
+      "cookies": [
+        {
+          "name": "_ga_Q9KY1T6XJQ",
+          "value": "GS2.1.s1768377319$o1$g0$t1768377319$j60$l0$h0",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1802937319.973327,
+          "size": 59,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gcl_au",
+          "value": "1.1.569407919.1768377319",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1776153319,
+          "size": 31,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gat_UA-47270784-2",
+          "value": "1",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1768377379,
+          "size": 19,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_ga",
+          "value": "GA1.1.1376724306.1768377320",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1802937319.942739,
+          "size": 30,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gid",
+          "value": "GA1.2.960491117.1768377320",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1768463719,
+          "size": 30,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "first_visit_url",
+          "value": "https://webscraper.io/test-sites/e-commerce/allinone",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1770969319,
+          "size": 67,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        }
+      ]
+    },
+    {
+      "id": "a12d57e2-926c-4dfd-9a72-36e70fb0a6ec",
+      "sequence": 0,
+      "timestamp": "2026-01-14T07:55:36.518Z",
+      "url": "https://webscraper.io/test-sites/e-commerce/allinone",
+      "screenshotPath": "C:\\dev\\merchGent\\screenshots\\screenshot-interact-2026-01-14T07-55-36-174Z.jpg",
+      "dataSummary": {
+        "productCount": 3,
+        "title": "Allinone | Web Scraper Test Sites",
+        "dataLayers": {
+          "dataLayer": [
+            {
+              "gtm.start": 1768377334928,
+              "event": "gtm.js",
+              "gtm.uniqueEventId": 3
+            },
+            {
+              "event": "gtm.dom",
+              "gtm.uniqueEventId": 25
+            },
+            {
+              "event": "gtm.load",
+              "gtm.uniqueEventId": 27
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 50,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "9311205_114",
+              "gtm.uniqueEventId": 28
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 75,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "9311205_114",
+              "gtm.uniqueEventId": 29
+            }
+          ]
+        },
+        "interactables": [
+          {
+            "type": "a",
+            "text": "WEB SCRAPER",
+            "selector": ".nav-link.menuitm",
+            "href": "https://webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "CLOUD SCRAPER",
+            "selector": "#cloud-nav-link",
+            "href": "https://webscraper.io/cloud-scraper"
+          },
+          {
+            "type": "a",
+            "text": "PRICING",
+            "selector": "#pricing-nav-link",
+            "href": "https://webscraper.io/pricing"
+          },
+          {
+            "type": "button",
+            "text": "LEARN",
+            "selector": "#dropdownMenuLink",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Install",
+            "selector": ".nav-link.btn-menu1.install-extension",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Cloud Login",
+            "selector": ".nav-link.btn-menu2",
+            "href": "https://cloud.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "Home",
+            "selector": ".nav-link",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone"
+          },
+          {
+            "type": "a",
+            "text": "Computers",
+            "selector": ".category-link.nav-link.",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/computers"
+          },
+          {
+            "type": "a",
+            "text": "Phones",
+            "selector": ".category-link.nav-link.",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/phones"
+          },
+          {
+            "type": "a",
+            "text": "Aspire E1-510",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/32"
+          },
+          {
+            "type": "a",
+            "text": "Iphone",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/8"
+          },
+          {
+            "type": "a",
+            "text": "Acer Aspire ES...",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/75"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper browser extension",
+            "selector": ".install-extension",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper Cloud",
+            "selector": "a",
+            "href": "https://webscraper.io/cloud-scraper"
+          },
+          {
+            "type": "a",
+            "text": "About us",
+            "selector": "a",
+            "href": "https://webscraper.io/about-us"
+          },
+          {
+            "type": "a",
+            "text": "Contact",
+            "selector": "a",
+            "href": "https://webscraper.io/contact"
+          },
+          {
+            "type": "a",
+            "text": "Website Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/privacy-policy"
+          },
+          {
+            "type": "a",
+            "text": "Browser Extension Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/extension-privacy-policy"
+          },
+          {
+            "type": "a",
+            "text": "Media kit",
+            "selector": "a",
+            "href": "https://webscraper.io/downloads/Web_Scraper_Media_Kit.zip"
+          },
+          {
+            "type": "a",
+            "text": "Jobs",
+            "selector": "a",
+            "href": "https://webscraper.io/jobs"
+          },
+          {
+            "type": "a",
+            "text": "Blog",
+            "selector": "a",
+            "href": "https://webscraper.io/blog"
+          },
+          {
+            "type": "a",
+            "text": "Documentation",
+            "selector": "a",
+            "href": "https://webscraper.io/documentation"
+          },
+          {
+            "type": "a",
+            "text": "Video Tutorials",
+            "selector": "a",
+            "href": "https://webscraper.io/tutorials"
+          },
+          {
+            "type": "a",
+            "text": "Screenshots",
+            "selector": "a",
+            "href": "https://webscraper.io/screenshots"
+          },
+          {
+            "type": "a",
+            "text": "Test Sites",
+            "selector": "a",
+            "href": "https://webscraper.io/test-sites"
+          },
+          {
+            "type": "a",
+            "text": "Forum",
+            "selector": "a",
+            "href": "https://forum.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "Status",
+            "selector": "a",
+            "href": "https://status.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "info@webscraper.io",
+            "selector": "a",
+            "href": "mailto:info@webscraper.io"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on Facebook",
+            "selector": "a",
+            "href": "https://www.facebook.com/webscraperio/"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on LinkedIn",
+            "selector": "a",
+            "href": "https://lv.linkedin.com/company/web-scraper"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on Youtube",
+            "selector": "a",
+            "href": "https://youtube.com/@WebScraper/videos"
+          },
+          {
+            "type": "a",
+            "text": "Download the Web Scraper extension",
+            "selector": ".install-extension.browser-icon-dark",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/privacy-policy"
+          },
+          {
+            "type": "button",
+            "text": "Accept & Continue",
+            "selector": ".acceptCookies",
+            "href": ""
+          }
+        ],
+        "findings": [
+          {
+            "id": "empty-links-0.3519581013999602",
+            "severity": "warning",
+            "category": "technical",
+            "title": "Empty/Broken Links Detected",
+            "description": "Found 1 anchor tags with no href attribute.",
+            "timestamp": "2026-01-14T07:55:36.171Z"
+          }
+        ]
+      },
+      "cookies": [
+        {
+          "name": "_ga_Q9KY1T6XJQ",
+          "value": "GS2.1.s1768377335$o1$g0$t1768377335$j60$l0$h0",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1802937335.627333,
+          "size": 59,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gcl_au",
+          "value": "1.1.1290755184.1768377335",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1776153335,
+          "size": 32,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gat_UA-47270784-2",
+          "value": "1",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1768377395,
+          "size": 19,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_ga",
+          "value": "GA1.1.900091809.1768377335",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1802937335.598549,
+          "size": 29,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gid",
+          "value": "GA1.2.2024823246.1768377335",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1768463735,
+          "size": 31,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "first_visit_url",
+          "value": "https://webscraper.io/test-sites/e-commerce/allinone",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1770969335,
+          "size": 67,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        }
+      ]
+    },
+    {
+      "id": "9fc22c0d-3dd4-4208-b4c6-1378e9a99445",
+      "sequence": 0,
+      "timestamp": "2026-01-14T07:55:49.288Z",
+      "url": "https://webscraper.io/test-sites/e-commerce/allinone",
+      "screenshotPath": "C:\\dev\\merchGent\\screenshots\\screenshot-interact-2026-01-14T07-55-47-942Z.jpg",
+      "dataSummary": {
+        "productCount": 3,
+        "title": "Allinone | Web Scraper Test Sites",
+        "dataLayers": {
+          "dataLayer": [
+            {
+              "gtm.start": 1768377344575,
+              "event": "gtm.js",
+              "gtm.uniqueEventId": 3
+            },
+            {
+              "event": "gtm.dom",
+              "gtm.uniqueEventId": 25
+            },
+            {
+              "event": "gtm.load",
+              "gtm.uniqueEventId": 27
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 50,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "9311205_114",
+              "gtm.uniqueEventId": 28
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 75,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "9311205_114",
+              "gtm.uniqueEventId": 29
+            },
+            {
+              "event": "gtm.click",
+              "gtm.element": {},
+              "gtm.elementClasses": "nav-link btn-menu1 install-extension",
+              "gtm.elementId": "",
+              "gtm.elementTarget": "_blank",
+              "gtm.triggers": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24",
+              "gtm.elementUrl": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en",
+              "gtm.uniqueEventId": 35
+            },
+            {
+              "event": "gtm.linkClick",
+              "gtm.element": {},
+              "gtm.elementClasses": "nav-link btn-menu1 install-extension",
+              "gtm.elementId": "",
+              "gtm.elementTarget": "_blank",
+              "gtm.triggers": "9311205_137,9311205_161,30,31",
+              "gtm.elementUrl": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en",
+              "gtm.elementText": "Install",
+              "gtm.willOpenInNewWindow": true,
+              "eventCallback": {},
+              "eventTimeout": 2000,
+              "gtm.uniqueEventId": 36
+            }
+          ]
+        },
+        "interactables": [
+          {
+            "type": "a",
+            "text": "WEB SCRAPER",
+            "selector": ".nav-link.menuitm",
+            "href": "https://webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "CLOUD SCRAPER",
+            "selector": "#cloud-nav-link",
+            "href": "https://webscraper.io/cloud-scraper"
+          },
+          {
+            "type": "a",
+            "text": "PRICING",
+            "selector": "#pricing-nav-link",
+            "href": "https://webscraper.io/pricing"
+          },
+          {
+            "type": "button",
+            "text": "LEARN",
+            "selector": "#dropdownMenuLink",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Install",
+            "selector": ".nav-link.btn-menu1.install-extension",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Cloud Login",
+            "selector": ".nav-link.btn-menu2",
+            "href": "https://cloud.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "Home",
+            "selector": ".nav-link",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone"
+          },
+          {
+            "type": "a",
+            "text": "Computers",
+            "selector": ".category-link.nav-link.",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/computers"
+          },
+          {
+            "type": "a",
+            "text": "Phones",
+            "selector": ".category-link.nav-link.",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/phones"
+          },
+          {
+            "type": "a",
+            "text": "Aspire E1-510",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/32"
+          },
+          {
+            "type": "a",
+            "text": "Iphone",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/8"
+          },
+          {
+            "type": "a",
+            "text": "Acer Aspire ES...",
+            "selector": ".title",
+            "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/75"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper browser extension",
+            "selector": ".install-extension",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper Cloud",
+            "selector": "a",
+            "href": "https://webscraper.io/cloud-scraper"
+          },
+          {
+            "type": "a",
+            "text": "About us",
+            "selector": "a",
+            "href": "https://webscraper.io/about-us"
+          },
+          {
+            "type": "a",
+            "text": "Contact",
+            "selector": "a",
+            "href": "https://webscraper.io/contact"
+          },
+          {
+            "type": "a",
+            "text": "Website Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/privacy-policy"
+          },
+          {
+            "type": "a",
+            "text": "Browser Extension Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/extension-privacy-policy"
+          },
+          {
+            "type": "a",
+            "text": "Media kit",
+            "selector": "a",
+            "href": "https://webscraper.io/downloads/Web_Scraper_Media_Kit.zip"
+          },
+          {
+            "type": "a",
+            "text": "Jobs",
+            "selector": "a",
+            "href": "https://webscraper.io/jobs"
+          },
+          {
+            "type": "a",
+            "text": "Blog",
+            "selector": "a",
+            "href": "https://webscraper.io/blog"
+          },
+          {
+            "type": "a",
+            "text": "Documentation",
+            "selector": "a",
+            "href": "https://webscraper.io/documentation"
+          },
+          {
+            "type": "a",
+            "text": "Video Tutorials",
+            "selector": "a",
+            "href": "https://webscraper.io/tutorials"
+          },
+          {
+            "type": "a",
+            "text": "Screenshots",
+            "selector": "a",
+            "href": "https://webscraper.io/screenshots"
+          },
+          {
+            "type": "a",
+            "text": "Test Sites",
+            "selector": "a",
+            "href": "https://webscraper.io/test-sites"
+          },
+          {
+            "type": "a",
+            "text": "Forum",
+            "selector": "a",
+            "href": "https://forum.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "Status",
+            "selector": "a",
+            "href": "https://status.webscraper.io/"
+          },
+          {
+            "type": "a",
+            "text": "info@webscraper.io",
+            "selector": "a",
+            "href": "mailto:info@webscraper.io"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on Facebook",
+            "selector": "a",
+            "href": "https://www.facebook.com/webscraperio/"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on LinkedIn",
+            "selector": "a",
+            "href": "https://lv.linkedin.com/company/web-scraper"
+          },
+          {
+            "type": "a",
+            "text": "Web Scraper on Youtube",
+            "selector": "a",
+            "href": "https://youtube.com/@WebScraper/videos"
+          },
+          {
+            "type": "a",
+            "text": "Download the Web Scraper extension",
+            "selector": ".install-extension.browser-icon-dark",
+            "href": "https://chromewebstore.google.com/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn?hl=en"
+          },
+          {
+            "type": "a",
+            "text": "Privacy Policy",
+            "selector": "a",
+            "href": "https://webscraper.io/privacy-policy"
+          },
+          {
+            "type": "button",
+            "text": "Accept & Continue",
+            "selector": ".acceptCookies",
+            "href": ""
+          }
+        ],
+        "findings": [
+          {
+            "id": "empty-links-0.40619925841157123",
+            "severity": "warning",
+            "category": "technical",
+            "title": "Empty/Broken Links Detected",
+            "description": "Found 1 anchor tags with no href attribute.",
+            "timestamp": "2026-01-14T07:55:47.939Z"
+          }
+        ]
+      },
+      "cookies": [
+        {
+          "name": "_ga_Q9KY1T6XJQ",
+          "value": "GS2.1.s1768377335$o1$g1$t1768377345$j50$l0$h0",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1802937345.895366,
+          "size": 59,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "first_visit_url",
+          "value": "https://webscraper.io/test-sites/e-commerce/allinone",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1770969335,
+          "size": 67,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_ga",
+          "value": "GA1.1.900091809.1768377335",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1802937345.270308,
+          "size": 29,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gid",
+          "value": "GA1.2.2024823246.1768377335",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1768463745,
+          "size": 31,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gat_UA-47270784-2",
+          "value": "1",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1768377395,
+          "size": 19,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gcl_au",
+          "value": "1.1.1290755184.1768377335",
+          "domain": ".webscraper.io",
+          "path": "/",
+          "expires": 1776153335,
+          "size": 32,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        }
+      ]
+    }
+  ],
+  "status": "active",
+  "updatedAt": "2026-01-14T07:55:49.289Z",
+  "cookies": [
+    {
+      "name": "_ga_Q9KY1T6XJQ",
+      "value": "GS2.1.s1768377335$o1$g1$t1768377345$j50$l0$h0",
+      "domain": ".webscraper.io",
+      "path": "/",
+      "expires": 1802937345.895366,
+      "size": 59,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "first_visit_url",
+      "value": "https://webscraper.io/test-sites/e-commerce/allinone",
+      "domain": ".webscraper.io",
+      "path": "/",
+      "expires": 1770969335,
+      "size": 67,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.900091809.1768377335",
+      "domain": ".webscraper.io",
+      "path": "/",
+      "expires": 1802937345.270308,
+      "size": 29,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "_gid",
+      "value": "GA1.2.2024823246.1768377335",
+      "domain": ".webscraper.io",
+      "path": "/",
+      "expires": 1768463745,
+      "size": 31,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "_gat_UA-47270784-2",
+      "value": "1",
+      "domain": ".webscraper.io",
+      "path": "/",
+      "expires": 1768377395,
+      "size": 19,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "_gcl_au",
+      "value": "1.1.1290755184.1768377335",
+      "domain": ".webscraper.io",
+      "path": "/",
+      "expires": 1776153335,
+      "size": 32,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    }
+  ]
+}

@@ -2,59 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* merchGent Dark Theme */
+/*
+  MerchGent Design System: HARD LINES
+  Philosophy: No curves, high contrast.
+*/
+
 :root {
   --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-elevated: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
+  --bg-secondary: #eeeeee;
+  --text-primary: #000000;
+  --text-secondary: #444444;
+  --border-primary: #000000;
+  --accent: #0000ff; /* Electric Blue */
+  --highlight: #ffffcc;
 }
 
 [data-theme="dark"] {
-  --bg-primary: #0a0a0b;
-  --bg-secondary: #18181b;
-  --bg-elevated: #27272a;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --border-primary: #3f3f46;
-  --border-secondary: #52525b;
+  --bg-primary: #000000;
+  --bg-secondary: #111111;
+  --text-primary: #ffffff;
+  --text-secondary: #bbbbbb;
+  --border-primary: #ffffff;
+  --accent: #00ffff; /* Cyan */
+  --highlight: #222222;
+}
+
+/* THE NUCLEAR OPTION */
+* {
+  border-radius: 0 !important;
 }
 
 body {
   margin: 0;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: "Inter", "Helvetica Neue", sans-serif; /* Clean Sans */
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  /* Hard transition, no fading */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+/* Data / Code */
+code,
+pre {
+  font-family: "JetBrains Mono", monospace;
 }
 
-/* Scrollbar styling for dark theme */
-[data-theme="dark"] ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Buttons (Global Base) */
+button {
+  transition: transform 0.05s ease, background 0.1s ease;
+}
+button:active {
+  transform: translate(1px, 1px);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+/* Scrollbar styling (Blocky) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-primary);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: var(--border-primary);
-  border-radius: 4px;
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border: 1px solid var(--bg-primary);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-secondary);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }

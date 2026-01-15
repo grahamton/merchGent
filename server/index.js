@@ -23,29 +23,46 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+// Serve screenshots statically
+app.use('/screenshots', express.static(path.join(process.cwd(), 'screenshots')));
 
 registerWebAgentRoutes(app);
 registerMerchAgentRoutes(app);
 
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <body style="font-family: monospace; padding: 2rem; background: #111; color: #eee;">
+        <h1>Agent Orchestrator (Backend)</h1>
+        <p>Status: <strong>ONLINE</strong></p>
+        <p>Port: <strong>${PORT}</strong></p>
+        <hr/>
+        <p>You are viewing the API server.</p>
+        <p>To use the application, please visit the frontend: <a href="http://localhost:3001" style="color: #4ade80">http://localhost:3001</a></p>
+      </body>
+    </html>
+  `);
+});
+
 // --- JOURNEY API ---
 
-app.post('/api/journey/start', (req, res) => {
+app.post('/api/journey/start', async (req, res) => {
   try {
     const { startUrl } = req.body;
-    const journey = journeyManager.createJourney(startUrl);
+    const journey = await journeyManager.createJourney(startUrl);
     res.json(journey);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/journey/step', (req, res) => {
+app.post('/api/journey/step', async (req, res) => {
   try {
     const { journeyId, stepData } = req.body;
     if (!journeyId || !stepData) {
       return res.status(400).json({ error: 'Missing journeyId or stepData' });
     }
-    const step = journeyManager.addStep(journeyId, stepData);
+    const step = await journeyManager.addStep(journeyId, stepData);
     res.json(step);
   } catch (error) {
     console.error('Journey Step Error:', error);
@@ -53,10 +70,14 @@ app.post('/api/journey/step', (req, res) => {
   }
 });
 
-app.get('/api/journey/:id/state', (req, res) => {
-    const state = journeyManager.getJourneyState(req.params.id);
-    if (!state) return res.status(404).json({ error: 'Journey not found' });
-    res.json(state);
+app.get('/api/journey/:id/state', async (req, res) => {
+    try {
+        const state = await journeyManager.getJourneyState(req.params.id);
+        if (!state) return res.status(404).json({ error: 'Journey not found' });
+        res.json(state);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(PORT, () => {

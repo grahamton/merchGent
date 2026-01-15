@@ -1,0 +1,2357 @@
+{
+  "id": "0768599e-76fb-4e58-bb0f-44d933b86bfd",
+  "createdAt": "2026-01-13T06:31:45.896Z",
+  "startUrl": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=80CD38D71A9E8BEAE78EB47903ED95E9.appprd3-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+  "steps": [
+    {
+      "id": "7e3e326a-30a6-43aa-9f7f-7fa67b8bc0e7",
+      "sequence": 0,
+      "timestamp": "2026-01-13T06:32:06.030Z",
+      "url": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=E88D700572D9B94A808D1853595CF711.appprd6-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+      "screenshotPath": "C:\\dev\\merchGent\\screenshots\\screenshot-interact-2026-01-13T06-32-05-674Z.jpg",
+      "dataSummary": {
+        "productCount": 10,
+        "title": "Search All IT Brands, Products & Services | Insight",
+        "dataLayers": {
+          "dataLayer": [
+            {
+              "gtm.start": 1768285909077,
+              "event": "gtm.js",
+              "gtm.uniqueEventId": 3
+            },
+            {
+              "authenticatedSession": "false",
+              "webGroup": "",
+              "webAccount": "",
+              "businessType": "",
+              "userType": "",
+              "userSince": "",
+              "repId": "",
+              "B2B": false,
+              "CES": true,
+              "salesOrg": "",
+              "GTM": "",
+              "iTAMSegment": "",
+              "ClientTier": "",
+              "soldto": ""
+            },
+            {
+              "0": "js",
+              "1": {}
+            },
+            {
+              "0": "config",
+              "1": "AW-819891427",
+              "2": {
+                "conversion_linker": true,
+                "conversion_cookie_prefix": "",
+                "send_page_view": false
+              }
+            },
+            {
+              "0": "config",
+              "1": "AW-389569545",
+              "2": {
+                "conversion_linker": true,
+                "conversion_cookie_prefix": "",
+                "send_page_view": false
+              }
+            },
+            {
+              "0": "event",
+              "1": "page_view",
+              "2": {
+                "send_to": [
+                  "AW-819891427"
+                ],
+                "event_category": "page view"
+              }
+            },
+            {
+              "event": "gtm.dom",
+              "gtm.uniqueEventId": 77
+            },
+            {
+              "event": "gtm.load",
+              "gtm.uniqueEventId": 81
+            },
+            {
+              "event": "gtm.historyChange-v2",
+              "gtm.historyChangeSource": "replaceState",
+              "gtm.oldUrlFragment": "",
+              "gtm.newUrlFragment": "",
+              "gtm.oldHistoryState": null,
+              "gtm.newHistoryState": null,
+              "gtm.oldUrl": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&salesOrg=2400&sessionId=80CD38D71A9E8BEAE78EB47903ED95E9.appprd3-2&lang=en_US&category=hardware%2Fprojectors&userSegment=CES&tabType=products",
+              "gtm.newUrl": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=E88D700572D9B94A808D1853595CF711.appprd6-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+              "gtm.triggers": "79,80",
+              "gtm.uniqueEventId": 84
+            },
+            {
+              "event": "chatPlaceholder",
+              "gtm.uniqueEventId": 89
+            }
+          ],
+          "digitalData": {
+            "archive": [],
+            "authentication": {
+              "authenticatedSession": "false",
+              "webGroup": "",
+              "webAccount": "",
+              "businessType": "",
+              "userType": "",
+              "userSince": "",
+              "repId": "",
+              "B2B": false,
+              "CES": true,
+              "salesOrg": "",
+              "GTM": "",
+              "iTAMSegment": "",
+              "ClientTier": "",
+              "soldto": "",
+              "_created": "2026-01-13T06:31:49.283Z"
+            },
+            "pageInfo": {
+              "pageName": "www.insight.com|NA|US|en|Search All IT Brands, Products & Services - Insight",
+              "counter": 1,
+              "url": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=80CD38D71A9E8BEAE78EB47903ED95E9.appprd3-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+              "domain": "www.insight.com",
+              "siteRegion": "NA",
+              "siteCountry": "US",
+              "siteLanguage": "en",
+              "_created": "2026-01-13T06:31:49.283Z"
+            },
+            "category": {
+              "pageType": "",
+              "siteSection": "en_US",
+              "siteSection2": "search.html",
+              "siteSection3": "",
+              "siteSection4": "",
+              "_created": "2026-01-13T06:31:49.283Z"
+            },
+            "chat": {
+              "event": "chatPlaceholder",
+              "_created": "2026-01-13T06:31:53.578Z"
+            }
+          },
+          "adobe": {
+            "OptInCategories": {
+              "AAM": "aam",
+              "ADCLOUD": "adcloud",
+              "ANALYTICS": "aa",
+              "CAMPAIGN": "campaign",
+              "ECID": "ecid",
+              "LIVEFYRE": "livefyre",
+              "TARGET": "target",
+              "MEDIA_ANALYTICS": "mediaaa"
+            },
+            "optIn": {
+              "on": {},
+              "off": {},
+              "publish": {},
+              "deny": {},
+              "approve": {},
+              "denyAll": {},
+              "approveAll": {},
+              "isApproved": {},
+              "isPreApproved": {},
+              "fetchPermissions": {},
+              "complete": {},
+              "registerPlugin": {},
+              "execute": {},
+              "memoizeContent": {},
+              "getMemoizedContent": {}
+            },
+            "target": {
+              "VERSION": "",
+              "event": {},
+              "getOffer": {},
+              "getOffers": {},
+              "applyOffer": {},
+              "applyOffers": {},
+              "sendNotifications": {},
+              "trackEvent": {},
+              "triggerView": {},
+              "registerExtension": {},
+              "init": {}
+            }
+          }
+        },
+        "interactables": [
+          {
+            "type": "a",
+            "text": "1.800.INSIGHT",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "tel:1.800.INSIGHT"
+          },
+          {
+            "type": "a",
+            "text": "Skip to content",
+            "selector": ".c-button..c-button--subtle.c-header-top__link.u-hide-visually..u-hide-visually--focusable",
+            "href": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&"
+          },
+          {
+            "type": "a",
+            "text": "Login",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/login"
+          },
+          {
+            "type": "a",
+            "text": "Create an account",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/endUser/createAccount"
+          },
+          {
+            "type": "button",
+            "text": "Tools",
+            "selector": "#headerToolsDropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Support",
+            "selector": "#headerSupportDropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Country and language configuration",
+            "selector": "#headerLocaleDropdown",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Shopping cart, 0 items",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/cart"
+          },
+          {
+            "type": "a",
+            "text": "Go to the Insight.com homepage",
+            "selector": ".c-button..c-button--none.c-header-logo__btn",
+            "href": "https://www.insight.com/"
+          },
+          {
+            "type": "button",
+            "text": "What we do",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Client stories",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Content & resources",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Connect with us",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Shop",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Search",
+            "selector": ".c-button..c-button--subtle.c-guest-search-bar__button",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Home",
+            "selector": ".c-breadcrumbs__link",
+            "href": "https://www.insight.com/"
+          },
+          {
+            "type": "div",
+            "text": "Products (503)",
+            "selector": "#products",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Search all categories instead",
+            "selector": ".c-button..c-button--inline-link.u-text-bold",
+            "href": ""
+          },
+          {
+            "type": "div",
+            "text": "Category",
+            "selector": ".c-search-filter__group__label.o-grid__item.u-1/1",
+            "href": ""
+          }
+        ],
+        "findings": []
+      },
+      "cookies": [
+        {
+          "name": "s_cc",
+          "value": "true",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 8,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_pltp",
+          "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 110,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_tp",
+          "value": "12227",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "itemsInCart",
+          "value": "0",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 12,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_nr30",
+          "value": "1768285910946-New",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1770877910,
+          "size": 23,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "mbox",
+          "value": "session#2dcfb3b4f3ec45e1953b6754dad4ca25#1768287771|PC#2dcfb3b4f3ec45e1953b6754dad4ca25.35_0#1831530711",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1802845910.400663,
+          "size": 107,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "AMCV_F14FFF565937D2AA0A495D22%40AdobeOrg",
+          "value": "179643557%7CMCIDTS%7C20467%7CMCMID%7C21840726891512134593679042968817697427%7CMCAAMLH-1768890710%7C9%7CMCAAMB-1768890710%7C6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y%7CMCOPTOUT-1768293110s%7CNONE%7CMCSYNCSOP%7C411-20474%7CvVersion%7C5.5.0",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1802845910.347743,
+          "size": 288,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "gpv_Page",
+          "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768287710,
+          "size": 112,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "AMCVS_F14FFF565937D2AA0A495D22%40AdobeOrg",
+          "value": "1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 42,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "ak_bmsc",
+          "value": "6A75F5EBC96AC4DCA8786E35E6C6FE27~000000000000000000000000000000~YAAQmPTVF4Ca3zibAQAAz7QNth4jBe18+w4QD1Ik7r3IXQGJ5fqirR0Cr33ajO59rcMUcgoshPlgcQG0sZ091ka9IuL8v8imXCTuZHfhYlN8w60eQILGFVQYLw2MMpmXZE704z8qGVZth1CHQ5Fx8gBkdnb1kA5OG16euRKGizDvs1/eslwYwW6t787GL69H/JGcw1NqSU+0FGUH4rjfKKaWmKZWWrYy0MY+gA8PmluVUj2vcbPRfBC/MRoVU3BWNXDPduwbnIwUvPHcWPifwPPCNbc3MrULe/fksx0Ubr7dAAUrpl0F9g+qvjtWdicp0IYTM6nkV6RckgHXeZ/3eCOOT32yHi3+LBALLPb1LVlvhB/Y5NGhs0qe3pypv5KtGf5kvfS+e5qnL4ELRZyxG3cTjBRsihgRBHMobMl2S0f8ti0JFw5lKKW+Ci1kz/FCIs2tlYpfsQSO1rzwG4SJ6nM=",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768293106.246676,
+          "size": 543,
+          "httpOnly": true,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gcl_au",
+          "value": "1.1.2061986578.1768285910",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1776061910,
+          "size": 32,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_abck",
+          "value": "1AD00111C1B0AE85A4010549335920C4~-1~YAAQmPTVF6ua3zibAQAAH7cNtg85VaMssPzHrA+H5pfRJxB9UWHaaGhpCeeVkB/04xcPemxYNcZEWyxopL9oX8H9HPrQPlCFp49NbnBHtJWa4vYHZcKdbA0GI2/hcyA06pEpj4CWuK1WriELtdqNLWHd+JaU3xXFHf17Wb0oIsszDC1EtXTBemR+7uJhDaFwTAe+IJKMCKpSfHypQGNWLuSWnwSCRbWYK33MCU2LF3G5UYdXx//xgnYwv1Dr/hmeSrcpxSyHEQN/WPcDqJuhku86rWWHTHmvMcHgC9rWtu2whUdLTHO9d/k9z+go1uDrgs2o6KsnsN7T91MWR9XGp51DCY5dvU4XkP5/gCOKbJoytVA7VYwLs9hYJ96jpLpuvoWhSmo/zTeiSHmLR96N5TsPK+vfQM3/OR6nwfqE7AwbHL596me7c6kCMMxuPi/zyguB3Dk7H8Q8VsX+WKhkozjSmkji3jwCVutxGXYIaDp6FT2C8h+b45C+0K02H/cThoSQ/h02FiPo/FTTAL/TUQ9t+2rEN5DO3APYbPlKH5yfo52ZQ9YN4ogrreme5Mq0yl3sZx1m0PQIseFASONGFB2dkfLRaFr2AP1TsW0kxj+UMbwQNqz2xa2Eipqk1/7QYpReok2qN6JIL5gYa7LkhReZ3+wV6Q==~-1~-1~-1~AAQAAAAF%2f%2f%2f%2f%2f1ZffEAIp%2fm8cb4uAlL0ZfgzFBRU1Ubq7V%2fNXp+zTuRmIk4GEv98UqFEvIf6Ca4p5M+uo5b548BsDB9Meima%2fdxk2ZYtt5q4OHxc~-1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1799821910.84144,
+          "size": 854,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT8rBqZeBqAmKAAjBA+yMqQetyGo_",
+          "value": "v1BtjegwSDE5I",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768286809.042314,
+          "size": 82,
+          "httpOnly": true,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_plt",
+          "value": "4.39",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "at_check",
+          "value": "true",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 12,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_ips",
+          "value": "1080",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "insight_current_locale",
+          "value": "en_US",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": 1799821908,
+          "size": 27,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "bm_sz",
+          "value": "14A0D2B874DF9BC31B061B6C8EDC3182~YAAQmPTVF2ua3zibAQAA1LINth63M2jBKXkU9oz7RZL5gNDDhM84qUT1tkGja0WNhsyP/1IP0pZ51Qvd+1XGimij8gwdDAYJw+zaDGvdzjUYtIoE2uwqQZmnY/pCQg2jfP2HTWwRvvmcBDO3SRztwcZ0usSwR4c67+3SLoecjmFN8b1n14TeqD6+cYu27rvrLY2sIiH9oZ9GYqD21IUnVk7qdU5Wko3fS2RtbbO0B/som7GVYs1KKMP3tQDXRsBbTwEOf9Q0I8gRSOzm5CaDgJfmkkAGtv4XVK5SvJ8h3WykO3B7QLhN5E4MuSFfcNjYyq1erY11D2kVqf2i7YGqkqN3x4//mIIpdWq6I11pdshbUL1p0q42jgRU7OFV81daLLiIb3GloWm5l71kHTgw+t0lJb0=~3682871~4605489",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768300306.739574,
+          "size": 466,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_ppv",
+          "value": "www.insight.com%257CNA%257CUS%257Cen%257CSearch%2520All%2520IT%2520Brands%252C%2520Products%2520%2526%2520Services%2520-%2520Insight%2C9%2C9%2C1080%2C1%2C11",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 161,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "JSESSIONID",
+          "value": "0235096A280B8C45ACED7F606C9EAD2E.appprd2-2",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 52,
+          "httpOnly": true,
+          "secure": true,
+          "session": true,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "insight_locale",
+          "value": "en_US",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": 1799821908,
+          "size": 19,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT87TrMTbilTJ",
+          "value": "v1CdjegwSDpK1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768286810.55224,
+          "size": 66,
+          "httpOnly": true,
+          "secure": true,
+          "session": false,
+          "sameSite": "Strict",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "affinity",
+          "value": "\"edb7262c46d0a090\"",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 26,
+          "httpOnly": true,
+          "secure": true,
+          "session": true,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        }
+      ]
+    },
+    {
+      "id": "376db552-f634-4619-bb19-93e280c95131",
+      "sequence": 0,
+      "timestamp": "2026-01-13T06:39:47.903Z",
+      "url": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=CE349204761FA9DFA44343D0099A271A.appprd4-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+      "screenshotPath": "C:\\dev\\merchGent\\screenshots\\screenshot-interact-2026-01-13T06-39-47-524Z.jpg",
+      "dataSummary": {
+        "productCount": 10,
+        "title": "Search All IT Brands, Products & Services | Insight",
+        "dataLayers": {
+          "dataLayer": [
+            {
+              "gtm.start": 1768286370778,
+              "event": "gtm.js",
+              "gtm.uniqueEventId": 3
+            },
+            {
+              "authenticatedSession": "false",
+              "webGroup": "",
+              "webAccount": "",
+              "businessType": "",
+              "userType": "",
+              "userSince": "",
+              "repId": "",
+              "B2B": false,
+              "CES": true,
+              "salesOrg": "",
+              "GTM": "",
+              "iTAMSegment": "",
+              "ClientTier": "",
+              "soldto": ""
+            },
+            {
+              "0": "js",
+              "1": {}
+            },
+            {
+              "0": "config",
+              "1": "AW-819891427",
+              "2": {
+                "conversion_linker": true,
+                "conversion_cookie_prefix": "",
+                "send_page_view": false
+              }
+            },
+            {
+              "0": "config",
+              "1": "AW-389569545",
+              "2": {
+                "conversion_linker": true,
+                "conversion_cookie_prefix": "",
+                "send_page_view": false
+              }
+            },
+            {
+              "0": "event",
+              "1": "page_view",
+              "2": {
+                "send_to": [
+                  "AW-819891427"
+                ],
+                "event_category": "page view"
+              }
+            },
+            {
+              "event": "gtm.dom",
+              "gtm.uniqueEventId": 77
+            },
+            {
+              "event": "gtm.load",
+              "gtm.uniqueEventId": 81
+            },
+            {
+              "event": "gtm.historyChange-v2",
+              "gtm.historyChangeSource": "replaceState",
+              "gtm.oldUrlFragment": "",
+              "gtm.newUrlFragment": "",
+              "gtm.oldHistoryState": null,
+              "gtm.newHistoryState": null,
+              "gtm.oldUrl": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&salesOrg=2400&sessionId=B69A43375F40A13B0CDF488AD19678D8.appprd6-2&lang=en_US&category=hardware%2Fprojectors&userSegment=CES&tabType=products",
+              "gtm.newUrl": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=CE349204761FA9DFA44343D0099A271A.appprd4-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+              "gtm.triggers": "79,80",
+              "gtm.uniqueEventId": 84
+            },
+            {
+              "event": "chatPlaceholder",
+              "gtm.uniqueEventId": 89
+            }
+          ],
+          "digitalData": {
+            "archive": [],
+            "authentication": {
+              "authenticatedSession": "false",
+              "webGroup": "",
+              "webAccount": "",
+              "businessType": "",
+              "userType": "",
+              "userSince": "",
+              "repId": "",
+              "B2B": false,
+              "CES": true,
+              "salesOrg": "",
+              "GTM": "",
+              "iTAMSegment": "",
+              "ClientTier": "",
+              "soldto": "",
+              "_created": "2026-01-13T06:39:31.136Z"
+            },
+            "pageInfo": {
+              "pageName": "www.insight.com|NA|US|en|Search All IT Brands, Products & Services - Insight",
+              "counter": 1,
+              "url": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&sessionId=B69A43375F40A13B0CDF488AD19678D8.appprd6-2&lang=en_US&category=hardware%2Fprojectors&rows=50&userSegment=CES&tabType=products",
+              "domain": "www.insight.com",
+              "siteRegion": "NA",
+              "siteCountry": "US",
+              "siteLanguage": "en",
+              "_created": "2026-01-13T06:39:31.136Z"
+            },
+            "category": {
+              "pageType": "",
+              "siteSection": "en_US",
+              "siteSection2": "search.html",
+              "siteSection3": "",
+              "siteSection4": "",
+              "_created": "2026-01-13T06:39:31.136Z"
+            },
+            "chat": {
+              "event": "chatPlaceholder",
+              "_created": "2026-01-13T06:39:35.538Z"
+            }
+          },
+          "adobe": {
+            "OptInCategories": {
+              "AAM": "aam",
+              "ADCLOUD": "adcloud",
+              "ANALYTICS": "aa",
+              "CAMPAIGN": "campaign",
+              "ECID": "ecid",
+              "LIVEFYRE": "livefyre",
+              "TARGET": "target",
+              "MEDIA_ANALYTICS": "mediaaa"
+            },
+            "optIn": {
+              "on": {},
+              "off": {},
+              "publish": {},
+              "deny": {},
+              "approve": {},
+              "denyAll": {},
+              "approveAll": {},
+              "isApproved": {},
+              "isPreApproved": {},
+              "fetchPermissions": {},
+              "complete": {},
+              "registerPlugin": {},
+              "execute": {},
+              "memoizeContent": {},
+              "getMemoizedContent": {}
+            },
+            "target": {
+              "VERSION": "",
+              "event": {},
+              "getOffer": {},
+              "getOffers": {},
+              "applyOffer": {},
+              "applyOffers": {},
+              "sendNotifications": {},
+              "trackEvent": {},
+              "triggerView": {},
+              "registerExtension": {},
+              "init": {}
+            }
+          }
+        },
+        "interactables": [
+          {
+            "type": "a",
+            "text": "1.800.INSIGHT",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "tel:1.800.INSIGHT"
+          },
+          {
+            "type": "a",
+            "text": "Skip to content",
+            "selector": ".c-button..c-button--subtle.c-header-top__link.u-hide-visually..u-hide-visually--focusable",
+            "href": "https://www.insight.com/en_US/search.html?country=US&q=*%3A*&instockOnly=true&start=0&salesOrg=2400&"
+          },
+          {
+            "type": "a",
+            "text": "Login",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/login"
+          },
+          {
+            "type": "a",
+            "text": "Create an account",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/endUser/createAccount"
+          },
+          {
+            "type": "button",
+            "text": "Tools",
+            "selector": "#headerToolsDropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Support",
+            "selector": "#headerSupportDropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Country and language configuration",
+            "selector": "#headerLocaleDropdown",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Shopping cart, 0 items",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/cart"
+          },
+          {
+            "type": "a",
+            "text": "Go to the Insight.com homepage",
+            "selector": ".c-button..c-button--none.c-header-logo__btn",
+            "href": "https://www.insight.com/"
+          },
+          {
+            "type": "button",
+            "text": "What we do",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Client stories",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Content & resources",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Connect with us",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Shop",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Search",
+            "selector": ".c-button..c-button--subtle.c-guest-search-bar__button",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Home",
+            "selector": ".c-breadcrumbs__link",
+            "href": "https://www.insight.com/"
+          },
+          {
+            "type": "div",
+            "text": "Products (503)",
+            "selector": "#products",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Search all categories instead",
+            "selector": ".c-button..c-button--inline-link.u-text-bold",
+            "href": ""
+          },
+          {
+            "type": "div",
+            "text": "Category",
+            "selector": ".c-search-filter__group__label.o-grid__item.u-1/1",
+            "href": ""
+          }
+        ],
+        "findings": []
+      },
+      "cookies": [
+        {
+          "name": "s_cc",
+          "value": "true",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 8,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_pltp",
+          "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 110,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_tp",
+          "value": "12227",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "itemsInCart",
+          "value": "0",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 12,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_nr30",
+          "value": "1768286372700-New",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1770878372,
+          "size": 23,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "mbox",
+          "value": "session#f673eff9ef60413fb244564a48c0f01c#1768288233|PC#f673eff9ef60413fb244564a48c0f01c.35_0#1831531173",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1802846372.038883,
+          "size": 107,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gcl_au",
+          "value": "1.1.964593680.1768286372",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1776062372,
+          "size": 31,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "AMCV_F14FFF565937D2AA0A495D22%40AdobeOrg",
+          "value": "179643557%7CMCIDTS%7C20467%7CMCMID%7C20272824694442862981886244806660754027%7CMCAAMLH-1768891171%7C9%7CMCAAMB-1768891171%7C6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y%7CMCOPTOUT-1768293571s%7CNONE%7CMCSYNCSOP%7C411-20474%7CvVersion%7C5.5.0",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1802846371.994062,
+          "size": 288,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_abck",
+          "value": "3EF8247252C602C4798167EB65ED4DE6~-1~YAAQmPTVF1gJ4DibAQAATcMUtg/csRhk1XiWTXKv1lVasPTaB3wp/MiVFHgTjADmEzcihA5UHc8BRO10bdUlH112RSHEPe6va+/l+YOtR2YPSIVwVT8CkNcmm7AhxbzPbncLB7pI2NpWlWoWDd4yNIOLy7L4HLpW/JfESxYm0UV/6WM/5LsJGaTTExP4cGVAKU5UZ/sai2SREtVp/m6AurIgMFOTY8Sg+SqL1A0OJSL3R9geNmmalUMUrSvN2z+1YChv9A3vZHz2WYCLw1AZwf0w6pY+Q6KmJKW5Cfv4My49xYUvc52uLE3DsrwxXDoUEWnxCes9sQ9Nek8Uo+zvtJX17J9LEQTxB9d1WgT41pHd1wYcLZ6D+O6nRBdCFTMpEecGfs0nQkS/wBa1yaEDHeDCOz24egPJD377fiPD5bajos0012zCHEMUhdTaBT+LZUOJ0x8QWvAKhl7SRO/r54EfIiskz6XBbadwPaLHDEoXgIEdxwpqpDHvG4AhId4wYtdENKY9TwQ8dfU7E2+geuhWFk/PdWHfy/gAahePAGXOErv8PkM4cldQM8bhssIf7hCsRzIyj1A3yXbyoxmZZuMiA6NJ1/dN7RJkjYSBPgkuXZyfSY4uP2UU0x+RDw+s+FbVcyQMZqeoMwFJHu95ApcAMnpEhw==~-1~-1~-1~AAQAAAAF%2f%2f%2f%2f%2fysgS53s+nPN0dnxUTYv%2fn3rCoZkKjbKyo5XxrAy08jSo35sRQmiEAr4JFBgsQCSF7Yp8EjBHAuEgbtM8yObL1Hfpycs4mAXX0JL~-1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1799822372.705214,
+          "size": 850,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT8rBqZeBqAmKAAjBA+yMqQetyGo_",
+          "value": "v1BtjegwSDE5I",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768287271.975121,
+          "size": 82,
+          "httpOnly": true,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_plt",
+          "value": "4.41",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "at_check",
+          "value": "true",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 12,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_ips",
+          "value": "1080",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "insight_current_locale",
+          "value": "en_US",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": 1799822370,
+          "size": 27,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "bm_sz",
+          "value": "0EC99865CE820EC57CEFC8D679E14E68~YAAQmPTVF/UI4DibAQAA4L4Uth7TXWmiexouw+I+rRIR7aBVduMhsjdUz872iPy2SG8J8FrhOHnloYeQV3LD6ch/PQT28jazI5b/G78oAhkZYXCuGyiPsl/xA2eETIDgbtLm97dgOvWsrfi8e3fIDeDQ9Oms+HYpIT3CRc0e4TKl5V11qup1m+R6VrejxCMkiJPiMiiI5wIn/FMy5KD7USal3y2gGb0Z3ipb7IOhsQOpKv3pDiZizrBZUfi3Zj2z1qozFRJZHbOEFSNxl0s0WZGczzYG/oLN7jbrAOcVvruP0rKmJc9IlnQWbHW5sA34dhcoJ/H8cvi41vOOXpPQ15IF7ShpNT3qEF88j0cmSULLXbXz3fidwdLRVwyHgIPjTzGH8oddEE8Y6Ha7gSTihLS3AtU=~3553093~3224370",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768300768.573776,
+          "size": 466,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_ppv",
+          "value": "www.insight.com%257CNA%257CUS%257Cen%257CSearch%2520All%2520IT%2520Brands%252C%2520Products%2520%2526%2520Services%2520-%2520Insight%2C9%2C9%2C1080%2C1%2C11",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 161,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "JSESSIONID",
+          "value": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 52,
+          "httpOnly": true,
+          "secure": true,
+          "session": true,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "insight_locale",
+          "value": "en_US",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": 1799822370,
+          "size": 19,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT87TrMTbilTJ",
+          "value": "v1BtjegwSDE5I",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768287272.500295,
+          "size": 66,
+          "httpOnly": true,
+          "secure": true,
+          "session": false,
+          "sameSite": "Strict",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "gpv_Page",
+          "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768288172,
+          "size": 112,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "ak_bmsc",
+          "value": "2DC128415B63CFE9B52D445C30D0F0C2~000000000000000000000000000000~YAAQmPTVFyUJ4DibAQAAvcAUth6qv9zyz5V6Ege4QDxXzOZMTw+PQOdNu+BA5HmvUHnr0Kfo9A6FeyYpi7DcKP8P3WvTJAF7rTxdwznp1+sSqOo+RDLsKoHnDgFibp37jc+mpV91BGdTyKtjGBjkKl2Ma7pEhQCeQ8v4VopP56SN2Y9by9NShZI1+pXaai0cxfeXZxBbsrm8Y5YrJ+ZGSC/Ps6F1wI/14/8MhUEtnEBmtT0rVnyZgKAY3q8hr/t9bIZfbwemsss3FqfFo3TZqSmuGZLYbOeakMk7heHcG0X6Y45VB923AZj4mnYU4fpJ4zvjUWfDEXiIuOrVyVPG6ijUaGuTNLl/gEtRvoXgP0523XDg4qCaI3KDzdyMbpXcMBwUZFP3QYlNJRfgiL6IzCLaUHIqkB77FFVBzXco7RBqsz1VBt6rq7IdIMdMyBki6nDCsPLzt//CqQ3aLaf2CLs=",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768293568.051386,
+          "size": 543,
+          "httpOnly": true,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "AMCVS_F14FFF565937D2AA0A495D22%40AdobeOrg",
+          "value": "1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 42,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "affinity",
+          "value": "\"ce04a6777b73d3aa\"",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 26,
+          "httpOnly": true,
+          "secure": true,
+          "session": true,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        }
+      ]
+    },
+    {
+      "id": "89eeb951-7720-4c43-9699-662d2c6a4655",
+      "sequence": 0,
+      "timestamp": "2026-01-13T06:40:27.507Z",
+      "url": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fcountry%3Dus%26q%3D*%253a*%26instockonly%3Dtrue%26start%3D0%26salesorg%3D2400%26sessionid%3Dce349204761fa9dfa44343d0099a271a.appprd4-2%26lang%3Den_us%26category%3Dhardware%252fprojectors%26rows%3D50%26usersegment%3Dces%26tabtype%3Dproducts&qsrc=k&tabType=products",
+      "screenshotPath": "C:\\dev\\merchGent\\screenshots\\screenshot-interact-2026-01-13T06-40-27-161Z.jpg",
+      "dataSummary": {
+        "productCount": 0,
+        "title": "Search All IT Brands, Products & Services | Insight",
+        "dataLayers": {
+          "dataLayer": [
+            {
+              "gtm.start": 1768286411667,
+              "event": "gtm.js",
+              "gtm.uniqueEventId": 3
+            },
+            {
+              "authenticatedSession": "false",
+              "webGroup": "",
+              "webAccount": "",
+              "businessType": "",
+              "userType": "",
+              "userSince": "",
+              "repId": "",
+              "B2B": false,
+              "CES": true,
+              "salesOrg": "",
+              "GTM": "",
+              "iTAMSegment": "",
+              "ClientTier": "",
+              "soldto": ""
+            },
+            {
+              "0": "js",
+              "1": {}
+            },
+            {
+              "0": "config",
+              "1": "AW-819891427",
+              "2": {
+                "conversion_linker": true,
+                "conversion_cookie_prefix": "",
+                "send_page_view": false
+              }
+            },
+            {
+              "0": "config",
+              "1": "AW-389569545",
+              "2": {
+                "conversion_linker": true,
+                "conversion_cookie_prefix": "",
+                "send_page_view": false
+              }
+            },
+            {
+              "0": "event",
+              "1": "page_view",
+              "2": {
+                "send_to": [
+                  "AW-819891427"
+                ],
+                "event_category": "page view"
+              }
+            },
+            {
+              "event": "gtm.dom",
+              "gtm.uniqueEventId": 77
+            },
+            {
+              "event": "gtm.load",
+              "gtm.uniqueEventId": 81
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 25,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "1296197_769",
+              "gtm.uniqueEventId": 84
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 50,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "1296197_769",
+              "gtm.uniqueEventId": 86
+            },
+            {
+              "event": "gtm.scrollDepth",
+              "gtm.scrollThreshold": 75,
+              "gtm.scrollUnits": "percent",
+              "gtm.scrollDirection": "vertical",
+              "gtm.triggers": "1296197_769",
+              "gtm.uniqueEventId": 88
+            },
+            {
+              "event": "gtm.historyChange-v2",
+              "gtm.historyChangeSource": "replaceState",
+              "gtm.oldUrlFragment": "",
+              "gtm.newUrlFragment": "",
+              "gtm.oldHistoryState": null,
+              "gtm.newHistoryState": null,
+              "gtm.oldUrl": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fcountry%3Dus%26q%3D*%253a*%26instockonly%3Dtrue%26start%3D0%26salesorg%3D2400%26sessionid%3Dce349204761fa9dfa44343d0099a271a.appprd4-2%26lang%3Den_us%26category%3Dhardware%252fprojectors%26rows%3D50%26usersegment%3Dces%26tabtype%3Dproducts&qsrc=k&tabType=products",
+              "gtm.newUrl": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fcountry%3Dus%26q%3D*%253a*%26instockonly%3Dtrue%26start%3D0%26salesorg%3D2400%26sessionid%3Dce349204761fa9dfa44343d0099a271a.appprd4-2%26lang%3Den_us%26category%3Dhardware%252fprojectors%26rows%3D50%26usersegment%3Dces%26tabtype%3Dproducts&qsrc=k&tabType=products",
+              "gtm.triggers": "79,80",
+              "gtm.uniqueEventId": 90
+            },
+            {
+              "searchKeyword": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+              "searchType": "Typed In",
+              "resultCounts": {
+                "productsCount": 0
+              },
+              "searchFilter": {
+                "origFacetDisplays": {},
+                "origParams": {
+                  "country": "US",
+                  "q": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+                  "start": "0",
+                  "salesOrg": "2400",
+                  "sessionId": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+                  "lang": "en_US",
+                  "rows": "50",
+                  "userSegment": "CES"
+                },
+                "totalArticles": 0
+              }
+            },
+            {
+              "searchKeyword": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+              "searchType": "Typed In",
+              "resultCounts": {
+                "productsCount": 0
+              },
+              "searchFilter": {
+                "origFacetDisplays": {},
+                "origParams": {
+                  "country": "US",
+                  "q": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+                  "start": "0",
+                  "salesOrg": "2400",
+                  "sessionId": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+                  "lang": "en_US",
+                  "rows": "50",
+                  "userSegment": "CES"
+                },
+                "totalArticles": 0
+              }
+            },
+            {
+              "event": "gtm.historyChange-v2",
+              "gtm.historyChangeSource": "replaceState",
+              "gtm.oldUrlFragment": "",
+              "gtm.newUrlFragment": "",
+              "gtm.oldHistoryState": null,
+              "gtm.newHistoryState": null,
+              "gtm.oldUrl": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fcountry%3Dus%26q%3D*%253a*%26instockonly%3Dtrue%26start%3D0%26salesorg%3D2400%26sessionid%3Dce349204761fa9dfa44343d0099a271a.appprd4-2%26lang%3Den_us%26category%3Dhardware%252fprojectors%26rows%3D50%26usersegment%3Dces%26tabtype%3Dproducts&qsrc=k&tabType=products",
+              "gtm.newUrl": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fcountry%3Dus%26q%3D*%253a*%26instockonly%3Dtrue%26start%3D0%26salesorg%3D2400%26sessionid%3Dce349204761fa9dfa44343d0099a271a.appprd4-2%26lang%3Den_us%26category%3Dhardware%252fprojectors%26rows%3D50%26usersegment%3Dces%26tabtype%3Dproducts&qsrc=k&tabType=products",
+              "gtm.triggers": "79,80",
+              "gtm.uniqueEventId": 92
+            },
+            {
+              "event": "chatPlaceholder",
+              "gtm.uniqueEventId": 94
+            }
+          ],
+          "digitalData": {
+            "archive": [
+              {
+                "searchKeyword": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+                "searchType": "Typed In",
+                "resultCounts": {
+                  "productsCount": 0
+                },
+                "searchFilter": {
+                  "origFacetDisplays": {},
+                  "origParams": {
+                    "country": "US",
+                    "q": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+                    "start": "0",
+                    "salesOrg": "2400",
+                    "sessionId": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+                    "lang": "en_US",
+                    "rows": "50",
+                    "userSegment": "CES"
+                  },
+                  "totalArticles": 0
+                },
+                "_created": "2026-01-13T06:40:14.001Z",
+                "_tename": "searchInfo",
+                "_archived": "2026-01-13T06:40:14.966Z"
+              }
+            ],
+            "authentication": {
+              "authenticatedSession": "false",
+              "webGroup": "",
+              "webAccount": "",
+              "businessType": "",
+              "userType": "",
+              "userSince": "",
+              "repId": "",
+              "B2B": false,
+              "CES": true,
+              "salesOrg": "",
+              "GTM": "",
+              "iTAMSegment": "",
+              "ClientTier": "",
+              "soldto": "",
+              "_created": "2026-01-13T06:40:11.912Z"
+            },
+            "pageInfo": {
+              "pageName": "www.insight.com|NA|US|en|Search All IT Brands, Products & Services - Insight",
+              "counter": 1,
+              "url": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fcountry%3Dus%26q%3D*%253a*%26instockonly%3Dtrue%26start%3D0%26salesorg%3D2400%26sessionid%3Dce349204761fa9dfa44343d0099a271a.appprd4-2%26lang%3Den_us%26category%3Dhardware%252fprojectors%26rows%3D50%26usersegment%3Dces%26tabtype%3Dproducts&qsrc=k",
+              "domain": "www.insight.com",
+              "siteRegion": "NA",
+              "siteCountry": "US",
+              "siteLanguage": "en",
+              "_created": "2026-01-13T06:40:11.912Z"
+            },
+            "category": {
+              "pageType": "",
+              "siteSection": "en_US",
+              "siteSection2": "search.html",
+              "siteSection3": "",
+              "siteSection4": "",
+              "_created": "2026-01-13T06:40:11.912Z"
+            },
+            "searchInfo": {
+              "searchKeyword": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+              "searchType": "Typed In",
+              "resultCounts": {
+                "productsCount": 0
+              },
+              "searchFilter": {
+                "origFacetDisplays": {},
+                "origParams": {
+                  "country": "US",
+                  "q": "https://www.insight.com/en_us/search.html?country=us&q=*%3a*&instockonly=true&start=0&salesorg=2400&sessionid=ce349204761fa9dfa44343d0099a271a.appprd4-2&lang=en_us&category=hardware%2fprojectors&rows=50&usersegment=ces&tabtype=products",
+                  "start": "0",
+                  "salesOrg": "2400",
+                  "sessionId": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+                  "lang": "en_US",
+                  "rows": "50",
+                  "userSegment": "CES"
+                },
+                "totalArticles": 0
+              },
+              "_created": "2026-01-13T06:40:14.966Z"
+            },
+            "chat": {
+              "event": "chatPlaceholder",
+              "_created": "2026-01-13T06:40:15.671Z"
+            }
+          },
+          "adobe": {
+            "OptInCategories": {
+              "AAM": "aam",
+              "ADCLOUD": "adcloud",
+              "ANALYTICS": "aa",
+              "CAMPAIGN": "campaign",
+              "ECID": "ecid",
+              "LIVEFYRE": "livefyre",
+              "TARGET": "target",
+              "MEDIA_ANALYTICS": "mediaaa"
+            },
+            "optIn": {
+              "on": {},
+              "off": {},
+              "publish": {},
+              "deny": {},
+              "approve": {},
+              "denyAll": {},
+              "approveAll": {},
+              "isApproved": {},
+              "isPreApproved": {},
+              "fetchPermissions": {},
+              "complete": {},
+              "registerPlugin": {},
+              "execute": {},
+              "memoizeContent": {},
+              "getMemoizedContent": {}
+            },
+            "target": {
+              "VERSION": "",
+              "event": {},
+              "getOffer": {},
+              "getOffers": {},
+              "applyOffer": {},
+              "applyOffers": {},
+              "sendNotifications": {},
+              "trackEvent": {},
+              "triggerView": {},
+              "registerExtension": {},
+              "init": {}
+            }
+          }
+        },
+        "interactables": [
+          {
+            "type": "a",
+            "text": "1.800.INSIGHT",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "tel:1.800.INSIGHT"
+          },
+          {
+            "type": "a",
+            "text": "Skip to content",
+            "selector": ".c-button..c-button--subtle.c-header-top__link.u-hide-visually..u-hide-visually--focusable",
+            "href": "https://www.insight.com/en_US/search.html?q=https%3A%2F%2Fwww.insight.com%2Fen_us%2Fsearch.html%3Fco"
+          },
+          {
+            "type": "a",
+            "text": "Login",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/login"
+          },
+          {
+            "type": "a",
+            "text": "Create an account",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/endUser/createAccount"
+          },
+          {
+            "type": "button",
+            "text": "Tools",
+            "selector": "#headerToolsDropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Support",
+            "selector": "#headerSupportDropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Country and language configuration",
+            "selector": "#headerLocaleDropdown",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Shopping cart, 0 items",
+            "selector": ".c-button..c-button--subtle.c-header-top__link",
+            "href": "https://www.insight.com/insightweb/cart"
+          },
+          {
+            "type": "a",
+            "text": "Go to the Insight.com homepage",
+            "selector": ".c-button..c-button--none.c-header-logo__btn",
+            "href": "https://www.insight.com/"
+          },
+          {
+            "type": "button",
+            "text": "What we do",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Client stories",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Content & resources",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Connect with us",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Shop",
+            "selector": ".c-button..c-button--none.c-header-main-nav__link.c-header-main-nav__link--dropdown",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Search",
+            "selector": ".c-button..c-button--subtle.c-guest-search-bar__button",
+            "href": ""
+          },
+          {
+            "type": "a",
+            "text": "Home",
+            "selector": ".c-breadcrumbs__link",
+            "href": "https://www.insight.com/"
+          },
+          {
+            "type": "a",
+            "text": "Login",
+            "selector": ".u-text-bold",
+            "href": "https://www.insight.com/insightweb/login"
+          },
+          {
+            "type": "button",
+            "text": "Previous",
+            "selector": ".c-button..c-button--inline-link.is-disabled.u-invisible.c-carousel__btn",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Next",
+            "selector": ".c-button..c-button--inline-link.c-carousel__btn",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Apple - iPhone 16e - Black - 5G smartphone - 128 G",
+            "selector": ".c-button..c-button--inline-link.c-search-not-found__description",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Add to cart",
+            "selector": ".c-button..c-button--secondary.c-search-not-found__cta",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "HP USB-C Dock G5 - docking station - USB-C - 1GbE",
+            "selector": ".c-button..c-button--inline-link.c-search-not-found__description",
+            "href": ""
+          },
+          {
+            "type": "button",
+            "text": "Add to cart",
+            "selector": ".c-button..c-button--secondary.c-search-not-found__cta",
+            "href": ""
+          }
+        ],
+        "findings": []
+      },
+      "cookies": [
+        {
+          "name": "s_pltp",
+          "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 110,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_tp",
+          "value": "1217",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 8,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_nr30",
+          "value": "1768286414107-New",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1770878414,
+          "size": 23,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "mbox",
+          "value": "session#f673eff9ef60413fb244564a48c0f01c#1768288273|PC#f673eff9ef60413fb244564a48c0f01c.35_0#1831531213",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1802846412.675133,
+          "size": 107,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "bm_sz",
+          "value": "0EC99865CE820EC57CEFC8D679E14E68~YAAQmPTVF58T4DibAQAAwlgVth6AAAh6zlvXh9JWdMmSyRTzf5rcOyzgrK8qD5td/u7XG6Pd6dr1B1ptnjJnHCW0W2bvYFkdf0PSyeT2sQPf9cVD14wXUCulrXSj6rp/+TbAw9JDAAM9z1Y5AKesMRBi91jxbsoEWrE0uh8mZa+wLS69ZZIh5ngFnIP5/VNSkQLdSsUz+BtaNP86GtlQ9IMxAwOEqQEH7sQqAXpuSVipU0Snqs0OJBMcSZK7hAKRBVh1vGg5T3hlsdL61A3tYlu0PwKJErih84/eKvNxIZhCsJNL/4CPfp+ylFrHmVivkiVCujdwnTl2QFugxcdNTS35BgsL3+W3ERfQmV2NKPt1nhLO9CWAb7T2TYGQKpzhEXcIfpYH50yJWJiiSLCMCrpIdxdowvLr0z+O60D/AFM=~3553093~3224370",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768300768.969417,
+          "size": 482,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "affinity",
+          "value": "\"ce04a6777b73d3aa\"",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 26,
+          "httpOnly": true,
+          "secure": true,
+          "session": true,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "AMCVS_F14FFF565937D2AA0A495D22%40AdobeOrg",
+          "value": "1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 42,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "ak_bmsc",
+          "value": "2DC128415B63CFE9B52D445C30D0F0C2~000000000000000000000000000000~YAAQmPTVFyUJ4DibAQAAvcAUth6qv9zyz5V6Ege4QDxXzOZMTw+PQOdNu+BA5HmvUHnr0Kfo9A6FeyYpi7DcKP8P3WvTJAF7rTxdwznp1+sSqOo+RDLsKoHnDgFibp37jc+mpV91BGdTyKtjGBjkKl2Ma7pEhQCeQ8v4VopP56SN2Y9by9NShZI1+pXaai0cxfeXZxBbsrm8Y5YrJ+ZGSC/Ps6F1wI/14/8MhUEtnEBmtT0rVnyZgKAY3q8hr/t9bIZfbwemsss3FqfFo3TZqSmuGZLYbOeakMk7heHcG0X6Y45VB923AZj4mnYU4fpJ4zvjUWfDEXiIuOrVyVPG6ijUaGuTNLl/gEtRvoXgP0523XDg4qCaI3KDzdyMbpXcMBwUZFP3QYlNJRfgiL6IzCLaUHIqkB77FFVBzXco7RBqsz1VBt6rq7IdIMdMyBki6nDCsPLzt//CqQ3aLaf2CLs=",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768293568.051386,
+          "size": 543,
+          "httpOnly": true,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "gpv_Page",
+          "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768288214,
+          "size": 112,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT87TrMTbilTJ",
+          "value": "v1BtjegwSDE5I",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768287314.958641,
+          "size": 66,
+          "httpOnly": true,
+          "secure": true,
+          "session": false,
+          "sameSite": "Strict",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "insight_locale",
+          "value": "en_US",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": 1799822370,
+          "size": 19,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_ppv",
+          "value": "www.insight.com%257CNA%257CUS%257Cen%257CSearch%2520All%2520IT%2520Brands%252C%2520Products%2520%2526%2520Services%2520-%2520Insight%2C89%2C89%2C1080%2C1%2C1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 162,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "JSESSIONID",
+          "value": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 52,
+          "httpOnly": true,
+          "secure": true,
+          "session": true,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_ips",
+          "value": "1080",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "insight_current_locale",
+          "value": "en_US",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": 1799822370,
+          "size": 27,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_plt",
+          "value": "2.87",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 9,
+          "httpOnly": false,
+          "secure": true,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "at_check",
+          "value": "true",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 12,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_abck",
+          "value": "3EF8247252C602C4798167EB65ED4DE6~-1~YAAQmPTVFzYU4DibAQAA9GEVtg946MZVohfzRI5X9x2bx511Y4b8F2QVbGQjQfl2V6pXt9IoTlYsMXrqJiHAnKEBWA4WW67JX4nZXjEuzMLEEXCmxiAEFnmvyVhcDPfaW22KN5URPYCL3lOe0WeI6TSUEyju4I0Zxv7TdNf/l+YF+C/n5UzoVNi5Tqiz0iG0/FcFtnghKtIL+5kf+oOVhDJkA2kJP4VJqhYVl3a4YW42BgrX7BBdHXDlLueSLj6o0VPnPj1VNY8gx5SL7Ie0hLoDxouwAQMF5wA/oQHxDZETJKCbmu0pPD2Z2cUpLHXvKrr8vo4DFFsIImnhxbD1pimwJDhDFny/FQew5H1ii7iF7+wQCYQTKT6DojlEc5d9DFbmyNrtQP57g4aX5WdggdXtki2siKG6URi9k/Am3/W+12a5Doh3MkrEccxVdCBhFreZfX7VQZsy3MTAQ0s9ChYKogKGCCS8b8M7ctGHiJPg8J0rgpKUmFyApal7C7u7N7ggRm6A0knkOs8ZBy4uE8OyvmlbW7SMp8OpPbiA9TpJKFbHR9A0zyqqdk3qGvqFoGjOo9uoFBJhZstOg5flOV0n4b2Lwp0Wrll9NkX/+cGSYEi5XP+LntgGpsjlM7XUV8NK+3xE9FMa5R+FxidUy2UTBTgmIZvTV7IQ+hKh9es/YLp8tIC90NwaXcFTo/Xgaz8vfVATCg==~-1~-1~-1~AAQAAAAF%2f%2f%2f%2f%2fy8lQtwDB0BRtHYD2v5UPuBGBecOhx4980zb%2fqoHfDKw8JR7Y7zwCILGoc4bfhwAzzFdLM8Wu9nWFK9+mDuTDpxtcKJbHRF0TFArOKhsegAmX4kEAFWdiQgrh6U8M31M11znqKU%3d~-1",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1799822413.338869,
+          "size": 932,
+          "httpOnly": false,
+          "secure": true,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT8rBqZeBqAmKAAjBA+yMqQetyGo_",
+          "value": "v1BtjegwSDE5I",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1768287314.958496,
+          "size": 82,
+          "httpOnly": true,
+          "secure": true,
+          "session": false,
+          "sameSite": "None",
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "AMCV_F14FFF565937D2AA0A495D22%40AdobeOrg",
+          "value": "179643557%7CMCIDTS%7C20467%7CMCMID%7C20272824694442862981886244806660754027%7CMCAAMLH-1768891171%7C9%7CMCAAMB-1768891171%7C6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y%7CMCOPTOUT-1768293571s%7CNONE%7CMCSYNCSOP%7C411-20474%7CvVersion%7C5.5.0",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1802846371.994062,
+          "size": 288,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "itemsInCart",
+          "value": "0",
+          "domain": "www.insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 12,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "_gcl_au",
+          "value": "1.1.964593680.1768286372",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": 1776062372,
+          "size": 31,
+          "httpOnly": false,
+          "secure": false,
+          "session": false,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        },
+        {
+          "name": "s_cc",
+          "value": "true",
+          "domain": ".insight.com",
+          "path": "/",
+          "expires": -1,
+          "size": 8,
+          "httpOnly": false,
+          "secure": false,
+          "session": true,
+          "priority": "Medium",
+          "sameParty": false,
+          "sourceScheme": "Secure"
+        }
+      ]
+    }
+  ],
+  "status": "active",
+  "updatedAt": "2026-01-13T06:40:27.508Z",
+  "cookies": [
+    {
+      "name": "s_pltp",
+      "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 110,
+      "httpOnly": false,
+      "secure": true,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "s_tp",
+      "value": "1217",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 8,
+      "httpOnly": false,
+      "secure": true,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "s_nr30",
+      "value": "1768286414107-New",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1770878414,
+      "size": 23,
+      "httpOnly": false,
+      "secure": true,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "mbox",
+      "value": "session#f673eff9ef60413fb244564a48c0f01c#1768288273|PC#f673eff9ef60413fb244564a48c0f01c.35_0#1831531213",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1802846412.675133,
+      "size": 107,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "bm_sz",
+      "value": "0EC99865CE820EC57CEFC8D679E14E68~YAAQmPTVF58T4DibAQAAwlgVth6AAAh6zlvXh9JWdMmSyRTzf5rcOyzgrK8qD5td/u7XG6Pd6dr1B1ptnjJnHCW0W2bvYFkdf0PSyeT2sQPf9cVD14wXUCulrXSj6rp/+TbAw9JDAAM9z1Y5AKesMRBi91jxbsoEWrE0uh8mZa+wLS69ZZIh5ngFnIP5/VNSkQLdSsUz+BtaNP86GtlQ9IMxAwOEqQEH7sQqAXpuSVipU0Snqs0OJBMcSZK7hAKRBVh1vGg5T3hlsdL61A3tYlu0PwKJErih84/eKvNxIZhCsJNL/4CPfp+ylFrHmVivkiVCujdwnTl2QFugxcdNTS35BgsL3+W3ERfQmV2NKPt1nhLO9CWAb7T2TYGQKpzhEXcIfpYH50yJWJiiSLCMCrpIdxdowvLr0z+O60D/AFM=~3553093~3224370",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1768300768.969417,
+      "size": 482,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "affinity",
+      "value": "\"ce04a6777b73d3aa\"",
+      "domain": "www.insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 26,
+      "httpOnly": true,
+      "secure": true,
+      "session": true,
+      "sameSite": "None",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "AMCVS_F14FFF565937D2AA0A495D22%40AdobeOrg",
+      "value": "1",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 42,
+      "httpOnly": false,
+      "secure": false,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "ak_bmsc",
+      "value": "2DC128415B63CFE9B52D445C30D0F0C2~000000000000000000000000000000~YAAQmPTVFyUJ4DibAQAAvcAUth6qv9zyz5V6Ege4QDxXzOZMTw+PQOdNu+BA5HmvUHnr0Kfo9A6FeyYpi7DcKP8P3WvTJAF7rTxdwznp1+sSqOo+RDLsKoHnDgFibp37jc+mpV91BGdTyKtjGBjkKl2Ma7pEhQCeQ8v4VopP56SN2Y9by9NShZI1+pXaai0cxfeXZxBbsrm8Y5YrJ+ZGSC/Ps6F1wI/14/8MhUEtnEBmtT0rVnyZgKAY3q8hr/t9bIZfbwemsss3FqfFo3TZqSmuGZLYbOeakMk7heHcG0X6Y45VB923AZj4mnYU4fpJ4zvjUWfDEXiIuOrVyVPG6ijUaGuTNLl/gEtRvoXgP0523XDg4qCaI3KDzdyMbpXcMBwUZFP3QYlNJRfgiL6IzCLaUHIqkB77FFVBzXco7RBqsz1VBt6rq7IdIMdMyBki6nDCsPLzt//CqQ3aLaf2CLs=",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1768293568.051386,
+      "size": 543,
+      "httpOnly": true,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "gpv_Page",
+      "value": "www.insight.com%7CNA%7CUS%7Cen%7CSearch%20All%20IT%20Brands%2C%20Products%20%26%20Services%20-%20Insight",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1768288214,
+      "size": 112,
+      "httpOnly": false,
+      "secure": true,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT87TrMTbilTJ",
+      "value": "v1BtjegwSDE5I",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1768287314.958641,
+      "size": 66,
+      "httpOnly": true,
+      "secure": true,
+      "session": false,
+      "sameSite": "Strict",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "insight_locale",
+      "value": "en_US",
+      "domain": "www.insight.com",
+      "path": "/",
+      "expires": 1799822370,
+      "size": 19,
+      "httpOnly": false,
+      "secure": true,
+      "session": false,
+      "sameSite": "None",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "s_ppv",
+      "value": "www.insight.com%257CNA%257CUS%257Cen%257CSearch%2520All%2520IT%2520Brands%252C%2520Products%2520%2526%2520Services%2520-%2520Insight%2C89%2C89%2C1080%2C1%2C1",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 162,
+      "httpOnly": false,
+      "secure": true,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "JSESSIONID",
+      "value": "CE349204761FA9DFA44343D0099A271A.appprd4-2",
+      "domain": "www.insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 52,
+      "httpOnly": true,
+      "secure": true,
+      "session": true,
+      "sameSite": "None",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "s_ips",
+      "value": "1080",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 9,
+      "httpOnly": false,
+      "secure": true,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "insight_current_locale",
+      "value": "en_US",
+      "domain": "www.insight.com",
+      "path": "/",
+      "expires": 1799822370,
+      "size": 27,
+      "httpOnly": false,
+      "secure": true,
+      "session": false,
+      "sameSite": "None",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "s_plt",
+      "value": "2.87",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 9,
+      "httpOnly": false,
+      "secure": true,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "at_check",
+      "value": "true",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 12,
+      "httpOnly": false,
+      "secure": false,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "_abck",
+      "value": "3EF8247252C602C4798167EB65ED4DE6~-1~YAAQmPTVFzYU4DibAQAA9GEVtg946MZVohfzRI5X9x2bx511Y4b8F2QVbGQjQfl2V6pXt9IoTlYsMXrqJiHAnKEBWA4WW67JX4nZXjEuzMLEEXCmxiAEFnmvyVhcDPfaW22KN5URPYCL3lOe0WeI6TSUEyju4I0Zxv7TdNf/l+YF+C/n5UzoVNi5Tqiz0iG0/FcFtnghKtIL+5kf+oOVhDJkA2kJP4VJqhYVl3a4YW42BgrX7BBdHXDlLueSLj6o0VPnPj1VNY8gx5SL7Ie0hLoDxouwAQMF5wA/oQHxDZETJKCbmu0pPD2Z2cUpLHXvKrr8vo4DFFsIImnhxbD1pimwJDhDFny/FQew5H1ii7iF7+wQCYQTKT6DojlEc5d9DFbmyNrtQP57g4aX5WdggdXtki2siKG6URi9k/Am3/W+12a5Doh3MkrEccxVdCBhFreZfX7VQZsy3MTAQ0s9ChYKogKGCCS8b8M7ctGHiJPg8J0rgpKUmFyApal7C7u7N7ggRm6A0knkOs8ZBy4uE8OyvmlbW7SMp8OpPbiA9TpJKFbHR9A0zyqqdk3qGvqFoGjOo9uoFBJhZstOg5flOV0n4b2Lwp0Wrll9NkX/+cGSYEi5XP+LntgGpsjlM7XUV8NK+3xE9FMa5R+FxidUy2UTBTgmIZvTV7IQ+hKh9es/YLp8tIC90NwaXcFTo/Xgaz8vfVATCg==~-1~-1~-1~AAQAAAAF%2f%2f%2f%2f%2fy8lQtwDB0BRtHYD2v5UPuBGBecOhx4980zb%2fqoHfDKw8JR7Y7zwCILGoc4bfhwAzzFdLM8Wu9nWFK9+mDuTDpxtcKJbHRF0TFArOKhsegAmX4kEAFWdiQgrh6U8M31M11znqKU%3d~-1",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1799822413.338869,
+      "size": 932,
+      "httpOnly": false,
+      "secure": true,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "__Secure-VqVZpDrwmmPSREEOugGm+yrKFa1GubVsT8rBqZeBqAmKAAjBA+yMqQetyGo_",
+      "value": "v1BtjegwSDE5I",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1768287314.958496,
+      "size": 82,
+      "httpOnly": true,
+      "secure": true,
+      "session": false,
+      "sameSite": "None",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "AMCV_F14FFF565937D2AA0A495D22%40AdobeOrg",
+      "value": "179643557%7CMCIDTS%7C20467%7CMCMID%7C20272824694442862981886244806660754027%7CMCAAMLH-1768891171%7C9%7CMCAAMB-1768891171%7C6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y%7CMCOPTOUT-1768293571s%7CNONE%7CMCSYNCSOP%7C411-20474%7CvVersion%7C5.5.0",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1802846371.994062,
+      "size": 288,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "itemsInCart",
+      "value": "0",
+      "domain": "www.insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 12,
+      "httpOnly": false,
+      "secure": false,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "_gcl_au",
+      "value": "1.1.964593680.1768286372",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": 1776062372,
+      "size": 31,
+      "httpOnly": false,
+      "secure": false,
+      "session": false,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "s_cc",
+      "value": "true",
+      "domain": ".insight.com",
+      "path": "/",
+      "expires": -1,
+      "size": 8,
+      "httpOnly": false,
+      "secure": false,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    }
+  ]
+}

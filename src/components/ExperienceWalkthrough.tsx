@@ -1,284 +1,429 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Journey, JourneyStep } from '../types';
+import { PageData, AnalysisResult, AuditMode } from '../types';
+import { API_BASE_URL } from '../config';
 
 interface ExperienceWalkthroughProps {
-  url: string;
-  onFinish?: () => void;
+  initialUrl: string;
+  onClose: () => void;
+  onAuditFull: (result: AnalysisResult) => void;
+  auditMode: AuditMode;
+  setAuditMode: (mode: AuditMode) => void;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-export const ExperienceWalkthrough: React.FC<ExperienceWalkthroughProps> = ({ url, onFinish }) => {
-  const [journey, setJourney] = useState<Journey | null>(null);
+export const ExperienceWalkthrough: React.FC<ExperienceWalkthroughProps> = ({
+  initialUrl,
+  onClose,
+  onAuditFull,
+  auditMode,
+  setAuditMode
+}) => {
+  const [journey, setJourney] = useState<any>(null); // TODO: Switch to Journey type after verifying full shape
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [interactionMode, setInteractionMode] = useState<'navigate' | 'search' | 'interact'>('navigate');
+  const [lastPageData, setLastPageData] = useState<PageData | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Journey on mount
+  // START SESSION
   useEffect(() => {
     const startJourney = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/journey/start`, {
+        const response = await fetch(`${API_BASE_URL}/api/journey/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ startUrl: url })
+            body: JSON.stringify({ startUrl: initialUrl })
         });
-        const newJourney = await res.json();
-        setJourney(newJourney);
+        if (!response.ok) throw new Error('Failed to start journey');
+        const data = await response.json();
+        setJourney(data);
 
-        // Immediately perform the first step (the start URL)
-        await performStep(newJourney.id, url, []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to start journey');
-      } finally {
-        setLoading(false);
+        if (data.id) {
+            await executeStep(initialUrl, data.id);
+        }
+
+      } catch (e: any) {
+          console.error('Failed to start journey', e);
+          setError(e.message || 'Failed to initialize session');
       }
+      setLoading(false);
     };
 
-    if (url && !journey) {
+    if (initialUrl && !journey) {
         startJourney();
     }
-  }, [url]); // eslint-disable-line
+  }, [initialUrl]);
 
-  // Auto-scroll to latest step
+  // SCROLL TO BOTTOM
   useEffect(() => {
-      if (scrollRef.current) {
-          scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
-  }, [journey?.steps.length]);
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [journey?.steps, analysisResult]);
 
-  const performStep = async (journeyId: string, targetUrl: string, currentCookies: any[]) => {
+  const executeStep = async (url: string, journeyId: string) => {
       setLoading(true);
       setError(null);
       try {
-          // 1. Scrape (with cookies)
-          const scrapeRes = await fetch(`${API_BASE_URL}/api/scrape`, {
+          // 1. WEB AGENT: Scrape/Interact
+          const scrapeRes = await fetch(`${API_BASE_URL}/api/interact`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url: targetUrl, cookies: currentCookies })
+              body: JSON.stringify({
+                  url,
+                  action: 'navigate'
+               })
           });
-
           if (!scrapeRes.ok) throw new Error('Scrape failed');
-          const pageData = await scrapeRes.json();
+          const pageData: PageData = await scrapeRes.json();
+          setLastPageData(pageData);
 
-          // 2. Add Step to Journey (Persist)
+          // 2. JOURNEY MANAGER: Record Step
+          // Backend expects stepData to contain propery 'pageData'
           const stepRes = await fetch(`${API_BASE_URL}/api/journey/step`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                   journeyId,
                   stepData: {
-                      url: targetUrl,
-                      pageData: pageData, // Includes structure, products, etc.
+                      url: pageData.url,
+                      pageData: pageData,
                       screenshotPath: pageData.screenshotPath,
                       cookies: pageData.cookies
                   }
               })
           });
-
           if (!stepRes.ok) throw new Error('Failed to save step');
           const newStep = await stepRes.json();
 
-          // 3. Update Local State
-          setJourney(prev => {
-              if (!prev) return null;
-              return {
-                  ...prev,
-                  steps: [...prev.steps, newStep],
-                  // Update our "cookie jar" in memory with latest from this step
-                  cookies: pageData.cookies
-              } as any; // Cast because 'cookies' isn't on Journey interface yet but we store it for runtime
-          });
+          setJourney((prev: any) => ({
+              ...prev,
+              steps: [...(prev?.steps || []), newStep]
+          }));
 
-      } catch (err: any) {
-          setError(err.message);
-      } finally {
-          setLoading(false);
+      } catch (e: any) {
+          console.error('Step execution failed', e);
+          setError(e.message || 'Step execution failed');
       }
+      setLoading(false);
   };
 
-  const handleNextStep = (e: React.FormEvent) => {
+  const handleNextStep = async (e: React.FormEvent) => {
       e.preventDefault();
-      const form = e.target as HTMLFormElement;
-      const formData = new FormData(form);
+      const formData = new FormData(e.target as HTMLFormElement);
       const nextUrl = formData.get('nextUrl') as string;
-      if (nextUrl && journey) {
-          // Use latest cookies (stored in journey state potentially or just let backend handle it?
-          // Implementation Plan said backend manages it, but we passed cookies in scrape.
-          // Let's rely on backend state via getState if needed, but for now we can just assume
-          // the backend JourneyManager has the cookies.
-          // WAIT, WebAgent needs cookies passed to it.
-          // JourneyManager updates its jar on 'addStep'.
-          // But 'scrape' doesn't know about JourneyManager.
-          // So we MUST fetch state or keep it locally.
-          // Let's use backend state fetch before scraping to be safe, OR just use what we have locally.
-
-          // Let's fetch strict state to be safe.
-          fetch(`${API_BASE_URL}/api/journey/${journey.id}/state`)
-            .then(res => res.json())
-            .then(state => {
-                performStep(journey.id, nextUrl, state.cookies);
-            });
+      if (nextUrl && journey?.id) {
+          await executeStep(nextUrl, journey.id);
       }
-      form.reset();
   };
 
-  if (!journey && loading) return <div className="p-10 text-center text-zinc-500">Initializing Journey...</div>;
-  if (error && !journey) return <div className="p-10 text-center text-red-500">Error: {error}</div>;
+  const performInteraction = async (action: string, params: any) => {
+      if (!lastPageData || !journey?.id) return;
+      setLoading(true);
+      setError(null);
+      try {
+           const res = await fetch(`${API_BASE_URL}/api/interact`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  url: lastPageData.url,
+                  action,
+                  cookies: lastPageData.cookies,
+                  ...params
+              })
+          });
+          if (!res.ok) throw new Error('Interaction failed');
+          const pageData: PageData = await res.json();
+          setLastPageData(pageData);
+
+           const stepRes = await fetch(`${API_BASE_URL}/api/journey/step`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  journeyId: journey.id,
+                  stepData: {
+                      url: pageData.url,
+                      pageData: pageData,
+                      screenshotPath: pageData.screenshotPath,
+                      cookies: pageData.cookies
+                  }
+              })
+          });
+          if (!stepRes.ok) throw new Error('Failed to save step');
+          const newStep = await stepRes.json();
+
+           setJourney((prev: any) => ({
+              ...prev,
+              steps: [...(prev?.steps || []), newStep]
+          }));
+      } catch (e: any) {
+          console.error('Interaction failed', e);
+          setError(e.message || 'Interaction failed');
+      }
+      setLoading(false);
+  };
+
+  const executeAnalysis = async () => {
+    if (!lastPageData) return;
+    setAnalyzing(true);
+    setError(null);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pageData: lastPageData,
+                mode: auditMode
+            })
+        });
+        if (!response.ok) throw new Error('Analysis failed');
+        const result: AnalysisResult = await response.json();
+        setAnalysisResult(result);
+        if (onAuditFull) onAuditFull(result);
+    } catch (e: any) {
+        console.error('Analysis failed', e);
+        setError(e.message || 'Analysis generation failed');
+    }
+    setAnalyzing(false);
+  };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 flex flex-col">
-      {/* Header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 p-4 sticky top-0 z-10 flex justify-between items-center">
-          <div>
-              <h2 className="text-sm uppercase tracking-wider text-blue-400 font-bold">Experience Walkthrough</h2>
-              <div className="text-xs text-zinc-500 font-mono">{journey?.id}</div>
-          </div>
-          <button onClick={onFinish} className="text-zinc-400 hover:text-white text-sm">Exit</button>
-      </div>
+    <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-black text-black dark:text-white font-sans">
+        {/* HEADER: Industrial Status Bar */}
+        <div className="border-b-2 border-black dark:border-white p-4 flex items-center justify-between bg-white dark:bg-black">
+            <div className="flex items-center gap-4">
+                <div className={`h-4 w-4 rounded-none border border-black dark:border-white ${error ? 'bg-red-600 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
+                <h1 className="text-lg font-bold uppercase tracking-widest hidden md:block">
+                    SESSION ID: {journey?.id?.slice(0,8) || 'INIT...'}
+                </h1>
+                {lastPageData && (
+                    <span className="px-2 py-1 border border-black dark:border-white text-xs font-mono font-bold">
+                        {lastPageData.products?.length || 0} ITEMS
+                    </span>
+                )}
+            </div>
+            <button
+                onClick={onClose}
+                className="px-4 py-2 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-bold uppercase text-sm"
+            >
+                [X] Terminate
+            </button>
+        </div>
 
-      {/* Timeline */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          {journey?.steps.map((step, index) => (
-              <div key={step.id} className="relative flex gap-6">
-                  {/* Step Marker */}
-                  <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-full bg-blue-900 border border-blue-500 flex items-center justify-center text-blue-200 font-bold text-sm shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-                          {index + 1}
-                      </div>
-                      {index !== (journey.steps.length - 1) && <div className="w-0.5 flex-1 bg-zinc-800 my-2"></div>}
-                  </div>
+        {/* ERROR BANNER */}
+        {error && (
+            <div className="bg-red-600 text-white p-2 text-center font-bold font-mono text-sm uppercase animate-in slide-in-from-top-2">
+                ⚠ SYSTEM ALERT: {error}
+            </div>
+        )}
 
-                  {/* Step Content */}
-                  <div className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                      <div className="bg-zinc-900 px-4 py-2 border-b border-zinc-800 flex justify-between items-center">
-                          <div className="font-mono text-xs text-zinc-400 truncate max-w-md" title={step.url}>{step.url}</div>
-                          <div className="text-xs text-zinc-600">{new Date(step.timestamp).toLocaleTimeString()}</div>
-                      </div>
+        {/* MAIN DISPLAY: Minimalist Frame */}
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 dark:bg-zinc-900 relative">
+           {/* Step History */}
+           <div className="space-y-4 max-w-4xl mx-auto pb-32">
+               {journey?.steps?.map((step: any, i: number) => (
+                   <div key={step.id || i} className="border border-black dark:border-white p-4 bg-white dark:bg-black relative group">
+                       {/* Step Number Badge */}
+                       <div className="absolute -top-3 -left-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white px-2 py-1 font-mono text-xs font-bold z-10">
+                           STEP {String(i + 1).padStart(2, '0')}
+                       </div>
 
-                      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Screenshot */}
-                          <div className="aspect-video bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800">
-                             {/* Note: Screenshot path is absolute on server. We need to serve it?
-                                 For now, use a placeholder or assume we can't see local files directly in browser
-                                 unless served statically.
-                                 TODO: Add static serving to server.
-                             */}
-                             <div className="w-full h-full flex items-center justify-center text-zinc-700 text-xs">
-                                [Screenshot: {step.screenshotPath.split(/[/\\]/).pop()}]
-                             </div>
-                          </div>
+                       {/* Content */}
+                       <div className="flex flex-col md:flex-row gap-4 mt-2">
+                           {step.screenshotPath && (
+                               <div className="w-full md:w-48 shrink-0 border border-black dark:border-white overflow-hidden bg-gray-200">
+                                   <img
+                                       src={`${API_BASE_URL}/screenshots/${step.screenshotPath.split(/[/\\]/).pop()}`}
+                                       alt="Capture"
+                                       className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-300"
+                                       onError={(e) => {
+                                           (e.target as HTMLImageElement).style.display = 'none';
+                                       }}
+                                   />
+                               </div>
+                           )}
+                           <div className="flex-1 min-w-0">
+                               <div className="font-mono text-xs text-gray-500 mb-1">{step.timestamp ? new Date(step.timestamp).toLocaleTimeString() : '--:--'}</div>
+                               <div className="font-bold truncate text-lg">{step.dataSummary?.title || step.url || 'Unknown Page'}</div>
+                               <div className="text-sm font-mono mt-2 text-gray-600 dark:text-gray-400 truncate border-b border-dashed border-gray-400 inline-block pb-0.5">
+                                   {step.url}
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+               ))}
 
-                          {/* Data Summary */}
-                          <div className="space-y-4">
-                              {step.dataSummary.title && (
-                                  <div className="font-bold text-zinc-200">{step.dataSummary.title}</div>
-                              )}
+               {/* Analysis Result Block */}
+               {analysisResult && (
+                   <div className="border-2 border-black dark:border-white p-6 bg-white dark:bg-black mt-8">
+                       <h3 className="text-xl font-bold uppercase border-b-2 border-black dark:border-white pb-2 mb-4">
+                           AUDIT REPORT: {auditMode.toUpperCase()}
+                       </h3>
 
-                              <div className="flex gap-2 flex-wrap">
-                                  {/* Product Count Badge */}
-                                  <div className="px-2 py-1 bg-zinc-800 rounded text-xs text-zinc-400 border border-zinc-700">
-                                      {step.dataSummary.productCount} Products
-                                  </div>
+                       {/* The Kill Sheet Matrix */}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black dark:bg-white border border-black dark:border-white">
+                           {Object.entries(analysisResult.auditMatrix || {}).map(([key, data]: [string, any]) => (
+                               <div key={key} className="bg-white dark:bg-black p-4">
+                                   <div className="flex justify-between items-start mb-2">
+                                       <span className="font-bold uppercase tracking-wider">{key}</span>
+                                       <span className={`px-2 py-0.5 text-xs font-bold border ${
+                                           data.status === 'fail' ? 'border-red-600 text-red-600' :
+                                           data.status === 'pass' ? 'border-green-600 text-green-600' :
+                                           'border-gray-500 text-gray-500'
+                                       }`}>
+                                           {data.status.toUpperCase()}
+                                       </span>
+                                   </div>
+                                   <p className="text-sm font-mono leading-tight">{data.finding}</p>
+                               </div>
+                           ))}
+                       </div>
 
-                                  {/* Data Layer Badges */}
-                                  {/* Note: step.dataSummary currently only has productCount/title in the interface journeyManager saves.
-                                      I need to update journeyManager.js to actually SAVE the new fields.
-                                      Wait, I missed that. Ticket 5 requires backend persistence update too.
-                                      I will persist 'dataSummary' with more fields in journeyManager.js
-                                  */}
-                              </div>
+                       {/* Diagnosis & Recommendations */}
+                       <div className="mt-6 space-y-4">
+                           <div>
+                               <h4 className="font-bold uppercase text-gray-500 dark:text-gray-400 text-xs tracking-widest mb-1">Diagnosis</h4>
+                               <p className="font-mono text-sm leading-relaxed">{analysisResult.diagnosis?.title}: {analysisResult.diagnosis?.description}</p>
+                           </div>
 
-                              <div className="mt-4 p-2 bg-zinc-950 rounded text-xs text-zinc-500 font-mono h-32 overflow-y-auto">
-                                  DATA PAYLOAD SAVED
-                              </div>
-                          </div>
+                           {analysisResult.recommendations?.length > 0 && (
+                               <div>
+                                   <h4 className="font-bold uppercase text-gray-500 dark:text-gray-400 text-xs tracking-widest mb-2">Correction Items</h4>
+                                   <ul className="list-decimal list-inside space-y-1 font-mono text-sm">
+                                       {analysisResult.recommendations.map((rec: any, i: number) => (
+                                           <li key={i} className={rec.impact === 'high' ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                                               {rec.title}
+                                           </li>
+                                       ))}
+                                   </ul>
+                               </div>
+                           )}
+                       </div>
+                   </div>
+               )}
+           </div>
 
-                          {/* Findings */}
-                          {step.dataSummary.findings && step.dataSummary.findings.length > 0 && (
-                              <div className="col-span-1 md:col-span-2 mt-2 pt-4 border-t border-zinc-800">
-                                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Analysis Findings</div>
-                                <div className="grid gap-2">
-                                    {step.dataSummary.findings.map((finding: any) => (
-                                      <div key={finding.id} className={`p-3 rounded-lg border text-sm ${
-                                         finding.severity === 'critical' ? 'bg-red-500/10 border-red-500/30 text-red-200' :
-                                         finding.severity === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' :
-                                         'bg-blue-500/10 border-blue-500/30 text-blue-200'
-                                      }`}>
-                                         <div className="font-bold mb-1 flex items-center gap-2">
-                                            {finding.severity === 'warning' && <span>⚠️</span>}
-                                            {finding.severity === 'critical' && <span>🚫</span>}
-                                            {finding.severity === 'info' && <span>ℹ️</span>}
-                                            <span>{finding.title}</span>
-                                            <span className="ml-auto text-[10px] uppercase font-mono bg-black/30 px-1.5 py-0.5 rounded border border-white/10">{finding.category}</span>
-                                         </div>
-                                         <div className="opacity-80 text-xs leading-relaxed">{finding.description}</div>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-                          )}
-                      </div>
-                  </div>
-              </div>
-          ))}
-          <div ref={scrollRef}></div>
-      </div>
+           <div ref={scrollRef}></div>
+        </div>
 
-      {/* Footer Controls */}
-      <div className="bg-zinc-900 border-t border-zinc-800 p-4">
-          <div className="max-w-4xl mx-auto space-y-4">
-              {/* Smart Suggestions */}
-              {journey?.steps[journey.steps.length-1]?.dataSummary?.interactables &&
-               journey.steps[journey.steps.length-1].dataSummary.interactables!.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                      {journey?.steps[journey.steps.length-1].dataSummary.interactables!.slice(0, 5).map((action, i) => (
-                          <button
-                             key={i}
-                             onClick={() => {
-                                 const input = document.querySelector('input[name="nextUrl"]') as HTMLInputElement;
-                                 if(input && action.href) {
-                                     // If relative, make absolute
-                                     try {
-                                        const currentUrl = new URL(journey.steps[journey.steps.length-1].url);
-                                        const next = new URL(action.href, currentUrl);
-                                        input.value = next.toString();
-                                     } catch {
-                                         input.value = action.href;
-                                     }
-                                 }
-                             }}
-                             className="flex-shrink-0 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-xs text-zinc-300 flex items-center gap-2 transition-colors"
-                          >
-                              <span className="opacity-50">[{action.type}]</span>
-                              <span className="font-medium truncate max-w-[150px]">{action.text}</span>
-                          </button>
-                      ))}
-                  </div>
-              )}
+        {/* COCKPIT (FOOTER) */}
+        <div className="border-t-2 border-black dark:border-white bg-white dark:bg-black">
+            {/* Mode Selector / Tabs */}
+            <div className="grid grid-cols-3 border-b border-black dark:border-white">
+               {['navigate', 'search', 'interact'].map((mode) => (
+                   <button
+                       key={mode}
+                       onClick={() => setInteractionMode(mode as any)}
+                       className={`py-4 text-sm font-bold uppercase tracking-widest border-r border-black dark:border-white last:border-r-0 transition-all ${
+                           interactionMode === mode
+                           ? 'bg-black text-white dark:bg-white dark:text-black'
+                           : 'hover:bg-gray-100 dark:hover:bg-zinc-900 text-gray-500'
+                       }`}
+                   >
+                       {mode}
+                   </button>
+               ))}
+            </div>
 
-              <form onSubmit={handleNextStep} className="flex gap-4">
-                  <input
-                     type="url"
-                     name="nextUrl"
-                     placeholder="Enter URL for next step..."
-                     defaultValue={journey?.steps[journey?.steps.length-1]?.url || ''}
-                     required
-                     className="flex-1 bg-zinc-950 border border-zinc-700 text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
-                  />
-                  <button
-                     type="submit"
-                     disabled={loading}
-                     className={`px-6 py-3 rounded-lg font-bold text-white transition-all ${
-                         loading ? 'bg-zinc-700 cursor-wait' : 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20'
-                     }`}
-                  >
-                      {loading ? 'Walking...' : 'Go'}
-                  </button>
-              </form>
-          </div>
-      </div>
+            {/* Controls Area */}
+            <div className="p-4 bg-gray-50 dark:bg-zinc-950 min-h-[120px]">
+
+                {/* 1. NAVIGATE */}
+                {interactionMode === 'navigate' && (
+                    <div className="flex flex-col md:flex-row gap-4">
+                         {/* Audit Switch */}
+                         <div className="border border-black dark:border-white bg-white dark:bg-black px-2 flex items-center shrink-0">
+                            <select
+                                value={auditMode}
+                                onChange={(e) => setAuditMode(e.target.value as any)}
+                                className="bg-transparent text-sm font-bold uppercase outline-none py-2 pr-4 cursor-pointer"
+                            >
+                                <option value="knowledge">PRODUCT MODE</option>
+                                <option value="transaction">CHECKOUT MODE</option>
+                            </select>
+                         </div>
+
+                        {/* Analyze Button */}
+                        <button
+                            onClick={executeAnalysis}
+                            disabled={analyzing || !lastPageData}
+                            className={`px-6 font-bold uppercase border border-black dark:border-white transition-all flex items-center justify-center gap-2 shrink-0 ${
+                                analyzing ? 'opacity-50 cursor-wait' : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
+                            }`}
+                        >
+                            {analyzing ? 'ANALYZING...' : 'RUN AUDIT'}
+                        </button>
+
+                        {/* URL Input */}
+                        <form onSubmit={handleNextStep} className="flex-1 flex gap-0 border border-black dark:border-white shadow-sm">
+                            <input
+                               type="url"
+                               name="nextUrl"
+                               placeholder="ENTER URL..."
+                               defaultValue={journey?.steps[journey?.steps.length-1]?.url || ''}
+                               required
+                               className="flex-1 px-4 py-3 bg-white dark:bg-black text-black dark:text-white outline-none font-mono text-sm placeholder-gray-500"
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="px-6 font-bold bg-gray-200 dark:bg-zinc-800 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border-l border-black dark:border-white transition-colors"
+                            >
+                                GO
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {/* 2. SEARCH */}
+                {interactionMode === 'search' && (
+                    <form
+                       onSubmit={(e) => {
+                           e.preventDefault();
+                           const formData = new FormData(e.target as HTMLFormElement);
+                           performInteraction('search', { value: formData.get('query') as string });
+                       }}
+                       className="flex border border-black dark:border-white shadow-sm"
+                    >
+                        <input
+                            type="text"
+                            name="query"
+                            placeholder="SEARCH QUERY..."
+                            required
+                            className="flex-1 px-4 py-3 bg-white dark:bg-black outline-none font-bold uppercase text-lg"
+                        />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="px-8 font-bold border-l border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                        >
+                            EXECUTE
+                        </button>
+                    </form>
+                )}
+
+                {/* 3. INTERACT */}
+                {interactionMode === 'interact' && (
+                    <div>
+                        <div className="text-xs font-mono mb-2 text-gray-500">DETECTED INTERACTABLES:</div>
+                        <div className="flex flex-wrap gap-2">
+                             {lastPageData?.interactables?.slice(0, 15).map((action: any, i:number) => (
+                                <button
+                                    key={i}
+                                    onClick={() => performInteraction('click', { selector: action.selector })}
+                                    disabled={loading}
+                                    className="px-3 py-2 border border-black dark:border-white text-xs font-mono hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                                >
+                                    [{action.type.toUpperCase()}] {action.text ? action.text.slice(0, 20) : 'ELEMENT'}
+                                </button>
+                             ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     </div>
   );
 };

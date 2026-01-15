@@ -8,7 +8,9 @@ export function useTheme() {
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = document.documentElement;
+    // Tailwind uses class-based dark mode
+    root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('merchgent-theme', theme);
   }, [theme]);
 

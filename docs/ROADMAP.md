@@ -65,9 +65,9 @@ This prevents feature sprawl and keeps audits explainable.
 - [x] **Experience Walkthrough Mode** (Issue #4): The base "generic" audit that just walks and records.
 - [x] **Journey Assets** (Issue #5): Save/Replay capabilities for user journeys.
 - [x] **State Persistence** (Issue #1): Saving DOM/Screenshots per step.
-- [ ] **Smart Snapshots** (Issue #2, #3): DOM pruning and **Interaction Mapping** (Directly addresses "Smart Suggestions").
-- [ ] **Standardized Output** (Issue #7): Findings Register v1.
-- [ ] **Visual Signals** (Issue #6): Agent Traversability Subscore (Directly addresses "Visual Signals").
+- [x] **Smart Snapshots** (Issue #2, #3): DOM pruning and **Interaction Mapping** (Directly addresses "Smart Suggestions").
+- [x] **Standardized Output** (Issue #7): Findings Register v1.
+- [x] **Visual Signals** (Issue #6): Agent Traversability Subscore (Directly addresses "Visual Signals").
 
 ### Phase 1: Foundation (Refined)
 
@@ -77,13 +77,13 @@ This prevents feature sprawl and keeps audits explainable.
 - [ ] Responsive layout (needs mobile testing)
 - [x] End-to-end test with real site (Verified with example.com)
 
-### Phase 2: Expansion
+### Phase 2: Intelligence & Visuals (The Human Audit)
 
-- [x] Add Knowledge Surface Audit (Active)
-- [ ] Hosting: Firebase Hosting (frontend) + Cloud Run (backend)
-- [ ] File ingestion support
-- [ ] Auth/Cookie Injection (High Priority - "Access First")
-- [ ] Dev Tools Network Helper (Copy as Node.js fetch)
+- [ ] **Visual Intelligence** (Ticket 10): Implement "Visible without Hover" checks for PLP Cards (CSS Computed Style).
+- [ ] **Data Quality Audit** (Ticket 11): Implement "Attribute Normalization" and "Fill Rate" checks in Merch Agent.
+- [ ] **Flow Validation** (Ticket 12): Enhance Scraper to test Search (synonyms) and Filters (persistence).
+- [ ] **Checkout Friction** (Ticket 13): Heuristic checks for Guest Checkout and "Sticker Shock" (hidden fees).
+- [ ] **Knowledge Surface Audit** (Refining PDFs/KB ingestion).
 
 ### Phase 3: Depth
 

@@ -262,12 +262,19 @@ const extractData = async (page) => {
         '.price, .amount, span[class*="price"], div[class*="price"]'
       );
       const priceRegex = /(\$|USD|EUR|GBP|JPY)\s?\d+([.,]\d{2})?/;
-      const price = priceEl ? priceEl.innerText.trim() : (rawText.match(priceRegex) || [])[0] || null;
+      const priceText = priceEl ? priceEl.innerText.trim() : (rawText.match(priceRegex) || [])[0] || null;
+      // Capture "Call for Price" or "Login to View" as explicit price signals if numeric price is missing
+      const price = priceText || ((/Call for Price|Login for Pricing|See Price/i.test(rawText)) ? 'Hidden/Action Required' : null);
+
+      const stockEl = el.querySelector('.stock, .availability, .inventory, [class*="stock"], [class*="availability"]');
+      const stockStatus = stockEl ? stockEl.innerText.trim() : (/In Stock|Out of Stock|Backorder/i.test(rawText) ? (rawText.match(/In Stock|Out of Stock|Backorder/i) || [])[0] : 'Unknown');
+
+      const buttonText = button ? button.innerText.trim() : '';
 
       const ctaText =
-        button
-          ? button.innerText.trim()
-          : (el.innerText.match(/Add to Cart|Add to Quote|View Details/i) || [])[0] ||
+        buttonText.length > 0
+          ? buttonText
+          : (el.innerText.match(/Add to Cart|Add to Quote|View Details|Buy Now/i) || [])[0] ||
             'View Details';
 
       const descriptionEl = descriptionSelectors
@@ -291,7 +298,8 @@ const extractData = async (page) => {
 
       return {
         title,
-        price: price || null,
+        price, // Now handles 'Hidden/Action Required'
+        stockStatus, // New Field
         imageAlt: imgAlt || null,
         imageSrc: img ? img.src : null,
         ctaText,
@@ -315,6 +323,9 @@ const extractData = async (page) => {
 
 export function registerWebAgentRoutes(app) {
   app.post('/api/scrape', async (req, res) => {
+    // ... existing scrape logic (kept same logic, just inside registerWebAgentRoutes, ensuring not to delete it if the user didn't request deletion,
+    // but here I am modifying the function so I should include the old logic OR simpler: just append the new route if I could, but replace_file_content requires a block.
+    // I will rewrite the whole registerWebAgentRoutes to include both routes.)
     const { url, cookies } = req.body;
 
     if (!url || !isValidHttpUrl(url)) {
@@ -359,9 +370,9 @@ export function registerWebAgentRoutes(app) {
       const currentCookies = await page.cookies();
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const screenshotFilename = `screenshot-${timestamp}.png`;
+      const screenshotFilename = `screenshot-${timestamp}.jpg`;
       const screenshotPath = path.join(SCREENSHOT_DIR, screenshotFilename);
-      await page.screenshot({ path: screenshotPath });
+      await page.screenshot({ path: screenshotPath, type: 'jpeg', quality: 70 });
 
       await browser.close();
 
@@ -384,5 +395,93 @@ export function registerWebAgentRoutes(app) {
         fallbackSuggestion: 'Try a different URL or check if the site blocks headless browsers.',
       });
     }
+  });
+
+  // NEW: Interaction Endpoint (The Hands)
+  app.post('/api/interact', async (req, res) => {
+      const { url, cookies, action, selector, value } = req.body;
+
+      if (!url || !action) {
+          return res.status(400).json({ error: 'URL and Action are required' });
+      }
+
+      console.log(`[Interact] executing '${action}' on ${url}`);
+      let browser;
+
+      try {
+          browser = await puppeteer.launch({
+            headless: 'new',
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-infobars',
+              '--window-position=0,0',
+              '--ignore-certificate-errors',
+              '--ignore-certificate-errors-spki-list',
+              '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"',
+            ],
+          });
+
+          const page = await browser.newPage();
+          await page.setViewport({ width: 1920, height: 1080 });
+
+          if (cookies && Array.isArray(cookies)) {
+              await page.setCookie(...cookies);
+          }
+
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await new Promise(r => setTimeout(r, 1000));
+
+          // PERFORM ACTION
+          if (action === 'search') {
+              const searchSelector = selector || 'input[type="search"], input[name="q"], input[name="search"], input[aria-label="Search"]';
+              await page.waitForSelector(searchSelector, { timeout: 5000 });
+              await page.type(searchSelector, value);
+              await page.keyboard.press('Enter');
+              await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => console.log('Navigation timeout (SPA?)'));
+          } else if (action === 'click') {
+              await page.waitForSelector(selector, { timeout: 5000 });
+              await page.click(selector);
+              await new Promise(r => setTimeout(r, 2000)); // Wait for SPA update
+          }
+
+          // EXTRACT NEW STATE
+          const data = await extractData(page);
+          const currentCookies = await page.cookies();
+          const newUrl = page.url(); // Capture the new URL after interaction
+
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const screenshotFilename = `screenshot-interact-${timestamp}.jpg`;
+          const screenshotPath = path.join(SCREENSHOT_DIR, screenshotFilename);
+          await page.screenshot({ path: screenshotPath, type: 'jpeg', quality: 70 });
+
+          await browser.close();
+
+          // Return new URL if navigation happened
+          // Actually, extractData doesn't grab URL. Let's grab it.
+          // Note: page is closed. We can't grab it now. Logic flaw in my thought process, strict extractData doesn't return URL.
+          // I should grab page.url() before closing.
+
+          // Since I can't easily edit extractData return value without changing the whole function above, I'll rely on client passing current URL,
+          // OR I should capture it.
+          // Re-reading: the scraper returns `url` (original).
+          // In the Interact flow, key value is potentially *new* URL.
+
+          // Let's refine the logic in the next edit step to keep this simple.
+          // For now, I will just return the original URL structure.
+
+          res.json({
+              url: newUrl,
+              ...data,
+              cookies: currentCookies,
+              screenshotPath,
+              viewportWidth: 1920
+          });
+
+      } catch (error) {
+          console.error('[Interact] Failed:', error.message);
+          if (browser) await browser.close();
+          res.status(500).json({ error: error.message });
+      }
   });
 }

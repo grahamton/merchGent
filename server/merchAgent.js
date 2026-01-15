@@ -52,46 +52,8 @@ const normalizeStandardsCheck = (standardsCheck) => {
   return normalized.slice(0, 3);
 };
 
-const calculateMerchGentScore = (pageData) => {
-  const b2bCount = pageData.products.reduce((sum, p) => sum + p.b2bIndicators.length, 0);
-  const b2cCount = pageData.products.reduce((sum, p) => sum + p.b2cIndicators.length, 0);
-  const totalSignals = b2bCount + b2cCount;
+// function deleted
 
-  let intentClarity = 0;
-  if (totalSignals > 0) {
-    const dominantSignalRatio = Math.max(b2bCount, b2cCount) / totalSignals;
-    intentClarity = Math.round(dominantSignalRatio * 33);
-  }
-
-  const productsWithDescriptions = pageData.products.filter(
-    (product) => product.description && product.description.length > 20
-  ).length;
-  const knowledgeAccessibility = Math.round(
-    (productsWithDescriptions / Math.max(pageData.products.length, 1)) * 33
-  );
-
-  const productsWithCTAs = pageData.products.filter(
-    (product) => product.ctaText && product.ctaText.length > 0
-  ).length;
-  const transactionReadiness = Math.round(
-    (productsWithCTAs / Math.max(pageData.products.length, 1)) * 34
-  );
-
-  const total = intentClarity + knowledgeAccessibility + transactionReadiness;
-
-  let status;
-  if (total >= 71) status = 'optimized';
-  else if (total >= 41) status = 'improving';
-  else status = 'needs-attention';
-
-  return {
-    total,
-    intentClarity,
-    knowledgeAccessibility,
-    transactionReadiness,
-    status,
-  };
-};
 
 const buildEvidenceEntries = (pageData) => {
   const b2bCount = pageData.products.reduce((sum, p) => sum + p.b2bIndicators.length, 0);
@@ -200,7 +162,7 @@ Return JSON only. Include:
 - diagnosisDescription (string)
 - hybridTrapCheck (string; "Not applicable" for Knowledge Surface)
 - standardsCheck (array of {criterion, status: "pass"|"partial"|"fail"|"unknown", evidence})
-- recommendations (array of up to 3 strings)
+- recommendations (array of {title, description, impact: "high"|"medium"|"low"})
 `;
 
 const normalizeAnalysis = (rawAnalysis, mode) => {
@@ -218,8 +180,15 @@ const normalizeAnalysis = (rawAnalysis, mode) => {
     rawAnalysis.hybridTrapCheck || (mode === 'Knowledge Surface Audit' ? 'Not applicable.' : 'Not enough evidence to confirm.')
   ).trim();
   const trustTrace = String(rawAnalysis.trustTrace || '').trim();
+
+  // Normalize structured recommendations
   const recommendations = Array.isArray(rawAnalysis.recommendations)
-    ? rawAnalysis.recommendations.filter((rec) => String(rec).trim().length > 0)
+    ? rawAnalysis.recommendations.map(rec => ({
+        title: String(rec.title || 'Recommendation').trim(),
+        description: String(rec.description || '').trim(),
+        impact: ['high', 'medium', 'low'].includes(rec.impact) ? rec.impact : 'medium',
+        agent: 'Merch Agent'
+    })).filter(rec => rec.description.length > 0)
     : [];
 
   return {
@@ -251,8 +220,7 @@ const isValidStandardsCheck = (items) =>
 
 const isValidRecommendations = (items) =>
   Array.isArray(items) &&
-  items.length <= 3 &&
-  items.every((item) => isNonEmptyString(item));
+  items.every((item) => item && typeof item === 'object' && isNonEmptyString(item.title) && isNonEmptyString(item.description));
 
 const validateAnalysisPayload = (analysis) => {
   if (!analysis || typeof analysis !== 'object') {
@@ -280,6 +248,10 @@ const validateAnalysisPayload = (analysis) => {
     return { isValid: false, reason: 'Invalid recommendations.' };
   }
 
+  if (!analysis.auditMatrix || typeof analysis.auditMatrix !== 'object') {
+    return { isValid: false, reason: 'Missing auditMatrix.' };
+  }
+
   return { isValid: true, reason: '' };
 };
 
@@ -298,6 +270,18 @@ const isValidHttpUrl = (rawUrl) => {
   }
 };
 
+// ... imports ...
+
+// Helper to convert file to GenerativePart
+function fileToGenerativePart(path, mimeType) {
+  return {
+    inlineData: {
+      data: fs.readFileSync(path).toString("base64"),
+      mimeType
+    },
+  };
+}
+
 export function registerMerchAgentRoutes(app) {
   app.post('/api/analyze', async (req, res) => {
     const { pageData, mode } = req.body || {};
@@ -310,24 +294,29 @@ export function registerMerchAgentRoutes(app) {
       return res.status(400).json({ error: 'Valid page data with an http/https URL is required.' });
     }
 
-    // --- ESCAPE HATCH (Optimization) ---
-    // If we have 0 products, the prompt will likely hallucinate.
-    // We fail fast here to save tokens and prevent bad data.
+    // Escape Hatch (Pre-check)
     if (!pageData.products || pageData.products.length === 0) {
-      console.log('[Merch Agent] Escape Hatch Triggered: 0 products found.');
-      return res.json({
-        trustTrace: 'SCRAPE FAILED (Pre-Check): The Web Agent found 0 products. Diagnosis aborted to prevent hallucination.',
-        merchGentScore: { total: 0, status: 'needs-attention' },
-        diagnosis: {
-            title: 'Technical Audit Failure (Scrape Blocked)',
-            description: 'The system was unable to extract structured product data. Zero products were detected.',
-        },
-        recommendations: [],
-        mode,
-        siteMode: 'Unknown',
-        hybridTrapCheck: 'Not applicable',
-        standardsCheck: []
-      });
+        // ... (existing escape hatch) ...
+         console.log('[Merch Agent] Escape Hatch Triggered: 0 products found.');
+         // ...
+         return res.json({
+             trustTrace: 'SCRAPE FAILED (Pre-Check): The Web Agent found 0 products.',
+             diagnosis: {
+                 title: 'Technical Audit Failure (Scrape Blocked)',
+                 description: 'The system was unable to extract structured product data. Zero products were detected.',
+             },
+             recommendations: [],
+             mode,
+             siteMode: 'Unknown',
+             hybridTrapCheck: 'Not applicable',
+             standardsCheck: [],
+             auditMatrix: {
+                trust: { status: 'fail', finding: 'Scrape failed to retrieve data.' },
+                guidance: { status: 'unknown', finding: 'No visual data available.' },
+                persuasion: { status: 'unknown', finding: 'No content analyzed.' },
+                friction: { status: 'unknown', finding: 'No interaction possible.' }
+             }
+         });
     }
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
@@ -340,16 +329,62 @@ export function registerMerchAgentRoutes(app) {
       const mission = extractMission(mode);
 
       const systemInstruction = buildSystemInstruction();
-      const userPrompt = `
+
+// Conditional Task Block
+      let integrityTask = '';
+      if (mode === 'knowledge') {
+        integrityTask = `
+## Merchandising Integrity Task (Ticket 11 & 10)
+Analyze the "Raw Product Data samples" JSON and the Screenshot.
+
+1. **Attribute Normalization Check**:
+   - Scan Product Titles. Are they consistent? (e.g. "Brand Model Spec").
+   - **CITE OFFENDERS**: Name any products that break the naming convention.
+
+2. **Visual Hierarchy & Persuasion Check (Screenshot)**:
+   - Does the grid guide the eye? (Clear Hero vs Standard).
+   - Are there "Persuasion Signals" visible? (Badges, Ratings, Discount Flags).
+   - **CITE MISSING**: If no badges/ratings are visible, explicitly state: "No social proof or merchandising badges detected."
+
+3. **Data Quality Verification**:
+   - Check key attributes (Price, Image).
+   - instead of just "Fill Rate %", say: "Missing Price on [Product A, Product B]".
+`;
+      }
+
+      // Multimodal Prompt Construction
+      const userPromptText = `
 ${buildContextBlock(pageData)}
 
 ## Mission: ${mode}
 ${mission}
+
+${integrityTask}
+
+## Output Requirement: The "Audit Matrix"
+Instead of a score, provide a "Kill Sheet" matrix assessing 4 areas:
+1. TRUST (Data/Consistency): Are titles normalized? Is data professional? **Cite specific messy examples.**
+2. GUIDANCE (Visuals): Is the grid scannable? (Visual hierarchy).
+3. PERSUASION (Signals): Are there Badges, Ratings, or "Why Buy" cues?
+4. FRICTION (Transaction): Are there blockers? (Hidden prices, no guest checkout).
 `;
 
+      const promptParts = [
+          { text: userPromptText }
+      ];
+
+      // Attach Image if available
+      if (pageData.screenshotPath && fs.existsSync(pageData.screenshotPath)) {
+          console.log(`[Merch Agent] Attaching screenshot for analysis: ${pageData.screenshotPath}`);
+          const mimeType = pageData.screenshotPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+          promptParts.push(fileToGenerativePart(pageData.screenshotPath, mimeType));
+      } else {
+          console.warn('[Merch Agent] No screenshot found for visual analysis.');
+      }
+
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        model: 'gemini-2.0-flash-exp', // Multimodal model
+        contents: [{ role: 'user', parts: promptParts }],
         config: {
           systemInstruction,
           temperature: 0.2,
@@ -362,6 +397,16 @@ ${mission}
               diagnosisTitle: { type: Type.STRING },
               diagnosisDescription: { type: Type.STRING },
               hybridTrapCheck: { type: Type.STRING },
+              auditMatrix: {
+                type: Type.OBJECT,
+                properties: {
+                  trust: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
+                  guidance: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
+                  persuasion: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
+                  friction: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] }
+                },
+                required: ['trust', 'guidance', 'persuasion', 'friction']
+              },
               standardsCheck: {
                 type: Type.ARRAY,
                 items: {
@@ -376,7 +421,15 @@ ${mission}
               },
               recommendations: {
                 type: Type.ARRAY,
-                items: { type: Type.STRING },
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    impact: { type: Type.STRING, enum: ['high', 'medium', 'low'] }
+                  },
+                  required: ['title', 'description', 'impact']
+                },
               },
             },
             required: [
@@ -385,6 +438,7 @@ ${mission}
               'diagnosisTitle',
               'diagnosisDescription',
               'hybridTrapCheck',
+              'auditMatrix',
               'standardsCheck',
               'recommendations',
             ],
@@ -392,6 +446,7 @@ ${mission}
         },
       });
 
+      // ... (Rest of response parsing and validation logic remains the same) ...
       let rawAnalysis = {};
       try {
         rawAnalysis = JSON.parse(response.text || '{}');
@@ -408,12 +463,12 @@ ${mission}
 
       const normalized = normalizeAnalysis(rawAnalysis, mode);
       const trustTrace = parseTrustTrace(normalized.trustTrace, pageData);
-      const recommendations = parseRecommendations(normalized.recommendations);
-      const merchGentScore = calculateMerchGentScore(pageData);
+      // Pass through structured recommendations directly, no more slicing or manufacturing titles
+      const recommendations = normalized.recommendations;
 
       res.json({
         trustTrace,
-        merchGentScore,
+        auditMatrix: rawAnalysis.auditMatrix, // Direct pass-through of validated matrix
         diagnosis: {
           title: normalized.diagnosisTitle,
           description: normalized.diagnosisDescription,
@@ -424,6 +479,7 @@ ${mission}
         hybridTrapCheck: normalized.hybridTrapCheck,
         standardsCheck: normalized.standardsCheck,
       });
+
     } catch (error) {
       console.error('[Merch Agent] Analysis Failed:', error.message);
       res.status(500).json({
