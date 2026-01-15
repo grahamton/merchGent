@@ -1,7 +1,6 @@
 import React from 'react';
 import { AnalysisResult } from '../types';
 import { TrustTrace } from './TrustTrace';
-import { MerchGentScoreDisplay } from './MerchGentScoreDisplay';
 import { RecommendationsPanel } from './RecommendationsPanel';
 import { StandardsCheckPanel } from './StandardsCheckPanel';
 
@@ -53,7 +52,6 @@ export const StrategyReport: React.FC<StrategyReportProps> = ({ result, url }) =
               <div className="text-xs text-zinc-600 uppercase tracking-wider mb-3">
                 Diagnosis
               </div>
-              <MerchGentScoreDisplay score={result.merchGentScore} />
 
               {/* Diagnosis Text */}
               <div className="mt-6 bg-zinc-900 rounded-xl border border-zinc-800 p-6">
