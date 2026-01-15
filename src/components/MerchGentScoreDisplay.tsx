@@ -6,6 +6,15 @@ interface MerchGentScoreDisplayProps {
 }
 
 export const MerchGentScoreDisplay: React.FC<MerchGentScoreDisplayProps> = ({ score }) => {
+  // Safety check for undefined score
+  if (!score || !score.status) {
+    return (
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8">
+        <div className="text-zinc-500 text-center">Score data unavailable</div>
+      </div>
+    );
+  }
+
   const getStatusConfig = (status: MerchGentScore['status']) => {
     switch (status) {
       case 'optimized':
