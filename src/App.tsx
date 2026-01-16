@@ -1,7 +1,6 @@
 /**
- * CLIENT AGENT (Audit Orchestrator)
- * Role: Audit planning, agent routing, synthesis.
- * Forbidden: Direct crawling, UX judgments, Transaction inspection.
+ * Main Application Component
+ * Handles audit workflow: URL input → data extraction → analysis → results
  */
 import React, { useState } from 'react';
 import { AgentStatus, PageData, AnalysisResult, AuditMode } from './types';
@@ -18,8 +17,8 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<AgentStatus>(AgentStatus.IDLE);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Default to WALKTHROUGH for the "One Blended Experience"
-  const [auditMode, setAuditMode] = useState<AuditMode>(AuditMode.WALKTHROUGH);
+  // Default to Knowledge Surface (merchandising quality analysis)
+  const [auditMode, setAuditMode] = useState<AuditMode>(AuditMode.KNOWLEDGE);
 
   const getErrorMessage = async (response: Response) => {
     try {
@@ -34,7 +33,7 @@ const App: React.FC = () => {
     return `Request failed: ${response.status} ${response.statusText}`;
   };
 
-  const performRealScrape = async (targetUrl: string): Promise<PageData> => {
+  const fetchPageData = async (targetUrl: string): Promise<PageData> => {
     const response = await fetch(`${API_BASE_URL}/api/scrape`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -68,11 +67,11 @@ const App: React.FC = () => {
 
     setError(null);
     setResult(null);
-    setStatus(AgentStatus.SCRAPING);
+    setStatus(AgentStatus.LOADING);
 
     try {
-      // Simple flow: scrape then analyze
-      const data = await performRealScrape(url);
+      // Extract page data then analyze
+      const data = await fetchPageData(url);
       setStatus(AgentStatus.ANALYZING);
       const analysis = await performAnalysis(data, auditMode);
       setResult(analysis);
@@ -106,7 +105,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {(status === AgentStatus.SCRAPING || status === AgentStatus.ANALYZING) && (
+      {(status === AgentStatus.LOADING || status === AgentStatus.ANALYZING) && (
         <LoadingAudit
           url={url}
           mode={auditMode}

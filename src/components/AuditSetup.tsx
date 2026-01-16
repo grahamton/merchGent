@@ -46,42 +46,16 @@ export const AuditSetup: React.FC<AuditSetupProps> = ({
                     />
                 </div>
 
-                {/* 2. MODE SELECTION (THE LAUNCHER) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Hidden for now - unified audit covers all modes */}
+                {/* Mode selection can be re-enabled later if needed */}
 
-                    {/* OPTION A: PRODUCT */}
-                    <button
-                        onClick={() => onModeChange(AuditMode.KNOWLEDGE)}
-                        className="group border-2 border-black dark:border-white p-8 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-left relative overflow-hidden"
-                    >
-                        <div className="absolute top-2 right-2 opacity-10 group-hover:opacity-100 text-6xl font-black transition-opacity">01</div>
-                        <h3 className="text-2xl font-black uppercase mb-2 group-hover:translate-x-2 transition-transform">Product Audit</h3>
-                        <p className="font-mono text-xs max-w-[80%] leading-relaxed opacity-60 group-hover:opacity-100">
-                            Analyze PDP content, visual hierarchy, and persuasion signals.
-                        </p>
-                    </button>
-
-                    {/* OPTION B: CHECKOUT */}
-                    <button
-                        onClick={() => onModeChange(AuditMode.TRANSACTION)}
-                        className="group border-2 border-black dark:border-white p-8 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-left relative overflow-hidden"
-                    >
-                        <div className="absolute top-2 right-2 opacity-10 group-hover:opacity-100 text-6xl font-black transition-opacity">02</div>
-                        <h3 className="text-2xl font-black uppercase mb-2 group-hover:translate-x-2 transition-transform">Checkout Audit</h3>
-                        <p className="font-mono text-xs max-w-[80%] leading-relaxed opacity-60 group-hover:opacity-100">
-                            Identify friction, hidden fees, and guest checkout blockers.
-                        </p>
-                    </button>
-
-                </div>
-
-                {/* 3. START BUTTON */}
+                {/* START BUTTON */}
                 <button
                     onClick={onSubmit}
                     disabled={!url || status !== 'idle'}
-                    className="w-full py-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white font-black text-2xl uppercase tracking-wider hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-full py-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white font-black text-2xl uppercase tracking-wider hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed mt-6"
                 >
-                    {status === 'idle' ? '→ EXECUTE AUDIT' : 'PROCESSING...'}
+                    {status === 'idle' ? '→ RUN AUDIT' : 'PROCESSING...'}
                 </button>
             </div>
         </div>
