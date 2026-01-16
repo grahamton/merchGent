@@ -1,28 +1,10 @@
 /**
- * MERCH AGENT (Diagnostic Strategist)
- * Role: Analysis, diagnosis, and recommendations.
- * Forbidden: Crawling, transactional actions.
+ * Merchandising Analysis API
+ * Analyzes product page data for merchandising quality issues
  */
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
-
-const AGENT_RULES_MD = fs.readFileSync(
-  path.join(process.cwd(), 'server', 'prompts', 'SYSTEM_PROMPT.md'),
-  'utf8'
-);
-const KNOWLEDGE_BASE_MD = fs.readFileSync(
-  path.join(process.cwd(), 'docs', 'VISION.md'),
-  'utf8'
-);
-const AGENT_RULESET_YAML = fs.readFileSync(
-  path.join(process.cwd(), 'server', 'prompts', 'agent_ruleset.yaml'),
-  'utf8'
-);
-const MERCH_AGENT_PERSONA_MD = fs.readFileSync(
-  path.join(process.cwd(), 'docs', 'MERCH_AGENT_PERSONA.md'),
-  'utf8'
-);
 
 const ENABLED_MODES = new Set(['Hybrid Experience Audit', 'Knowledge Surface Audit']);
 
@@ -109,20 +91,7 @@ const parseRecommendations = (rawRecommendations) => {
   }));
 };
 
-const extractMission = (mode) => {
-  const missionHeader = `## Mission: ${mode}`;
-  if (!AGENT_RULES_MD.includes(missionHeader)) {
-    throw new Error(`Mission not found in AGENT_RULES.md for mode: "${mode}"`);
-  }
-  const missionSplit = AGENT_RULES_MD.split(missionHeader);
-  const mission = missionSplit[1] ? missionSplit[1].split('## ')[0] : '';
-
-  if (!mission.trim()) {
-    throw new Error(`Mission content is empty for mode: "${mode}"`);
-  }
-
-  return mission;
-};
+// extractMission function removed - mission content is now in SYSTEM_PROMPT_V2.md
 
 const buildContextBlock = (pageData) => `
 ## Context (Scraped Page Data)
@@ -145,25 +114,13 @@ Heuristic Signals:
 - B2C Indicators Found: ${pageData.products.some((p) => p.b2cIndicators.length > 0)}
 `;
 
-const buildSystemInstruction = () => `
-${MERCH_AGENT_PERSONA_MD}
-
-${AGENT_RULES_MD}
-${KNOWLEDGE_BASE_MD}
-
-## Runtime Enforcement Rules (YAML)
-${AGENT_RULESET_YAML}
-
-## Output Requirements
-Return JSON only. Include:
-- trustTrace (string, cite observed signals from page data)
-- siteMode ("B2B" | "B2C" | "Hybrid")
-- diagnosisTitle (string)
-- diagnosisDescription (string)
-- hybridTrapCheck (string; "Not applicable" for Knowledge Surface)
-- standardsCheck (array of {criterion, status: "pass"|"partial"|"fail"|"unknown", evidence})
-- recommendations (array of {title, description, impact: "high"|"medium"|"low"})
-`;
+const buildSystemInstruction = () => {
+  const systemPrompt = fs.readFileSync(
+    path.join(process.cwd(), 'server', 'prompts', 'SYSTEM_PROMPT_V2.md'),
+    'utf8'
+  );
+  return systemPrompt;
+};
 
 const normalizeAnalysis = (rawAnalysis, mode) => {
   const siteMode =
@@ -241,11 +198,13 @@ const validateAnalysisPayload = (analysis) => {
   if (!isNonEmptyString(analysis.hybridTrapCheck)) {
     return { isValid: false, reason: 'Missing hybridTrapCheck.' };
   }
-  if (!isValidStandardsCheck(analysis.standardsCheck)) {
-    return { isValid: false, reason: 'Invalid standardsCheck.' };
+
+  // Allow empty arrays for standardsCheck and recommendations
+  if (!Array.isArray(analysis.standardsCheck)) {
+    return { isValid: false, reason: 'standardsCheck must be an array.' };
   }
-  if (!isValidRecommendations(analysis.recommendations)) {
-    return { isValid: false, reason: 'Invalid recommendations.' };
+  if (!Array.isArray(analysis.recommendations)) {
+    return { isValid: false, reason: 'recommendations must be an array.' };
   }
 
   if (!analysis.auditMatrix || typeof analysis.auditMatrix !== 'object') {
@@ -326,7 +285,6 @@ export function registerMerchAgentRoutes(app) {
 
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const mission = extractMission(mode);
 
       const systemInstruction = buildSystemInstruction();
 
@@ -356,9 +314,6 @@ Analyze the "Raw Product Data samples" JSON and the Screenshot.
       const userPromptText = `
 ${buildContextBlock(pageData)}
 
-## Mission: ${mode}
-${mission}
-
 ${integrityTask}
 
 ## Output Requirement: The "Audit Matrix"
@@ -383,75 +338,88 @@ Instead of a score, provide a "Kill Sheet" matrix assessing 4 areas:
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp', // Multimodal model
-        contents: [{ role: 'user', parts: promptParts }],
+        model: 'gemini-2.5-flash',
+        contents: promptParts,
         config: {
-          systemInstruction,
           temperature: 0.2,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              trustTrace: { type: Type.STRING },
-              siteMode: { type: Type.STRING, enum: ['B2B', 'B2C', 'Hybrid'] },
-              diagnosisTitle: { type: Type.STRING },
-              diagnosisDescription: { type: Type.STRING },
-              hybridTrapCheck: { type: Type.STRING },
-              auditMatrix: {
-                type: Type.OBJECT,
-                properties: {
-                  trust: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
-                  guidance: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
-                  persuasion: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
-                  friction: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] }
-                },
-                required: ['trust', 'guidance', 'persuasion', 'friction']
-              },
-              standardsCheck: {
-                type: Type.ARRAY,
-                items: {
+          responseOptions: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                trustTrace: { type: Type.STRING },
+                siteMode: { type: Type.STRING, enum: ['B2B', 'B2C', 'Hybrid'] },
+                diagnosisTitle: { type: Type.STRING },
+                diagnosisDescription: { type: Type.STRING },
+                hybridTrapCheck: { type: Type.STRING },
+                auditMatrix: {
                   type: Type.OBJECT,
                   properties: {
-                    criterion: { type: Type.STRING },
-                    status: { type: Type.STRING },
-                    evidence: { type: Type.STRING },
+                    trust: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
+                    guidance: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
+                    persuasion: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] },
+                    friction: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['pass', 'fail', 'check'] }, finding: { type: Type.STRING } }, required: ['status', 'finding'] }
                   },
-                  required: ['criterion', 'status', 'evidence'],
+                  required: ['trust', 'guidance', 'persuasion', 'friction']
+                },
+                standardsCheck: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      criterion: { type: Type.STRING },
+                      status: { type: Type.STRING },
+                      evidence: { type: Type.STRING },
+                    },
+                    required: ['criterion', 'status', 'evidence'],
+                  },
+                },
+                recommendations: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      description: { type: Type.STRING },
+                      impact: { type: Type.STRING, enum: ['high', 'medium', 'low'] }
+                    },
+                    required: ['title', 'description', 'impact']
+                  },
                 },
               },
-              recommendations: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    impact: { type: Type.STRING, enum: ['high', 'medium', 'low'] }
-                  },
-                  required: ['title', 'description', 'impact']
-                },
-              },
+              required: [
+                'trustTrace',
+                'siteMode',
+                'diagnosisTitle',
+                'diagnosisDescription',
+                'hybridTrapCheck',
+                'auditMatrix',
+                'standardsCheck',
+                'recommendations',
+              ],
             },
-            required: [
-              'trustTrace',
-              'siteMode',
-              'diagnosisTitle',
-              'diagnosisDescription',
-              'hybridTrapCheck',
-              'auditMatrix',
-              'standardsCheck',
-              'recommendations',
-            ],
           },
+          systemInstruction,
         },
       });
 
-      // ... (Rest of response parsing and validation logic remains the same) ...
+      // Extract JSON from response (strip markdown code blocks if present)
+      let responseText = response.text || '{}';
+      // Remove markdown code block formatting if present
+      responseText = responseText.replace(/^```json\s*\n?/i, '').replace(/\n?```$/,  '').trim();
+
       let rawAnalysis = {};
       try {
-        rawAnalysis = JSON.parse(response.text || '{}');
+        rawAnalysis = JSON.parse(responseText);
+
+        // DEBUG: Log the full raw response to see everything the model returns
+        console.log('\n[Merch Agent] ========== RAW MODEL RESPONSE ==========');
+        console.log(JSON.stringify(rawAnalysis, null, 2));
+        console.log('[Merch Agent] =============================================\n');
+
       } catch (error) {
         console.error('[Merch Agent] Invalid JSON from model:', error.message);
+        console.error('[Merch Agent] Raw response text (first 500 chars):', responseText.substring(0, 500));
         return res.status(502).json({ error: 'Analysis failed: invalid model JSON.' });
       }
 

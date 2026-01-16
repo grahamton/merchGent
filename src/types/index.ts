@@ -86,7 +86,7 @@ export interface AnalysisResult {
 
 export enum AgentStatus {
   IDLE = "idle",
-  SCRAPING = "scraping",
+  LOADING = "loading",
   ANALYZING = "analyzing",
   COMPLETED = "completed",
   ERROR = "error",
@@ -95,20 +95,12 @@ export enum AgentStatus {
 export enum AuditMode {
   HYBRID = "Hybrid Experience Audit",
   KNOWLEDGE = "Knowledge Surface Audit",
-  TRANSACTION = "Transaction Friction Audit",
-  LOGGED_IN = "Logged-In vs Logged-Out Audit",
-  COHERENCE = "Merchandising Coherence Audit",
-  READINESS = "Agent Readiness Scan",
-  WALKTHROUGH = "Experience Walkthrough Audit",
 }
 
-// Phase 1: Only Hybrid Experience Audit is enabled
-// Phase 2: Added Knowledge Surface Audit
-// Phase 0: Added Experience Walkthrough Audit
+// Currently enabled modes
 export const ENABLED_MODES: AuditMode[] = [
   AuditMode.HYBRID,
   AuditMode.KNOWLEDGE,
-  AuditMode.WALKTHROUGH,
 ];
 
 // Helper to check if a mode is enabled
@@ -145,11 +137,3 @@ export interface Journey {
 }
 
 export type Theme = "light" | "dark";
-
-export interface MerchGentScore {
-  total: number;
-  status: 'optimized' | 'improving' | 'needs-attention';
-  intentClarity: number;
-  knowledgeAccessibility: number;
-  transactionReadiness: number;
-}

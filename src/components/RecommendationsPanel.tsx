@@ -10,44 +10,37 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({ reco
     switch (impact) {
       case 'high':
         return {
-          color: 'text-red-400',
-          bg: 'bg-red-500/10',
-          border: 'border-red-500/30',
-          label: 'HIGH'
+          color: 'text-red-600 dark:text-red-400',
+          bg: 'bg-red-50 dark:bg-red-950',
+          border: 'border-red-600 dark:border-red-400',
+          label: 'HIGH IMPACT'
         };
       case 'medium':
         return {
-          color: 'text-yellow-400',
-          bg: 'bg-yellow-500/10',
-          border: 'border-yellow-500/30',
-          label: 'MEDIUM'
+          color: 'text-yellow-600 dark:text-yellow-400',
+          bg: 'bg-yellow-50 dark:bg-yellow-950',
+          border: 'border-yellow-600 dark:border-yellow-400',
+          label: 'MEDIUM IMPACT'
         };
       case 'low':
         return {
-          color: 'text-blue-400',
-          bg: 'bg-blue-500/10',
-          border: 'border-blue-500/30',
-          label: 'LOW'
+          color: 'text-blue-600 dark:text-blue-400',
+          bg: 'bg-blue-50 dark:bg-blue-950',
+          border: 'border-blue-600 dark:border-blue-400',
+          label: 'LOW IMPACT'
         };
     }
   };
 
-  const getAgentColor = (agent: string) => {
-    if (agent.includes('Web')) return 'text-blue-400';
-    if (agent.includes('Merch')) return 'text-purple-400';
-    if (agent.includes('Data')) return 'text-green-400';
-    return 'text-zinc-400';
-  };
-
   return (
-    <div className="h-full flex flex-col border-l border-zinc-800">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-zinc-800">
-        <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-1">
-          Actionable Intel
+      <div className="p-4 border-b-[3px] border-black dark:border-white">
+        <h3 className="text-sm font-bold uppercase tracking-widest mb-1">
+          ACTIONABLE INTEL
         </h3>
-        <p className="text-xs text-zinc-500">
-          Top {recommendations.length} Recommendations
+        <p className="text-xs text-gray-500 font-mono">
+          TOP {recommendations.length} RECOMMENDATIONS
         </p>
       </div>
 
@@ -58,23 +51,23 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({ reco
           return (
             <div
               key={i}
-              className={`rounded-xl border p-4 ${impactConfig.border} ${impactConfig.bg}`}
+              className={`border-[3px] p-4 ${impactConfig.border} ${impactConfig.bg} transition-colors duration-300`}
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
-                <div className={`text-[10px] font-mono font-bold uppercase tracking-wider ${impactConfig.color}`}>
-                  {impactConfig.label} IMPACT
+                <div className={`text-[10px] font-mono font-black uppercase tracking-wider ${impactConfig.color}`}>
+                  {impactConfig.label}
                 </div>
-                <div className={`text-[10px] font-mono ${getAgentColor(rec.agent)}`}>
+                <div className="text-[10px] font-mono text-gray-500 uppercase">
                   {rec.agent}
                 </div>
               </div>
 
               {/* Content */}
-              <h4 className="text-sm font-bold text-zinc-200 mb-2">
+              <h4 className="text-sm font-black uppercase tracking-tight mb-2">
                 {rec.title}
               </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <p className="text-xs leading-relaxed font-mono">
                 {rec.description}
               </p>
             </div>
@@ -82,9 +75,9 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({ reco
         })}
 
         {recommendations.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-zinc-600 text-sm">No recommendations at this time</div>
-            <div className="text-zinc-700 text-xs mt-1">Site appears optimized</div>
+          <div className="text-center py-8 border-[3px] border-dashed border-gray-300 dark:border-zinc-700">
+            <div className="text-gray-500 text-sm font-mono uppercase">NO RECOMMENDATIONS</div>
+            <div className="text-gray-400 text-xs mt-1 font-mono">SITE APPEARS OPTIMIZED</div>
           </div>
         )}
       </div>
