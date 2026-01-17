@@ -33,15 +33,23 @@ export const AuditSetup: React.FC<AuditSetupProps> = ({
                 PROTOCOL V2.0 // SELECT PROTOCOL
             </div>
 
-            <div className="flex flex-col gap-6">
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    onSubmit(e);
+                }}
+                className="flex flex-col gap-6"
+            >
                 {/* 1. URL ENTRY */}
                 <div className="w-full">
-                    <label className="block text-left text-xs font-bold uppercase tracking-widest mb-1 text-gray-500">Target Endpoint</label>
+                    <label htmlFor="target-url" className="block text-left text-xs font-bold uppercase tracking-widest mb-1 text-gray-500">Target Endpoint</label>
                     <input
+                        id="target-url"
                         type="url"
                         placeholder="HTTPS://TARGET-SITE.COM"
                         value={url}
                         onChange={(e) => onUrlChange(e.target.value)}
+                        required
                         className="w-full px-6 py-6 bg-transparent text-xl md:text-3xl font-mono font-bold outline-none border-2 border-black dark:border-white placeholder-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors uppercase"
                     />
                 </div>
@@ -51,13 +59,14 @@ export const AuditSetup: React.FC<AuditSetupProps> = ({
 
                 {/* START BUTTON */}
                 <button
-                    onClick={onSubmit}
+                    type="submit"
                     disabled={!url || status !== 'idle'}
+                    aria-live="polite"
                     className="w-full py-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white font-black text-2xl uppercase tracking-wider hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed mt-6"
                 >
                     {status === 'idle' ? '→ RUN AUDIT' : 'PROCESSING...'}
                 </button>
-            </div>
+            </form>
         </div>
 
         {/* Minimal Footer */}
