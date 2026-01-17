@@ -93,19 +93,15 @@ export enum AgentStatus {
 }
 
 export enum AuditMode {
-  HYBRID = "Hybrid Experience Audit",
-  KNOWLEDGE = "Knowledge Surface Audit",
+  KNOWLEDGE = 'Knowledge Surface Audit',
+  HYBRID = 'Hybrid Experience Audit'
 }
 
-// Currently enabled modes
-export const ENABLED_MODES: AuditMode[] = [
-  AuditMode.HYBRID,
-  AuditMode.KNOWLEDGE,
-];
+import { ENABLED_MODES } from '../config/constants';
 
 // Helper to check if a mode is enabled
-export function isModeEnabled(mode: AuditMode): boolean {
-  return ENABLED_MODES.includes(mode);
+export function isModeEnabled(mode: string): boolean {
+  return ENABLED_MODES.has(mode as any);
 }
 
 export interface JourneyStep {

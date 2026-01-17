@@ -3,7 +3,10 @@ import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
 
-const serviceAccountPath = path.join(process.cwd(), 'server', 'service-account.json');
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serviceAccountPath = path.join(__dirname, 'service-account.json');
 
 let db = null;
 

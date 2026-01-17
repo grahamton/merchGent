@@ -8,11 +8,14 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
 import path from 'path';
 
+import { fileURLToPath } from 'url';
+
 puppeteer.use(StealthPlugin());
 
-const SCREENSHOT_DIR = path.join(process.cwd(), 'screenshots');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SCREENSHOT_DIR = path.resolve(__dirname, '..', 'screenshots');
 if (!fs.existsSync(SCREENSHOT_DIR)) {
-  fs.mkdirSync(SCREENSHOT_DIR);
+  fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 }
 
 const isValidHttpUrl = (rawUrl) => {
@@ -34,6 +37,7 @@ const heuristicElementDetection = async (page) => {
       '[itemprop="itemListElement"]',
       '.product-tile',
       '.product-item',
+      '[class*="product-card"]',
     ];
 
     for (const selector of stableSelectors) {
@@ -321,22 +325,12 @@ const extractData = async (page) => {
   };
 };
 
-export function registerWebAgentRoutes(app) {
-  app.post('/api/scrape', async (req, res) => {
-    // ... existing scrape logic (kept same logic, just inside registerWebAgentRoutes, ensuring not to delete it if the user didn't request deletion,
-    // but here I am modifying the function so I should include the old logic OR simpler: just append the new route if I could, but replace_file_content requires a block.
-    // I will rewrite the whole registerWebAgentRoutes to include both routes.)
-    const { url, cookies } = req.body;
-
-    if (!url || !isValidHttpUrl(url)) {
-      return res.status(400).json({ error: 'Valid http/https URL is required' });
-    }
-
-    console.log(`[Scraper] Stealth analysis for: ${url} (Cookies provided: ${cookies ? 'Yes' : 'No'})`);
-    let browser;
-
-    try {
-      browser = await puppeteer.launch({
+const BrowserManager = {
+  browser: null,
+  async getBrowser() {
+    if (!this.browser) {
+      console.log('[BrowserManager] Initializing new browser instance...');
+      this.browser = await puppeteer.launch({
         headless: 'new',
         args: [
           '--no-sandbox',
@@ -348,11 +342,39 @@ export function registerWebAgentRoutes(app) {
           '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"',
         ],
       });
+      console.log('[BrowserManager] Browser initialized.');
+    }
+    return this.browser;
+  },
+  async closeBrowser() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+      console.log('[BrowserManager] Browser closed.');
+    }
+  },
+};
 
-      const page = await browser.newPage();
+// Graceful shutdown
+process.on('exit', () => BrowserManager.closeBrowser());
+process.on('SIGINT', () => BrowserManager.closeBrowser());
+process.on('SIGTERM', () => BrowserManager.closeBrowser());
+
+export function registerWebAgentRoutes(app) {
+  app.post('/api/scrape', async (req, res) => {
+    const { url, cookies } = req.body;
+
+    if (!url || !isValidHttpUrl(url)) {
+      return res.status(400).json({ error: 'Valid http/https URL is required' });
+    }
+
+    console.log(`[Scraper] Stealth analysis for: ${url} (Cookies provided: ${cookies ? 'Yes' : 'No'})`);
+    let page;
+    try {
+      const browser = await BrowserManager.getBrowser();
+      page = await browser.newPage();
       await page.setViewport({ width: 1920, height: 1080 });
 
-      // INJECT STATE (Cookies)
       if (cookies && Array.isArray(cookies) && cookies.length > 0) {
         try {
             await page.setCookie(...cookies);
@@ -365,21 +387,16 @@ export function registerWebAgentRoutes(app) {
       await new Promise((r) => setTimeout(r, Math.random() * 1000 + 1000));
 
       const data = await extractData(page);
-
-      // EXTRACT STATE (Cookies)
       const currentCookies = await page.cookies();
-
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const screenshotFilename = `screenshot-${timestamp}.jpg`;
       const screenshotPath = path.join(SCREENSHOT_DIR, screenshotFilename);
       await page.screenshot({ path: screenshotPath, type: 'jpeg', quality: 70 });
 
-      await browser.close();
-
       const result = {
         url,
         ...data,
-        cookies: currentCookies, // Return new state
+        cookies: currentCookies,
         screenshotPath,
         viewportWidth: 1920,
       };
@@ -388,16 +405,15 @@ export function registerWebAgentRoutes(app) {
       res.json(result);
     } catch (error) {
       console.error('[Scraper] Stealth Scrape Failed:', error.message);
-      if (browser) await browser.close();
-
       res.status(500).json({
         error: `Scrape blocked or failed: ${error.message}`,
         fallbackSuggestion: 'Try a different URL or check if the site blocks headless browsers.',
       });
+    } finally {
+      if (page) await page.close();
     }
   });
 
-  // NEW: Interaction Endpoint (The Hands)
   app.post('/api/interact', async (req, res) => {
       const { url, cookies, action, selector, value } = req.body;
 
@@ -406,23 +422,10 @@ export function registerWebAgentRoutes(app) {
       }
 
       console.log(`[Interact] executing '${action}' on ${url}`);
-      let browser;
-
+      let page;
       try {
-          browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-infobars',
-              '--window-position=0,0',
-              '--ignore-certificate-errors',
-              '--ignore-certificate-errors-spki-list',
-              '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"',
-            ],
-          });
-
-          const page = await browser.newPage();
+          const browser = await BrowserManager.getBrowser();
+          page = await browser.newPage();
           await page.setViewport({ width: 1920, height: 1080 });
 
           if (cookies && Array.isArray(cookies)) {
@@ -432,7 +435,6 @@ export function registerWebAgentRoutes(app) {
           await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
           await new Promise(r => setTimeout(r, 1000));
 
-          // PERFORM ACTION
           if (action === 'search') {
               const searchSelector = selector || 'input[type="search"], input[name="q"], input[name="search"], input[aria-label="Search"]';
               await page.waitForSelector(searchSelector, { timeout: 5000 });
@@ -442,33 +444,16 @@ export function registerWebAgentRoutes(app) {
           } else if (action === 'click') {
               await page.waitForSelector(selector, { timeout: 5000 });
               await page.click(selector);
-              await new Promise(r => setTimeout(r, 2000)); // Wait for SPA update
+              await new Promise(r => setTimeout(r, 2000));
           }
 
-          // EXTRACT NEW STATE
           const data = await extractData(page);
           const currentCookies = await page.cookies();
-          const newUrl = page.url(); // Capture the new URL after interaction
-
+          const newUrl = page.url();
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const screenshotFilename = `screenshot-interact-${timestamp}.jpg`;
           const screenshotPath = path.join(SCREENSHOT_DIR, screenshotFilename);
           await page.screenshot({ path: screenshotPath, type: 'jpeg', quality: 70 });
-
-          await browser.close();
-
-          // Return new URL if navigation happened
-          // Actually, extractData doesn't grab URL. Let's grab it.
-          // Note: page is closed. We can't grab it now. Logic flaw in my thought process, strict extractData doesn't return URL.
-          // I should grab page.url() before closing.
-
-          // Since I can't easily edit extractData return value without changing the whole function above, I'll rely on client passing current URL,
-          // OR I should capture it.
-          // Re-reading: the scraper returns `url` (original).
-          // In the Interact flow, key value is potentially *new* URL.
-
-          // Let's refine the logic in the next edit step to keep this simple.
-          // For now, I will just return the original URL structure.
 
           res.json({
               url: newUrl,
@@ -480,8 +465,9 @@ export function registerWebAgentRoutes(app) {
 
       } catch (error) {
           console.error('[Interact] Failed:', error.message);
-          if (browser) await browser.close();
           res.status(500).json({ error: error.message });
+      } finally {
+        if (page) await page.close();
       }
   });
 }

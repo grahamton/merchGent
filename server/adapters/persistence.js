@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { getDb } from '../config/firebase.js';
 
-const serviceAccountPath = path.join(process.cwd(), 'server', 'service-account.json');
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serviceAccountPath = path.join(__dirname, '..', 'service-account.json');
 const hasCreds = fs.existsSync(serviceAccountPath);
 // FORCE LOCAL for stability during UI Redesign
 const STORAGE_MODE = 'LOCAL'; // was: process.env.STORAGE_MODE || (hasCreds ? 'CLOUD' : 'LOCAL');
@@ -10,7 +13,7 @@ const STORAGE_MODE = 'LOCAL'; // was: process.env.STORAGE_MODE || (hasCreds ? 'C
 console.log(`[Persistence] Initializing in ${STORAGE_MODE} mode`);
 
 // Ensure data is stored in server/data/journeys
-const DATA_DIR = path.join(process.cwd(), 'server', 'data', 'journeys');
+const DATA_DIR = path.resolve(__dirname, 'data', 'journeys');
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
 }

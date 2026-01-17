@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 
-const ENABLED_MODES = new Set(['Hybrid Experience Audit', 'Knowledge Surface Audit']);
+import { ENABLED_MODES } from './constants.js';
 
 const coerceStatus = (status) => {
   const normalized = String(status || '').toLowerCase();
@@ -114,9 +114,13 @@ Heuristic Signals:
 - B2C Indicators Found: ${pageData.products.some((p) => p.b2cIndicators.length > 0)}
 `;
 
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const buildSystemInstruction = () => {
   const systemPrompt = fs.readFileSync(
-    path.join(process.cwd(), 'server', 'prompts', 'SYSTEM_PROMPT_V2.md'),
+    path.join(__dirname, 'prompts', 'SYSTEM_PROMPT_V2.md'),
     'utf8'
   );
   return systemPrompt;

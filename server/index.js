@@ -12,8 +12,12 @@ import { registerWebAgentRoutes } from './webAgent.js';
 import { registerMerchAgentRoutes } from './merchAgent.js';
 import { journeyManager } from './journey/journeyManager.js';
 
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 dotenv.config();
-const localEnvPath = path.join(process.cwd(), '.env.local');
+const localEnvPath = path.join(__dirname, '..', '.env.local');
 if (fs.existsSync(localEnvPath)) {
   dotenv.config({ path: localEnvPath });
 }
@@ -23,8 +27,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
-// Serve screenshots statically
-app.use('/screenshots', express.static(path.join(process.cwd(), 'screenshots')));
+
 
 registerWebAgentRoutes(app);
 registerMerchAgentRoutes(app);
@@ -59,8 +62,8 @@ app.post('/api/journey/start', async (req, res) => {
 app.post('/api/journey/step', async (req, res) => {
   try {
     const { journeyId, stepData } = req.body;
-    if (!journeyId || !stepData) {
-      return res.status(400).json({ error: 'Missing journeyId or stepData' });
+    if (!journeyId || typeof journeyId !== 'string' || !stepData) {
+      return res.status(400).json({ error: 'Missing or invalid journeyId or stepData' });
     }
     const step = await journeyManager.addStep(journeyId, stepData);
     res.json(step);
