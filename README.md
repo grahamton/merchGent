@@ -1,33 +1,36 @@
 # merch-connector
 
-An MCP server that gives AI agents eyes on any e-commerce storefront. Scrape product listings, take screenshots, run AI-powered merchandising audits, and build persistent memory about sites -- all through the Model Context Protocol.
+[![npm version](https://img.shields.io/npm/v/merch-connector)](https://www.npmjs.com/package/merch-connector)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![MCP Server](https://img.shields.io/badge/MCP-Server-purple)](https://modelcontextprotocol.io)
 
-## What it does
+**An MCP server that gives AI agents eyes on any e-commerce storefront.**
 
-merch-connector connects to any MCP-compatible AI client (Claude Desktop, Claude Code, etc.) and exposes seven tools that let the agent browse, extract, analyze, and remember e-commerce pages. It uses a stealth-configured headless browser to handle bot-protected sites, extracts structured product data, detects facets and filters, measures performance, and optionally runs a full merchandising audit using an AI model (Anthropic Claude or Google Gemini).
+Scrape product listings, extract facets, measure performance, run AI-powered merchandising audits, and build persistent memory about sites -- all through the [Model Context Protocol](https://modelcontextprotocol.io).
+
+## Why merch-connector?
+
+E-commerce merchandising analysis is manual, repetitive, and fragmented. A merchandiser might spend hours clicking through competitor sites, checking if filters work, comparing product grids, and noting what's changed. AI agents can do this work -- but they can't see storefronts the way shoppers do.
+
+merch-connector bridges that gap. It gives any MCP-compatible AI agent (Claude, custom agents, etc.) the ability to:
+
+- **Browse** any storefront with a stealth headless browser that handles bot protection
+- **Extract** structured product data, facets, performance metrics, and page structure
+- **Analyze** merchandising quality through three expert personas or a full roundtable debate
+- **Remember** site quirks across sessions so the agent gets smarter over time
 
 ## Quick start
 
-Run it directly without installing:
-
 ```bash
 npx merch-connector
-```
-
-Or install globally:
-
-```bash
-npm install -g merch-connector
-merch-connector
 ```
 
 The server communicates over stdio and is designed to be launched by an MCP client, not run standalone.
 
 ## Configuration
 
-### Claude Desktop
-
-Add to your `claude_desktop_config.json`:
+Add to your Claude Desktop `claude_desktop_config.json` or Claude Code `.mcp.json`:
 
 ```json
 {
@@ -36,174 +39,212 @@ Add to your `claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "merch-connector"],
       "env": {
-        "ANTHROPIC_API_KEY": "your_api_key_here"
+        "ANTHROPIC_API_KEY": "your_key_here"
       }
     }
   }
 }
 ```
 
-### Claude Code
+Or install globally: `npm install -g merch-connector`
 
-Add to your project `.mcp.json` or global config:
-
-```json
-{
-  "mcpServers": {
-    "merch-connector": {
-      "command": "npx",
-      "args": ["-y", "merch-connector"],
-      "env": {
-        "ANTHROPIC_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-### Using a global install
-
-If you installed globally, replace the command and args:
-
-```json
-{
-  "mcpServers": {
-    "merch-connector": {
-      "command": "merch-connector",
-      "env": {
-        "ANTHROPIC_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-## Environment variables
+### Environment variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | One of these | API key for Anthropic Claude. Used by `audit_storefront` and `ask_page`. |
-| `GEMINI_API_KEY` | One of these | API key for Google Gemini. Used by `audit_storefront` and `ask_page`. |
-| `MODEL_PROVIDER` | No | Force a provider: `"anthropic"` or `"gemini"`. Auto-detected from whichever key is set if omitted. |
-| `MODEL_NAME` | No | Override the default model. Defaults to `claude-opus-4-6` (Anthropic) or `gemini-2.5-pro` (Gemini). |
-| `MERCH_CONNECTOR_DATA_DIR` | No | Custom directory for site memory files. Defaults to `~/.merch-connector/data/`. |
+| `ANTHROPIC_API_KEY` | One of these | Anthropic Claude API key |
+| `GEMINI_API_KEY` | One of these | Google Gemini API key |
+| `MODEL_PROVIDER` | No | Force `"anthropic"` or `"gemini"`. Auto-detected if omitted. |
+| `MODEL_NAME` | No | Override default model. Defaults: `claude-opus-4-6` / `gemini-2.5-pro` |
+| `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files. Default: `~/.merch-connector/data/` |
 
-You only need one AI API key. If you only plan to use `scrape_page`, `interact_with_page`, `clear_session`, and `site_memory`, no API key is needed at all -- those tools run locally.
+You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `merch_roundtable`). Scraping tools work without one.
 
 ## Tools
 
-### audit_storefront
+| Tool | Description | Needs AI key? |
+|------|-------------|:---:|
+| `scrape_page` | Extract products, facets, metadata, performance timing from any URL | No |
+| `interact_with_page` | Search or click on a page, then extract the result | No |
+| `ask_page` | Scrape a page and ask any question about it in plain language | Yes |
+| `audit_storefront` | Full merchandising audit with structured diagnosis and recommendations | Yes |
+| `merch_roundtable` | Three expert personas independently analyze, then debate to consensus | Yes |
+| `site_memory` | Read/write persistent notes and learned data about any domain | No |
+| `clear_session` | Reset stored cookies for a domain | No |
 
-Scrape a product listing or PDP and run a full AI-powered merchandising audit. Returns a structured diagnosis with a 4-dimension audit matrix (Trust, Guidance, Persuasion, Friction), standards checks, and prioritized recommendations. Includes a screenshot for visual analysis.
+### Example: ask_page
 
-Supports an optional `persona` parameter to run the audit through a specific expert lens instead of the default analyst.
+> "Recommend facet changes for this laptop category page"
 
-**Parameters:**
-- `url` (required) -- Full URL of the page to audit
-- `depth` -- Pages of pagination to follow (1-5, default 1)
-- `max_products` -- Max products to extract per page (default 10)
-- `persona` -- Optional: `"floor_walker"`, `"auditor"`, or `"scout"` (see Personas below)
+```json
+{
+  "url": "https://www.insight.com/en_US/shop/category/notebooks/store.html",
+  "question": "Recommend facet changes?"
+}
+```
 
-### scrape_page
+Response:
 
-Extract raw structured data from any storefront URL without AI analysis. Returns product catalog (title, price, stock, CTA, description, B2B/B2C signals), facets/filters, page metadata, performance timing, data layer contents, and interactable elements.
+> **Brand/Manufacturer** -- Most glaring omission. 50 products span 6+ brands (HP, Lenovo, Apple, Microsoft, Dell, Crucial). B2B buyers with vendor agreements need this as facet #1.
+>
+> **Price range buckets are misaligned.** "Below $50" (2 items) signals category contamination -- confirmed by a Crucial RAM stick appearing in laptop results. Clean up category mapping and re-bucket starting at $500.
 
-**Parameters:**
-- `url` (required) -- Full URL to scrape
-- `depth` -- Pages of pagination to follow (1-5, default 1)
-- `max_products` -- Max products per page (default 10)
-- `include_screenshot` -- Set true to include a base64 JPEG screenshot (default false)
+### Example: merch_roundtable
 
-### interact_with_page
+The roundtable scrapes once, then runs three sequential AI analyses followed by a moderator synthesis:
 
-Perform a search or click action on a storefront page, then return the resulting page data. Useful for navigating paginated results, triggering search queries, or following CTAs.
-
-**Parameters:**
-- `url` (required) -- Full URL to load
-- `action` (required) -- `"search"` or `"click"`
-- `selector` -- CSS selector (required for click, optional for search)
-- `value` -- Text to type (required for search)
-- `include_screenshot` -- Include a base64 JPEG screenshot of the result
-
-### ask_page
-
-Scrape a page and ask any natural-language question about it. The AI sees the full product data, facets, performance metrics, and a screenshot.
-
-**Parameters:**
-- `url` (required) -- Full URL to scrape and ask about
-- `question` (required) -- Your question in plain language
-- `depth` -- Pages of pagination to scrape first (default 1)
-- `max_products` -- Max products per page (default 10)
-
-### site_memory
-
-Read, write, list, or delete persistent memory about websites. Memory auto-accumulates on every scrape (structure, performance, facets). Use this to add custom notes or store site-specific configuration.
-
-**Parameters:**
-- `action` (required) -- `"read"`, `"write"`, `"list"`, or `"delete"`
-- `url` -- Any URL on the domain (required for read/write/delete)
-- `note` -- Text note to append (used with write)
-- `key` -- Custom field name to set (used with write)
-- `value` -- Value for the custom field (used with write + key)
-
-### clear_session
-
-Clear stored session cookies for a domain. Use this to test logged-out vs. logged-in experiences.
-
-**Parameters:**
-- `url` (required) -- Any URL on the domain to clear
-
-### merch_roundtable
-
-Run a multi-perspective merchandising analysis. Three expert personas independently evaluate the same page, then a moderator synthesizes their findings into a unified assessment with consensus, disagreements, and prioritized recommendations.
-
-The roundtable scrapes the page once, then runs three sequential analyses followed by a moderator synthesis:
-
-1. **Floor Walker** evaluates customer experience and first impressions
-2. **Auditor** runs a structured framework evaluation (Trust/Guidance/Persuasion/Friction)
-3. **Scout** analyzes competitive positioning and market gaps
-4. **Moderator** synthesizes all three perspectives into consensus, surfaces disagreements, and produces prioritized final recommendations
-
-**Parameters:**
-- `url` (required) -- Full URL of the page to analyze
-- `depth` -- Pages of pagination to follow (1-5, default 1)
-- `max_products` -- Max products per page (default 10)
-
-**Output structure:**
-- `perspectives` -- Each persona's summary, top concern, and key insight
-- `debate.consensus` -- Where all perspectives agree
-- `debate.disagreements` -- Topics where perspectives diverge, with each position
-- `debate.finalRecommendations` -- Prioritized list with impact rating and which personas endorse each
+1. **Floor Walker** -- reacts as a real shopper ("I can't find Dell laptops without scrolling through 50 products")
+2. **Auditor** -- evaluates Trust/Guidance/Persuasion/Friction ("0% facet detection rate, title normalization at 70%")
+3. **Scout** -- identifies competitive gaps ("every competitor in B2B tech has brand filtering as facet #1")
+4. **Moderator** -- synthesizes consensus, surfaces disagreements, produces prioritized recommendations endorsed by persona
 
 ## Personas
 
-merch-connector includes three expert personas that bring different lenses to merchandising analysis. Each can be used independently via the `persona` parameter on `audit_storefront`, or together via `merch_roundtable`.
+Three expert lenses for merchandising analysis. Use individually via the `persona` parameter on `audit_storefront`, or together via `merch_roundtable`.
 
-### Floor Walker
+| Persona | Role | Voice |
+|---------|------|-------|
+| **Floor Walker** | A shopper visiting for the first time | First-person, casual, instinctive -- "I don't know what button to click" |
+| **Auditor** | Compliance analyst with a framework | Metric-driven, precise -- "Fill rate is 82%, 3/10 titles lack brand prefix" |
+| **Scout** | VP of Merchandising at a competitor | Strategic, comparative -- "This is table-stakes for the category" |
 
-A shopper walking through the store for the first time. Evaluates first impressions, scannability, findability, and gut trust. Writes in first person with casual, observational language. Focuses on what a customer sees and feels in the first 5 seconds.
+## Architecture
 
-### Auditor
+```
+MCP Client (Claude, etc.)
+    |
+    | stdio (JSON-RPC)
+    |
+merch-connector (Node.js MCP server)
+    |
+    +-- scraper.js      Puppeteer + stealth plugin, structure detection, facet extraction
+    +-- analyzer.js     Model-agnostic AI (Anthropic Claude / Google Gemini)
+    +-- site-memory.js  Persistent per-domain JSON store
+    +-- prompts/        Persona prompt files (floor-walker, auditor, scout, moderator)
+```
 
-A compliance analyst evaluating against the Trust/Guidance/Persuasion/Friction framework. Methodical, metric-driven, and evidence-based. Cites specific products, percentages, and fill rates. Every claim has a data point attached.
+- **Scraping**: Puppeteer with stealth plugin bypasses bot detection. Heuristic structure detection finds product grids on unknown sites. Extracts products, facets, performance timing, and takes screenshots.
+- **Analysis**: Dual-provider AI. Anthropic uses tool_choice forcing for structured JSON; Gemini uses responseSchema. Dynamic imports load only the needed SDK.
+- **Memory**: Auto-learns site fingerprints (selectors, timing, facet names) on every scrape. Manual notes persist across sessions. Stored as JSON files per domain.
+- **Sessions**: Per-domain cookie jar maintained in memory, auto-merged on subsequent calls.
 
-### Scout
+## Development
 
-A VP of Merchandising at a competing retailer. Thinks about competitive positioning, category norms, table-stakes features, and strategic blind spots. Frames every finding as a gap or advantage relative to market expectations.
+```bash
+git clone https://github.com/grahamton/merchGent.git
+cd merchGent
+npm install
 
-## How site memory works
+# Also install at least one AI SDK for analysis features
+npm install @anthropic-ai/sdk    # or @google/genai
 
-Every time you scrape a page, merch-connector automatically learns about the site: its structural selectors, performance baseline, available facets, and typical product count. This memory persists across sessions in JSON files stored at `~/.merch-connector/data/` (or the path set by `MERCH_CONNECTOR_DATA_DIR`).
+# Copy and fill in your API key
+cp .env.example .env
+```
 
-You can also manually store notes and custom fields using the `site_memory` tool -- for example, recording that a site needs extra wait time for lazy loading, uses a non-standard product card selector, or requires login cookies for pricing.
+### Running tests
 
-Memory is keyed by domain. Use `site_memory` with `action: "list"` to see all remembered sites.
+```bash
+npm test                              # scrape-only (no API key needed)
+npm run test:audit                    # full merchandising audit
+npm run test:persona                  # single persona (floor_walker)
+npm run test:roundtable               # all 3 personas + moderator
+node test/smoke.js --ask "question"   # ask anything about a page
+node test/smoke.js --url https://...  # override default URL
+```
 
-## Requirements
+### Testing with MCP Inspector
 
-- Node.js 18 or later
-- One AI API key (Anthropic or Google Gemini) for `audit_storefront` and `ask_page`
-- No API key needed for scraping-only tools
+```bash
+npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
+```
+
+Opens a browser UI where you can call any tool interactively.
+
+## Detailed tool reference
+
+### audit_storefront
+
+Scrape + AI analysis in one call. Returns diagnosis, 4-dimension audit matrix (Trust/Guidance/Persuasion/Friction), standards checks, and prioritized recommendations.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | Full URL to audit |
+| `depth` | No | Pagination pages to follow (1-5, default 1) |
+| `max_products` | No | Max products per page (default 10) |
+| `persona` | No | `"floor_walker"`, `"auditor"`, or `"scout"` |
+
+### scrape_page
+
+Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals), facets/filters, page metadata, performance timing, data layers, and interactable elements.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | Full URL to scrape |
+| `depth` | No | Pagination pages to follow (1-5, default 1) |
+| `max_products` | No | Max products per page (default 10) |
+| `include_screenshot` | No | Include base64 JPEG screenshot (default false) |
+
+### interact_with_page
+
+Perform a search or click, then extract the resulting page.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | Full URL to load |
+| `action` | Yes | `"search"` or `"click"` |
+| `selector` | Depends | CSS selector (required for click) |
+| `value` | Depends | Text to type (required for search) |
+| `include_screenshot` | No | Include screenshot of result |
+
+### ask_page
+
+Scrape + AI Q&A. The model sees full product data, facets, performance, and a screenshot.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | Full URL to scrape and ask about |
+| `question` | Yes | Plain language question |
+| `depth` | No | Pagination pages (default 1) |
+| `max_products` | No | Max products per page (default 10) |
+
+### merch_roundtable
+
+Multi-persona analysis with moderator synthesis.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | Full URL to analyze |
+| `depth` | No | Pagination pages (default 1) |
+| `max_products` | No | Max products per page (default 10) |
+
+**Returns:** `perspectives` (each persona's take), `debate.consensus`, `debate.disagreements`, `debate.finalRecommendations` (with impact + endorsements).
+
+### site_memory
+
+Persistent per-domain memory. Auto-accumulates on every scrape.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `action` | Yes | `"read"`, `"write"`, `"list"`, or `"delete"` |
+| `url` | Depends | Any URL on the domain (required for read/write/delete) |
+| `note` | No | Text note to append (with write) |
+| `key` | No | Custom field name (with write) |
+| `value` | No | Value for the field (with write + key) |
+
+### clear_session
+
+Reset cookies for a domain.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | Any URL on the domain to clear |
+
+## History
+
+**v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added three expert personas, roundtable mode, persistent site memory, dual AI provider support, and facet/pagination extraction.
+
+**v1.0.0** -- Original React + Express application with Gemini-powered analysis.
 
 ## License
 
