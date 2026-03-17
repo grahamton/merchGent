@@ -166,7 +166,6 @@ async function callAnthropic(contextText, screenshot) {
   const response = await client.messages.create({
     model,
     max_tokens: 4096,
-    thinking: { type: 'adaptive' },
     system: getSystemPrompt(),
     messages: [{ role: 'user', content: userContent }],
     tools: [{
@@ -402,7 +401,6 @@ async function callAnthropicGeneric(systemPrompt, contextText, screenshot, outpu
   const response = await client.messages.create({
     model,
     max_tokens: 4096,
-    thinking: { type: 'adaptive' },
     system: systemPrompt,
     messages: [{ role: 'user', content: userContent }],
     tools: [{

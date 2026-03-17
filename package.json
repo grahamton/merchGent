@@ -14,6 +14,10 @@
   ],
   "scripts": {
     "start": "node server/index.js",
+    "test": "node test/smoke.js",
+    "test:audit": "node test/smoke.js --audit",
+    "test:roundtable": "node test/smoke.js --roundtable",
+    "test:persona": "node test/smoke.js --persona floor_walker",
     "prepublishOnly": "node --check server/index.js && node --check server/scraper.js && node --check server/analyzer.js && node --check server/site-memory.js"
   },
   "keywords": [
@@ -33,7 +37,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AudienceKey/merchGent.git"
+    "url": "https://github.com/grahamton/merchGent.git"
   },
   "engines": {
     "node": ">=18"

@@ -41,3 +41,7 @@ service-account.json
 validation_output.txt
 verification_result.json
 issues_list.txt
+
+# Local tool config
+.claude/
+.agent/
