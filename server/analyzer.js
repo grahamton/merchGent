@@ -6,6 +6,12 @@
  *   1. MODEL_PROVIDER env var ('anthropic' | 'gemini')
  *   2. ANTHROPIC_API_KEY present → anthropic
  *   3. GEMINI_API_KEY present    → gemini
+ *
+ * Personas:
+ *   - Floor Walker: shopper-experience lens
+ *   - Auditor: structured framework evaluation
+ *   - Scout: competitive / strategic analysis
+ *   - Roundtable: all three + moderator debate synthesis
  */
 import fs from 'fs';
 import path from 'path';
@@ -13,10 +19,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// ─── Shared: prompt builders ──────────────────────────────────────────────────
+// ─── Shared: prompt loaders ─────────────────────────────────────────────────
 
-const getSystemPrompt = () =>
-  fs.readFileSync(path.join(__dirname, 'prompts', 'SYSTEM_PROMPT_V2.md'), 'utf8');
+const loadPrompt = (filename) =>
+  fs.readFileSync(path.join(__dirname, 'prompts', filename), 'utf8');
+
+const getSystemPrompt = () => loadPrompt('SYSTEM_PROMPT_V2.md');
 
 const buildContextBlock = (pageData) => {
   const withDesc = pageData.products.filter((p) => p.description && p.description.length > 20).length;
@@ -266,6 +274,410 @@ function detectProvider() {
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   if (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) return 'gemini';
   throw new Error('No AI API key found. Set ANTHROPIC_API_KEY or GEMINI_API_KEY (and optionally MODEL_PROVIDER).');
+}
+
+// ─── Persona schemas ──────────────────────────────────────────────────────
+
+const FLOOR_WALKER_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['firstImpression', 'scan', 'hunt', 'gutTrust', 'topConcern', 'summary'],
+  properties: {
+    firstImpression: { type: 'string' },
+    scan:            { type: 'string' },
+    hunt:            { type: 'string' },
+    gutTrust:        { type: 'string' },
+    topConcern:      { type: 'string' },
+    summary:         { type: 'string' },
+  },
+};
+
+const AUDITOR_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['siteMode', 'matrix', 'standardsChecks', 'topConcern', 'dataPoint', 'summary'],
+  properties: {
+    siteMode: { type: 'string', enum: ['B2B', 'B2C', 'Hybrid'] },
+    matrix: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['trust', 'guidance', 'persuasion', 'friction'],
+      properties: {
+        trust:      { type: 'object', additionalProperties: false, required: ['status', 'finding'], properties: { status: { type: 'string', enum: ['pass', 'fail', 'check'] }, finding: { type: 'string' } } },
+        guidance:   { type: 'object', additionalProperties: false, required: ['status', 'finding'], properties: { status: { type: 'string', enum: ['pass', 'fail', 'check'] }, finding: { type: 'string' } } },
+        persuasion: { type: 'object', additionalProperties: false, required: ['status', 'finding'], properties: { status: { type: 'string', enum: ['pass', 'fail', 'check'] }, finding: { type: 'string' } } },
+        friction:   { type: 'object', additionalProperties: false, required: ['status', 'finding'], properties: { status: { type: 'string', enum: ['pass', 'fail', 'check'] }, finding: { type: 'string' } } },
+      },
+    },
+    standardsChecks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['criterion', 'status', 'evidence'],
+        properties: {
+          criterion: { type: 'string' },
+          status:    { type: 'string' },
+          evidence:  { type: 'string' },
+        },
+      },
+    },
+    topConcern: { type: 'string' },
+    dataPoint:  { type: 'string' },
+    summary:    { type: 'string' },
+  },
+};
+
+const SCOUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['categoryFitness', 'assortmentStrategy', 'discoveryTools', 'competitiveGaps', 'strategicRead', 'topConcern', 'summary'],
+  properties: {
+    categoryFitness:    { type: 'string' },
+    assortmentStrategy: { type: 'string' },
+    discoveryTools:     { type: 'string' },
+    competitiveGaps:    { type: 'string' },
+    strategicRead:      { type: 'string' },
+    topConcern:         { type: 'string' },
+    summary:            { type: 'string' },
+  },
+};
+
+const ROUNDTABLE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['consensus', 'disagreements', 'finalRecommendations'],
+  properties: {
+    consensus: { type: 'string' },
+    disagreements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['topic', 'floorWalkerPosition', 'auditorPosition', 'scoutPosition'],
+        properties: {
+          topic:               { type: 'string' },
+          floorWalkerPosition: { type: 'string' },
+          auditorPosition:     { type: 'string' },
+          scoutPosition:       { type: 'string' },
+        },
+      },
+    },
+    finalRecommendations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['title', 'description', 'impact', 'endorsedBy'],
+        properties: {
+          title:       { type: 'string' },
+          description: { type: 'string' },
+          impact:      { type: 'string', enum: ['high', 'medium', 'low'] },
+          endorsedBy:  { type: 'array', items: { type: 'string', enum: ['floorWalker', 'auditor', 'scout'] } },
+        },
+      },
+    },
+  },
+};
+
+// ─── Generic provider call helpers ────────────────────────────────────────
+
+/**
+ * Call Anthropic with a custom system prompt and output schema.
+ * Uses tool_choice forcing to guarantee structured output.
+ */
+async function callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const model = process.env.MODEL_NAME || 'claude-opus-4-6';
+
+  const userContent = [{ type: 'text', text: contextText }];
+  if (screenshot) {
+    userContent.push({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/jpeg', data: screenshot.toString('base64') },
+    });
+  }
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userContent }],
+    tools: [{
+      name: toolName,
+      description: `Return the structured ${toolName} result.`,
+      input_schema: outputSchema,
+    }],
+    tool_choice: { type: 'tool', name: toolName },
+  });
+
+  const toolUse = response.content.find((b) => b.type === 'tool_use');
+  if (!toolUse) throw new Error(`Claude did not return a tool_use block for ${toolName}.`);
+  return toolUse.input;
+}
+
+/**
+ * Call Gemini with a custom system prompt and output schema.
+ * Uses responseSchema for structured JSON output.
+ */
+async function callGeminiGeneric(systemPrompt, contextText, screenshot, geminiSchema) {
+  const { GoogleGenAI } = await import('@google/genai');
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY });
+  const model = process.env.MODEL_NAME || 'gemini-2.5-pro';
+
+  const promptParts = [{ text: contextText }];
+  if (screenshot) {
+    promptParts.push({ inlineData: { data: screenshot.toString('base64'), mimeType: 'image/jpeg' } });
+  }
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: promptParts,
+    config: {
+      temperature: 0.2,
+      responseOptions: {
+        responseMimeType: 'application/json',
+        responseSchema: geminiSchema,
+      },
+      systemInstruction: systemPrompt,
+    },
+  });
+
+  const text = (response.text || '{}').replace(/^```json\s*\n?/i, '').replace(/\n?```$/, '').trim();
+  return JSON.parse(text);
+}
+
+/**
+ * Convert a JSON Schema object to Gemini Type schema format.
+ * @param {object} jsonSchema - Standard JSON Schema
+ * @param {object} Type - Gemini Type enum
+ */
+function toGeminiSchema(jsonSchema, Type) {
+  function convert(schema) {
+    if (!schema || typeof schema !== 'object') return schema;
+    const result = {};
+    switch (schema.type) {
+      case 'object':
+        result.type = Type.OBJECT;
+        if (schema.properties) {
+          result.properties = {};
+          for (const [key, val] of Object.entries(schema.properties)) {
+            result.properties[key] = convert(val);
+          }
+        }
+        if (schema.required) result.required = schema.required;
+        break;
+      case 'array':
+        result.type = Type.ARRAY;
+        if (schema.items) result.items = convert(schema.items);
+        break;
+      case 'string':
+        result.type = Type.STRING;
+        if (schema.enum) result.enum = schema.enum;
+        break;
+      case 'number':
+        result.type = Type.NUMBER;
+        break;
+      case 'boolean':
+        result.type = Type.BOOLEAN;
+        break;
+      default:
+        return schema;
+    }
+    return result;
+  }
+  return convert(jsonSchema);
+}
+
+/**
+ * Universal persona caller. Routes to Anthropic or Gemini based on env.
+ */
+async function callWithPersona(systemPrompt, contextText, screenshot, outputSchema, toolName) {
+  const provider = detectProvider();
+  console.error(`[Persona:${toolName}] Using provider: ${provider}`);
+
+  if (provider === 'anthropic') {
+    return callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName);
+  } else {
+    const { Type } = await import('@google/genai');
+    const geminiSchema = toGeminiSchema(outputSchema, Type);
+    return callGeminiGeneric(systemPrompt, contextText, screenshot, geminiSchema);
+  }
+}
+
+// ─── Persona analysis functions ───────────────────────────────────────────
+
+/**
+ * Build a rich context block for persona analysis (includes more detail than the audit context).
+ */
+function buildPersonaContext(pageData) {
+  const withDesc = pageData.products.filter((p) => p.description && p.description.length > 20).length;
+
+  const facetSummary = (pageData.facets || []).length > 0
+    ? pageData.facets.map((f) => `${f.name} (${f.type}, ${f.optionCount} options): ${f.options.slice(0, 5).map((o) => o.label).join(', ')}${f.optionCount > 5 ? '...' : ''}`).join('\n')
+    : 'None detected';
+
+  const perfSummary = pageData.performance
+    ? `DOM loaded: ${pageData.performance.domContentLoaded}ms, FCP: ${pageData.performance.firstContentfulPaint}ms, Full load: ${pageData.performance.loadComplete}ms, Resources: ${pageData.performance.resourceCount}`
+    : 'Not available';
+
+  return `## Scraped Page Data
+URL: ${pageData.url}
+Title: ${pageData.title}
+Meta: ${pageData.metaDescription || 'N/A'}
+Products found: ${pageData.products.length}
+Description coverage: ${withDesc}/${pageData.products.length}
+
+## Performance
+${perfSummary}
+
+## Structural Detection
+Grid selector: ${pageData.structure?.gridSelector || 'N/A'}
+Card selector: ${pageData.structure?.cardSelector || 'N/A'}
+Confidence: ${pageData.structure?.confidence || 'N/A'}
+
+## All Products
+${JSON.stringify(pageData.products, null, 2)}
+
+## Facets/Filters
+${facetSummary}
+
+## Heuristic Signals
+B2B indicators present: ${pageData.products.some((p) => p.b2bIndicators?.length > 0)}
+B2C indicators present: ${pageData.products.some((p) => p.b2cIndicators?.length > 0)}
+
+## Findings
+${(pageData.findings || []).map((f) => `[${f.severity}] ${f.title}: ${f.description}`).join('\n') || 'None'}
+
+## Interactable Elements (first 10)
+${(pageData.interactables || []).slice(0, 10).map((i) => `[${i.type}] "${i.text}" → ${i.selector}`).join('\n') || 'None'}`;
+}
+
+/**
+ * Analyze a page as the Floor Walker persona.
+ * Returns a shopper-experience focused assessment.
+ */
+export async function analyzeAsFloorWalker(pageData, screenshot = null) {
+  const systemPrompt = loadPrompt('floor-walker.md');
+  const contextText = buildPersonaContext(pageData);
+  return callWithPersona(systemPrompt, contextText, screenshot, FLOOR_WALKER_SCHEMA, 'floor_walker_result');
+}
+
+/**
+ * Analyze a page as the Auditor persona.
+ * Returns a structured framework evaluation.
+ */
+export async function analyzeAsAuditor(pageData, screenshot = null) {
+  const systemPrompt = loadPrompt('auditor.md');
+  const contextText = buildPersonaContext(pageData);
+  return callWithPersona(systemPrompt, contextText, screenshot, AUDITOR_SCHEMA, 'auditor_result');
+}
+
+/**
+ * Analyze a page as the Scout persona.
+ * Returns a competitive/strategic assessment.
+ */
+export async function analyzeAsScout(pageData, screenshot = null) {
+  const systemPrompt = loadPrompt('scout.md');
+  const contextText = buildPersonaContext(pageData);
+  return callWithPersona(systemPrompt, contextText, screenshot, SCOUT_SCHEMA, 'scout_result');
+}
+
+/**
+ * Run the full roundtable: all three personas in sequence, then a moderator debate.
+ *
+ * Each persona runs against the same page data. The moderator receives all three
+ * perspectives and synthesizes consensus, disagreements, and final recommendations.
+ *
+ * @param {object} pageData     - Output from scrapePage()
+ * @param {Buffer} [screenshot] - Optional JPEG screenshot buffer
+ * @returns {object} Full roundtable output with perspectives and debate
+ */
+export async function runRoundtable(pageData, screenshot = null) {
+  if (!pageData.products || pageData.products.length === 0) {
+    return {
+      url: pageData.url,
+      error: 'No products found. The scraper could not extract structured product data.',
+      perspectives: null,
+      debate: null,
+    };
+  }
+
+  console.error('[Roundtable] Starting Floor Walker analysis...');
+  const floorWalker = await analyzeAsFloorWalker(pageData, screenshot);
+
+  console.error('[Roundtable] Starting Auditor analysis...');
+  const auditor = await analyzeAsAuditor(pageData, screenshot);
+
+  console.error('[Roundtable] Starting Scout analysis...');
+  const scout = await analyzeAsScout(pageData, screenshot);
+
+  // Build the debate brief for the moderator
+  const moderatorPrompt = loadPrompt('roundtable-moderator.md');
+  const debateBrief = `## Page Under Review
+URL: ${pageData.url}
+Title: ${pageData.title}
+Products found: ${pageData.products.length}
+
+---
+
+## Floor Walker's Perspective
+${JSON.stringify(floorWalker, null, 2)}
+
+---
+
+## Auditor's Perspective
+${JSON.stringify(auditor, null, 2)}
+
+---
+
+## Scout's Perspective
+${JSON.stringify(scout, null, 2)}
+
+---
+
+Now synthesize these three perspectives. Identify where they agree, where they disagree, and produce prioritized final recommendations that draw from the strongest insights across all three viewpoints.`;
+
+  console.error('[Roundtable] Starting Moderator synthesis...');
+  const debate = await callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result');
+
+  return {
+    url: pageData.url,
+    perspectives: {
+      floorWalker: {
+        summary:        floorWalker.summary,
+        topConcern:     floorWalker.topConcern,
+        customerImpact: floorWalker.firstImpression,
+      },
+      auditor: {
+        summary:    auditor.summary,
+        matrix:     auditor.matrix,
+        topConcern: auditor.topConcern,
+        dataPoint:  auditor.dataPoint,
+      },
+      scout: {
+        summary:        scout.summary,
+        topConcern:     scout.topConcern,
+        competitiveGap: scout.competitiveGaps,
+      },
+    },
+    debate: {
+      consensus:            debate.consensus,
+      disagreements:        (debate.disagreements || []).map((d) => ({
+        topic: d.topic,
+        positions: {
+          floorWalker: d.floorWalkerPosition,
+          auditor:     d.auditorPosition,
+          scout:       d.scoutPosition,
+        },
+      })),
+      finalRecommendations: debate.finalRecommendations || [],
+    },
+    // Include full persona outputs for detailed inspection
+    _raw: { floorWalker, auditor, scout },
+  };
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────

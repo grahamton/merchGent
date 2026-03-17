@@ -4,7 +4,7 @@ An MCP server that gives AI agents eyes on any e-commerce storefront. Scrape pro
 
 ## What it does
 
-merch-connector connects to any MCP-compatible AI client (Claude Desktop, Claude Code, etc.) and exposes six tools that let the agent browse, extract, analyze, and remember e-commerce pages. It uses a stealth-configured headless browser to handle bot-protected sites, extracts structured product data, detects facets and filters, measures performance, and optionally runs a full merchandising audit using an AI model (Anthropic Claude or Google Gemini).
+merch-connector connects to any MCP-compatible AI client (Claude Desktop, Claude Code, etc.) and exposes seven tools that let the agent browse, extract, analyze, and remember e-commerce pages. It uses a stealth-configured headless browser to handle bot-protected sites, extracts structured product data, detects facets and filters, measures performance, and optionally runs a full merchandising audit using an AI model (Anthropic Claude or Google Gemini).
 
 ## Quick start
 
@@ -96,10 +96,13 @@ You only need one AI API key. If you only plan to use `scrape_page`, `interact_w
 
 Scrape a product listing or PDP and run a full AI-powered merchandising audit. Returns a structured diagnosis with a 4-dimension audit matrix (Trust, Guidance, Persuasion, Friction), standards checks, and prioritized recommendations. Includes a screenshot for visual analysis.
 
+Supports an optional `persona` parameter to run the audit through a specific expert lens instead of the default analyst.
+
 **Parameters:**
 - `url` (required) -- Full URL of the page to audit
 - `depth` -- Pages of pagination to follow (1-5, default 1)
 - `max_products` -- Max products to extract per page (default 10)
+- `persona` -- Optional: `"floor_walker"`, `"auditor"`, or `"scout"` (see Personas below)
 
 ### scrape_page
 
@@ -149,6 +152,44 @@ Clear stored session cookies for a domain. Use this to test logged-out vs. logge
 
 **Parameters:**
 - `url` (required) -- Any URL on the domain to clear
+
+### merch_roundtable
+
+Run a multi-perspective merchandising analysis. Three expert personas independently evaluate the same page, then a moderator synthesizes their findings into a unified assessment with consensus, disagreements, and prioritized recommendations.
+
+The roundtable scrapes the page once, then runs three sequential analyses followed by a moderator synthesis:
+
+1. **Floor Walker** evaluates customer experience and first impressions
+2. **Auditor** runs a structured framework evaluation (Trust/Guidance/Persuasion/Friction)
+3. **Scout** analyzes competitive positioning and market gaps
+4. **Moderator** synthesizes all three perspectives into consensus, surfaces disagreements, and produces prioritized final recommendations
+
+**Parameters:**
+- `url` (required) -- Full URL of the page to analyze
+- `depth` -- Pages of pagination to follow (1-5, default 1)
+- `max_products` -- Max products per page (default 10)
+
+**Output structure:**
+- `perspectives` -- Each persona's summary, top concern, and key insight
+- `debate.consensus` -- Where all perspectives agree
+- `debate.disagreements` -- Topics where perspectives diverge, with each position
+- `debate.finalRecommendations` -- Prioritized list with impact rating and which personas endorse each
+
+## Personas
+
+merch-connector includes three expert personas that bring different lenses to merchandising analysis. Each can be used independently via the `persona` parameter on `audit_storefront`, or together via `merch_roundtable`.
+
+### Floor Walker
+
+A shopper walking through the store for the first time. Evaluates first impressions, scannability, findability, and gut trust. Writes in first person with casual, observational language. Focuses on what a customer sees and feels in the first 5 seconds.
+
+### Auditor
+
+A compliance analyst evaluating against the Trust/Guidance/Persuasion/Friction framework. Methodical, metric-driven, and evidence-based. Cites specific products, percentages, and fill rates. Every claim has a data point attached.
+
+### Scout
+
+A VP of Merchandising at a competing retailer. Thinks about competitive positioning, category norms, table-stakes features, and strategic blind spots. Frames every finding as a gap or advantage relative to market expectations.
 
 ## How site memory works
 

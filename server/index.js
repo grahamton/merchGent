@@ -2,10 +2,13 @@
  * merch-connector — MCP Server
  *
  * Gives any agent eyes on a storefront:
- *   audit_storefront   → scrape + AI analysis in one shot
+ *   audit_storefront   → scrape + AI analysis in one shot (supports persona lens)
  *   scrape_page        → raw structured extraction only
  *   interact_with_page → search/click then extract
+ *   ask_page           → scrape + free-form Q&A
+ *   site_memory        → persistent per-domain memory
  *   clear_session      → reset stored cookies for a domain
+ *   merch_roundtable   → multi-persona debate (Floor Walker + Auditor + Scout + Moderator)
  *
  * Session cookies are stored per-domain and auto-merged on subsequent calls.
  * Connect via stdio (Claude Desktop, Claude Code MCP config, etc.)
@@ -15,7 +18,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage } from './analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsScout, runRoundtable } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory } from './site-memory.js';
 
 // ─── Session store (cookie jar keyed by domain) ──────────────────────────────
@@ -67,6 +70,11 @@ const TOOLS = [
         max_products: {
           type: 'number',
           description: 'Max products to extract per page. Default: 10.',
+        },
+        persona: {
+          type: 'string',
+          enum: ['floor_walker', 'auditor', 'scout'],
+          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis.',
         },
       },
       required: ['url'],
@@ -217,6 +225,33 @@ const TOOLS = [
       required: ['action'],
     },
   },
+  {
+    name: 'merch_roundtable',
+    description:
+      'Run a multi-perspective merchandising analysis using three expert personas (Floor Walker, Auditor, Scout) ' +
+      'that independently evaluate the page, then debate their findings to produce a consensus. ' +
+      'The Floor Walker reacts as a real shopper, the Auditor evaluates against a structured framework, ' +
+      'and the Scout analyzes competitive positioning. A moderator then synthesizes all three views into ' +
+      'prioritized recommendations with endorsements from each persona.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Full URL of the page to analyze.',
+        },
+        depth: {
+          type: 'number',
+          description: 'Pages of pagination to follow (1-5, default 1).',
+        },
+        max_products: {
+          type: 'number',
+          description: 'Max products to extract per page (default 10).',
+        },
+      },
+      required: ['url'],
+    },
+  },
 ];
 
 // ─── Shared output builder ───────────────────────────────────────────────────
@@ -255,17 +290,26 @@ function buildPageOutput(result) {
 
 // ─── Tool handlers ────────────────────────────────────────────────────────────
 
-async function handleAuditStorefront({ url, depth = 1, max_products = 10 }) {
+async function handleAuditStorefront({ url, depth = 1, max_products = 10, persona }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
   const cookies = getSessionCookies(url);
   const pageData = await scrapePage(url, cookies, depth, max_products);
   saveSessionCookies(url, pageData.cookies);
 
-  const analysis = await analyzePage(pageData, pageData.screenshotBuffer);
-  const output = buildPageOutput(pageData);
+  let analysis;
+  if (persona === 'floor_walker') {
+    analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer);
+  } else if (persona === 'auditor') {
+    analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer);
+  } else if (persona === 'scout') {
+    analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer);
+  } else {
+    analysis = await analyzePage(pageData, pageData.screenshotBuffer);
+  }
 
-  return { ...output, audit: analysis };
+  const output = buildPageOutput(pageData);
+  return { ...output, audit: analysis, ...(persona ? { persona } : {}) };
 }
 
 async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false }) {
@@ -364,6 +408,17 @@ function handleSiteMemory({ action, url, note, key, value }) {
   throw new Error(`Unknown action: "${action}". Use read, write, list, or delete.`);
 }
 
+async function handleRoundtable({ url, depth = 1, max_products = 10 }) {
+  if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
+
+  const cookies = getSessionCookies(url);
+  const pageData = await scrapePage(url, cookies, depth, max_products);
+  saveSessionCookies(url, pageData.cookies);
+
+  const result = await runRoundtable(pageData, pageData.screenshotBuffer);
+  return result;
+}
+
 function handleClearSession({ url }) {
   const domain = getDomain(url);
   if (!domain) throw new Error(`Cannot extract domain from: "${url}"`);
@@ -375,7 +430,7 @@ function handleClearSession({ url }) {
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'merch-connector', version: '1.1.0' },
+  { name: 'merch-connector', version: '1.2.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -398,6 +453,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: await handleAskPage(args) };
       case 'site_memory':
         return { content: handleSiteMemory(args) };
+      case 'merch_roundtable': {
+        const result = await handleRoundtable(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
       case 'clear_session':
         return { content: handleClearSession(args) };
       default:
