@@ -1,137 +1,169 @@
-# merchGent
+# merch-connector
 
-> **A read-only merchandising diagnostic system for modern commerce.**
+An MCP server that gives AI agents eyes on any e-commerce storefront. Scrape product listings, take screenshots, run AI-powered merchandising audits, and build persistent memory about sites -- all through the Model Context Protocol.
 
-merchGent audits e-commerce experiences across content, UX, and customer intent, producing actionable insights for merchandising leaders navigating complex B2B, B2C, and hybrid storefronts.
+## What it does
 
----
+merch-connector connects to any MCP-compatible AI client (Claude Desktop, Claude Code, etc.) and exposes six tools that let the agent browse, extract, analyze, and remember e-commerce pages. It uses a stealth-configured headless browser to handle bot-protected sites, extracts structured product data, detects facets and filters, measures performance, and optionally runs a full merchandising audit using an AI model (Anthropic Claude or Google Gemini).
 
-## 🚀 Key Features
+## Quick start
 
-### 1. Interactive Experience Walkthrough (Phase 0)
-
-**Don't just scan; see.** The new Walkthrough mode allows you to "drive" the agent through a multi-step user journey (e.g., "Add to Cart", "Checkout flow").
-
-- **State Persistence**: The agent maintains a "cookie jar," allowing it to stay logged in or keep cart state across steps.
-- **Smart Snapshots**: At every step, the agent extracts:
-  - **Visuals**: High-res screenshots.
-  - **Data Layers**: Auto-detection of `dataLayer`, `digitalData`, `adobe`, etc.
-  - **Interaction Map**: Auto-suggested "Next Actions" (clickable buttons/links).
-
-### 2. The Merch Agent Persona
-
-**The Guardian of Catalog Integrity.** The agent is no longer a generic AI assistant. It embodies a specific persona:
-
-- **Role**: E-commerce Data Quality & Taxonomy Specialist.
-- **Obsession**: Fill Rates, Attribute Gaps, and Facet Hygiene.
-- **Voice**: "If a user can't filter by it, it doesn't exist."
-
-### 3. Smart Findings Register
-
-**Standardized Insights.** Issues are no longer random text; they are structured data (`Finding` objects) with:
-
-- **Severity**: Critical, Warning, Info, Success.
-- **Category**: Usability, Performance, Merch, Technical.
-- **Auto-Scouts**: Built-in rules automatically detect "Missing Alt Text", "Broken Links", and "Mixed B2B/B2C Signals".
-
-### 4. Hybrid Trap Detection
-
-**Is your site serving two masters?** Identifies conflicting signals (e.g., "Request Quote" vs "Buy Now" proximity) that confuse buyers and hurt conversion.
-
----
-
-## 🛠️ Quick Start
-
-### Prerequisites
-
-- Node.js (v18+)
-- An API key for AI inference ([Gemini](https://ai.google.dev/) recommended)
-
-### Installation
+Run it directly without installing:
 
 ```bash
-git clone <repo-url>
-cd merchGent
-npm install
+npx merch-connector
 ```
 
-### Configuration
-
-Create `.env` (or `.env.local`) in the project root:
-
-```env
-GEMINI_API_KEY=your_api_key_here
-# Optional: override API base URL for the frontend
-VITE_API_BASE_URL=http://localhost:3001
-```
-
-### Running Locally
-
-Run backend and frontend concurrently:
+Or install globally:
 
 ```bash
-# Windows
-restart_all.bat
-
-# Manual (Two Terminals)
-npm run server   # http://localhost:3001
-npm run dev      # http://localhost:3000
+npm install -g merch-connector
+merch-connector
 ```
 
----
+The server communicates over stdio and is designed to be launched by an MCP client, not run standalone.
 
-## 📊 Audit Modes
+## Configuration
 
-| Mode                        | Phase       | Focus                                                                              | Status        |
-| :-------------------------- | :---------- | :--------------------------------------------------------------------------------- | :------------ |
-| **Experience Walkthrough**  | **Phase 0** | **Journey Mapping**: Interactive recording of multi-step flows. State persistence. | ✅ **Active** |
-| **Hybrid Experience Audit** | **Phase 1** | **Conflict Detection**: B2B vs B2C signal conflicts.                               | ✅ **Active** |
-| **Knowledge Surface Audit** | **Phase 2** | **Content Quality**: Findability, completeness, and trust gaps.                    | ✅ **Active** |
-| **Merch Coherence Audit**   | Planned     | **Consistency**: Category logic, product grouping.                                 | 🚧 Planned    |
+### Claude Desktop
 
----
+Add to your `claude_desktop_config.json`:
 
-## 🧠 Architecture
+```json
+{
+  "mcpServers": {
+    "merch-connector": {
+      "command": "npx",
+      "args": ["-y", "merch-connector"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
 
-merchGent is built as a **team of specialized agents**:
+### Claude Code
 
-1.  **Client Agent (Orchestrator)**: The Frontend UI. Manages the audit lifecycle and presents the "Findings" timeline.
-2.  **Web Agent (The Body)**: A headless Chrome instance (Puppeteer) that:
-    - Navigates pages securely.
-    - Injects/Extracts cookies for persistence.
-    - Runs "Scouts" (JavaScript heuristics) to find grids, cards, and data layers.
-3.  **Merch Agent (The Brain)**: A Generative AI agent injected with the **Guardian Persona**. It:
-    - Ingests the raw PageData and Findings.
-    - Synthesizes a "Health Score" and "Strategy Report" based on strict merchandising rules.
-4.  **Journey Manager (The Memory)**: A backend service that persists user journeys, managing the transition from Step 1 -> Step N.
+Add to your project `.mcp.json` or global config:
 
----
+```json
+{
+  "mcpServers": {
+    "merch-connector": {
+      "command": "npx",
+      "args": ["-y", "merch-connector"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
 
-## 🛡️ Anti-Gravity Governance
+### Using a global install
 
-This project enforces strict discipline to prevent "Feature Factory" bloat.
+If you installed globally, replace the command and args:
 
-### Core Rules
+```json
+{
+  "mcpServers": {
+    "merch-connector": {
+      "command": "merch-connector",
+      "env": {
+        "ANTHROPIC_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
 
-See [`docs/ANTIGRAVITY_RULES.md`](docs/ANTIGRAVITY_RULES.md).
+## Environment variables
 
-1.  **Level 1 Only**: Solving problems at the lowest effective layer.
-2.  **No Scope Creep**: One ticket, one goal.
-3.  **Evidence First**: Prototypes before abstractions.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | One of these | API key for Anthropic Claude. Used by `audit_storefront` and `ask_page`. |
+| `GEMINI_API_KEY` | One of these | API key for Google Gemini. Used by `audit_storefront` and `ask_page`. |
+| `MODEL_PROVIDER` | No | Force a provider: `"anthropic"` or `"gemini"`. Auto-detected from whichever key is set if omitted. |
+| `MODEL_NAME` | No | Override the default model. Defaults to `claude-opus-4-6` (Anthropic) or `gemini-2.5-pro` (Gemini). |
+| `MERCH_CONNECTOR_DATA_DIR` | No | Custom directory for site memory files. Defaults to `~/.merch-connector/data/`. |
 
-### Workflow Personas
+You only need one AI API key. If you only plan to use `scrape_page`, `interact_with_page`, `clear_session`, and `site_memory`, no API key is needed at all -- those tools run locally.
 
-Use slash commands to invoke specific modes:
+## Tools
 
-- `/fixer`: **Local Fixer** (Edit code in place)
-- `/ticketbrain`: **Ticket Brain** (Atomic planning)
-- `/spiker`: **The Spiker** (Quick prototyping)
-- `/stakeholder-review`: **The Roast** (Customer perspective check)
+### audit_storefront
 
----
+Scrape a product listing or PDP and run a full AI-powered merchandising audit. Returns a structured diagnosis with a 4-dimension audit matrix (Trust, Guidance, Persuasion, Friction), standards checks, and prioritized recommendations. Includes a screenshot for visual analysis.
+
+**Parameters:**
+- `url` (required) -- Full URL of the page to audit
+- `depth` -- Pages of pagination to follow (1-5, default 1)
+- `max_products` -- Max products to extract per page (default 10)
+
+### scrape_page
+
+Extract raw structured data from any storefront URL without AI analysis. Returns product catalog (title, price, stock, CTA, description, B2B/B2C signals), facets/filters, page metadata, performance timing, data layer contents, and interactable elements.
+
+**Parameters:**
+- `url` (required) -- Full URL to scrape
+- `depth` -- Pages of pagination to follow (1-5, default 1)
+- `max_products` -- Max products per page (default 10)
+- `include_screenshot` -- Set true to include a base64 JPEG screenshot (default false)
+
+### interact_with_page
+
+Perform a search or click action on a storefront page, then return the resulting page data. Useful for navigating paginated results, triggering search queries, or following CTAs.
+
+**Parameters:**
+- `url` (required) -- Full URL to load
+- `action` (required) -- `"search"` or `"click"`
+- `selector` -- CSS selector (required for click, optional for search)
+- `value` -- Text to type (required for search)
+- `include_screenshot` -- Include a base64 JPEG screenshot of the result
+
+### ask_page
+
+Scrape a page and ask any natural-language question about it. The AI sees the full product data, facets, performance metrics, and a screenshot.
+
+**Parameters:**
+- `url` (required) -- Full URL to scrape and ask about
+- `question` (required) -- Your question in plain language
+- `depth` -- Pages of pagination to scrape first (default 1)
+- `max_products` -- Max products per page (default 10)
+
+### site_memory
+
+Read, write, list, or delete persistent memory about websites. Memory auto-accumulates on every scrape (structure, performance, facets). Use this to add custom notes or store site-specific configuration.
+
+**Parameters:**
+- `action` (required) -- `"read"`, `"write"`, `"list"`, or `"delete"`
+- `url` -- Any URL on the domain (required for read/write/delete)
+- `note` -- Text note to append (used with write)
+- `key` -- Custom field name to set (used with write)
+- `value` -- Value for the custom field (used with write + key)
+
+### clear_session
+
+Clear stored session cookies for a domain. Use this to test logged-out vs. logged-in experiences.
+
+**Parameters:**
+- `url` (required) -- Any URL on the domain to clear
+
+## How site memory works
+
+Every time you scrape a page, merch-connector automatically learns about the site: its structural selectors, performance baseline, available facets, and typical product count. This memory persists across sessions in JSON files stored at `~/.merch-connector/data/` (or the path set by `MERCH_CONNECTOR_DATA_DIR`).
+
+You can also manually store notes and custom fields using the `site_memory` tool -- for example, recording that a site needs extra wait time for lazy loading, uses a non-standard product card selector, or requires login cookies for pricing.
+
+Memory is keyed by domain. Use `site_memory` with `action: "list"` to see all remembered sites.
+
+## Requirements
+
+- Node.js 18 or later
+- One AI API key (Anthropic or Google Gemini) for `audit_storefront` and `ask_page`
+- No API key needed for scraping-only tools
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-> **Disclaimer**: merchGent is a diagnostic tool. It observes and reports; humans make the final decisions. Use in production at your own risk.
+MIT

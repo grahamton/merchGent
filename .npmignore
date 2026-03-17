@@ -1,0 +1,15 @@
+.env
+.env.*
+.env.local
+.git
+.github
+.claude
+.agent
+node_modules
+screenshots/
+server/data/
+package-lock.json
+mcp.json
+mcp.example.json
+.gitignore
+.npmignore

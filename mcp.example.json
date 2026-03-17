@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "merch-connector": {
+      "command": "npx",
+      "args": ["-y", "merch-connector"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
