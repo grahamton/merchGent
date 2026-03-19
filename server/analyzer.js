@@ -847,16 +847,9 @@ ${JSON.stringify(scout, null, 2)}
 
 Now synthesize these three perspectives. Identify where they agree, where they disagree, and produce prioritized final recommendations that draw from the strongest insights across all three viewpoints.`;
 
-  console.error('[Roundtable] Starting Moderator synthesis...');
-  await onProgress?.(6, 8, 'Moderator synthesizing...');
-  const debate = await callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result');
-  await onProgress?.(7, 8, 'Moderator ✓ — consensus reached', {
-    persona: 'moderator',
-    consensus: debate.consensus,
-    result: debate,
-  });
-
-  return {
+  // Build the partial result with all three persona perspectives — this is returned immediately
+  // to the MCP client so the tool call completes before the client timeout fires.
+  const partialResult = {
     url: pageData.url,
     perspectives: {
       floorWalker: {
@@ -876,21 +869,43 @@ Now synthesize these three perspectives. Identify where they agree, where they d
         competitiveGap: scout.competitiveGaps,
       },
     },
-    debate: {
-      consensus:            debate.consensus,
-      disagreements:        (debate.disagreements || []).map((d) => ({
-        topic: d.topic,
-        positions: {
-          floorWalker: d.floorWalkerPosition,
-          auditor:     d.auditorPosition,
-          scout:       d.scoutPosition,
-        },
-      })),
-      finalRecommendations: debate.finalRecommendations || [],
-    },
+    debate: null,  // populated async via roundtable_moderator_result notification
+    moderatorPending: true,
     // Include full persona outputs for detailed inspection
     _raw: { floorWalker, auditor, scout },
   };
+
+  // Run the moderator async — result arrives via onProgress notification so the
+  // MCP tool call can return immediately with the three persona results.
+  console.error('[Roundtable] Starting Moderator synthesis (async)...');
+  await onProgress?.(6, 8, 'Moderator synthesizing...');
+
+  callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result')
+    .then(async (debate) => {
+      await onProgress?.(7, 8, 'Moderator ✓ — consensus reached', {
+        persona: 'moderator',
+        consensus: debate.consensus,
+        disagreements: (debate.disagreements || []).map((d) => ({
+          topic: d.topic,
+          positions: {
+            floorWalker: d.floorWalkerPosition,
+            auditor:     d.auditorPosition,
+            scout:       d.scoutPosition,
+          },
+        })),
+        finalRecommendations: debate.finalRecommendations || [],
+        result: debate,
+      });
+    })
+    .catch((err) => {
+      console.error('[Roundtable] Moderator synthesis failed:', err.message);
+      onProgress?.(7, 8, `Moderator failed: ${err.message}`, {
+        persona: 'moderator',
+        error: err.message,
+      });
+    });
+
+  return partialResult;
 }
 
 // ─── Competitor comparison ────────────────────────────────────────────────────
