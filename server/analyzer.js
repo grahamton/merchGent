@@ -19,12 +19,11 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Only apply MODEL_NAME when the active provider matches MODEL_PROVIDER explicitly.
-// Prevents e.g. MODEL_NAME=qwen/qwen3.5-9b leaking into Anthropic API calls.
+// Only apply MODEL_NAME when MODEL_PROVIDER is explicitly set and matches the active provider.
+// Prevents MODEL_NAME=qwen/qwen3.5-9b leaking into Anthropic API calls when provider auto-detects.
 function getModelName(provider, defaultModel) {
   const explicit = process.env.MODEL_PROVIDER?.toLowerCase();
   if (explicit === provider && process.env.MODEL_NAME) return process.env.MODEL_NAME;
-  if (!explicit && process.env.MODEL_NAME) return process.env.MODEL_NAME; // single-provider setups
   return defaultModel;
 }
 
@@ -162,7 +161,7 @@ const normalize = (raw) => ({
 async function callAnthropic(contextText, screenshot) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = getModelName('anthropic', 'claude-opus-4-6');
+  const model = getModelName('anthropic', 'claude-sonnet-4-6');
 
   const userContent = [{ type: 'text', text: contextText }];
   if (screenshot) {
@@ -440,7 +439,7 @@ const ROUNDTABLE_SCHEMA = {
 async function callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = getModelName('anthropic', 'claude-opus-4-6');
+  const model = getModelName('anthropic', 'claude-sonnet-4-6');
 
   const userContent = [{ type: 'text', text: contextText }];
   if (screenshot) {
@@ -1012,7 +1011,7 @@ export function validatePriceBuckets(pageData) {
  * Run a merchandising audit on pre-scraped page data.
  *
  * Provider is selected automatically from env vars:
- *   MODEL_PROVIDER=anthropic → Claude claude-opus-4-6
+ *   MODEL_PROVIDER=anthropic → Claude claude-sonnet-4-6
  *   MODEL_PROVIDER=gemini    → Gemini 2.5 Flash
  *   (unset) → whichever API key is present; Anthropic wins if both set
  *
@@ -1070,7 +1069,7 @@ Be concise. If the data doesn't contain what's needed to answer, say so.`;
 async function askAnthropic(context, question, screenshot) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = getModelName('anthropic', 'claude-opus-4-6');
+  const model = getModelName('anthropic', 'claude-sonnet-4-6');
 
   const userContent = [{ type: 'text', text: `${context}\n\n## Question\n${question}` }];
   if (screenshot) {

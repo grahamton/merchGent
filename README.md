@@ -268,6 +268,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.5.4** -- Fixed `MODEL_NAME` cross-provider bleed: the env var is now only applied when `MODEL_PROVIDER` is explicitly set and matches the active provider, preventing local model names (e.g. `qwen/qwen3.5-9b`) from leaking into Anthropic or Gemini API calls on auto-detected setups.
+
 **v1.5.3** -- Fixed cross-provider model bleed: `MODEL_NAME` is now scoped to the active `MODEL_PROVIDER`, so e.g. `MODEL_NAME=qwen/qwen3.5-9b` no longer leaks into Anthropic API calls when switching providers. All three AI SDKs are regular dependencies — no manual installation needed. B2B/Hybrid classification improvements from v1.5.2 included.
 
 **v1.5.2** -- Improved B2B/B2C/Hybrid classification. Added contract pricing signals (`Your price`, `Account price`, `Get Quote`, `Purchase Order`, `RFQ`, `Punch-out`) to B2B keyword list. Restored `Add to Cart` as a B2C signal so dual-signal sites (e.g. Insight.com) correctly score as `Hybrid` instead of `B2C`. Added BEM-style facet selectors (`c-facet`, `c-filter`, `c-refinement`) for enterprise storefronts. Fixed `trim()` crash on undefined innerText in badge/price/stock extraction. All three AI SDKs (Anthropic, Gemini, OpenAI) are now regular dependencies — no manual peer dep installation required.
