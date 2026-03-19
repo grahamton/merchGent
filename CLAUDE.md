@@ -58,8 +58,8 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 |----------|-----------|-------|
 | `ANTHROPIC_API_KEY` | One of these three | `sk-ant-...` |
 | `GEMINI_API_KEY` | One of these three | Google Gemini |
-| `OPENAI_API_KEY` | One of these three | OpenAI-compatible (set to `"lm-studio"` for LM Studio) |
-| `OPENAI_BASE_URL` | No | Default: `http://localhost:1234/v1` |
+| `OPENAI_API_KEY` | One of these three | OpenAI-compatible API key |
+| `OPENAI_BASE_URL` | No | Optional; defaults to `https://api.openai.com/v1` |
 | `MODEL_PROVIDER` | No | Force: `"anthropic"`, `"gemini"`, or `"openai"` |
 | `MODEL_NAME` | No | Override default model |
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files |
