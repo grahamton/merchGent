@@ -107,6 +107,7 @@ Three expert lenses for merchandising analysis. Use individually via the `person
 | **Floor Walker** | A shopper visiting for the first time | First-person, casual, instinctive -- "I don't know what button to click" |
 | **Auditor** | Compliance analyst with a framework | Metric-driven, precise -- "Fill rate is 82%, 3/10 titles lack brand prefix" |
 | **Scout** | VP of Merchandising at a competitor | Strategic, comparative -- "This is table-stakes for the category" |
+| **B2B Auditor** | Procurement buyer evaluating a vendor | Process-driven -- scores steps-to-PO, spec completeness, pricing transparency, self-serve viability |
 
 ## Architecture
 
@@ -172,7 +173,7 @@ Scrape + AI analysis in one call. Returns diagnosis, 4-dimension audit matrix (T
 | `url` | Yes | Full URL to audit |
 | `depth` | No | Pagination pages to follow (1-5, default 1) |
 | `max_products` | No | Max products per page (default 10) |
-| `persona` | No | `"floor_walker"`, `"auditor"`, or `"scout"` |
+| `persona` | No | `"floor_walker"`, `"auditor"`, `"scout"`, or `"b2b_auditor"` |
 
 ### scrape_page
 
@@ -242,7 +243,7 @@ Reset cookies for a domain.
 
 ## History
 
-**v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added three expert personas, roundtable mode, persistent site memory, dual AI provider support, and facet/pagination extraction.
+**v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added four expert personas (Floor Walker, Auditor, Scout, B2B Auditor), roundtable mode with progress notifications, persistent site memory injected into all persona analyses, price bucket validation, dual AI provider support (Anthropic + Gemini), and facet/pagination extraction.
 
 **v1.0.0** -- Original React + Express application with Gemini-powered analysis.
 
