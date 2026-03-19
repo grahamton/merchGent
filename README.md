@@ -268,6 +268,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.6.1** -- Automated CI/CD publishing via GitHub Actions. Pushing a version tag now publishes to both npmjs.org (`merch-connector`) and GitHub Packages (`@grahamton/merch-connector`) automatically — no manual `npm publish` or 2FA required.
+
 **v1.6.0** -- Major new Network Intelligence Layer. Every `scrape_page` call now intercepts XHR/fetch responses during page load and fingerprints the commerce stack from 35 platform signatures: Elasticsearch, Algolia, Coveo, Lucidworks Fusion, Solr, Bloomreach, Searchspring, Google Cloud Retail, SFCC, SAP Hybris, Commercetools, Shopify, Bazaarvoice, PowerReviews, and more. When a high-confidence API match is found (≥70%), products and facets are extracted directly from the API response — eliminating DOM parsing failures like "Unknown Facet" on enterprise storefronts. Deep dataLayer/digitalData parsing extracts GA4 ecommerce events, GTM container IDs, GA4 measurement IDs, W3C digitalData objects, user segment signals, and A/B experiment assignments. Discovered API endpoints are persisted to site memory (tokens stripped) so the discovery pass only runs once per domain. Roundtable now reuses persona results cached by prior `audit_storefront` calls — best case reduces from 4 AI calls to 1 (moderator only), cutting timeout risk by 75%.
 
 **v1.5.5** -- Server version is now read dynamically from `package.json` so the MCP Inspector and protocol handshake always report the correct version. All three AI SDKs are regular dependencies (no manual installation). Fixes from v1.5.4 included.
