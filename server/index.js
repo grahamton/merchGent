@@ -32,7 +32,7 @@ import {
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
-import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains, computeConvergenceScore, describeConvergence } from './eval-store.js';
+import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
 
 // ─── Session store (cookies + page cache, keyed by domain) ───────────────────
 //
@@ -735,19 +735,33 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   const domain = getDomain(url);
   if (!domain) throw new Error(`Cannot extract domain from: "${url}"`);
 
-  // Pull persona results from session cache
-  const floor_walker = getCachedPersona(url, 'floor_walker');
-  const auditor      = getCachedPersona(url, 'auditor');
-  const scout        = getCachedPersona(url, 'scout');
+  // Pull ALL persona types from session cache
+  const floor_walker  = getCachedPersona(url, 'floor_walker');
+  const auditor       = getCachedPersona(url, 'auditor');
+  const scout         = getCachedPersona(url, 'scout');
+  const b2b_auditor   = getCachedPersona(url, 'b2b_auditor');
+  const defaultAudit  = getCachedPersona(url, 'default');
 
-  if (!floor_walker && !auditor && !scout) {
+  if (!floor_walker && !auditor && !scout && !b2b_auditor && !defaultAudit) {
     throw new Error(
       `No cached persona results found for ${url}. ` +
-      'Run merch_roundtable or audit_storefront (with persona) on this URL first, then call save_eval.'
+      'Run merch_roundtable or audit_storefront on this URL first, then call save_eval.'
     );
   }
 
-  const personas = { floor_walker, auditor, scout };
+  const personas = {
+    ...(floor_walker  && { floor_walker }),
+    ...(auditor       && { auditor }),
+    ...(scout         && { scout }),
+    ...(b2b_auditor   && { b2b_auditor }),
+    ...(defaultAudit  && { default: defaultAudit }),
+  };
+
+  // Auto-detect which tool produced these results:
+  // roundtable populates floor_walker + auditor + scout simultaneously;
+  // individual audit_storefront calls populate one named slot at a time.
+  const roundtablePersonaCount = [floor_walker, auditor, scout].filter(Boolean).length;
+  const toolName = roundtablePersonaCount >= 2 ? 'merch_roundtable' : 'audit_storefront';
 
   // Attach lightweight page context from page cache if available
   const pageData = getCachedPage(url);
@@ -761,23 +775,34 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   const saved = saveEvalRun(domain, {
     url,
     personas,
-    debate: null,            // moderator arrives async; no guarantee it's in cache
-    toolName: 'merch_roundtable',
+    debate: null,       // moderator arrives async; not guaranteed to be in cache
+    toolName,
     note: note ?? null,
     saveFullRun: save_full_run,
     pageContext,
   });
 
+  // Build topConcerns for the summary (all schemas: topConcern, default: diagnosisTitle)
+  const topConcerns = [
+    floor_walker?.topConcern,
+    auditor?.topConcern,
+    scout?.topConcern,
+    b2b_auditor?.topConcern,
+    defaultAudit?.diagnosisTitle,
+  ].filter(Boolean);
+
+  const convergenceDisplay = saved.convergenceScore !== null
+    ? `${saved.convergenceScore}/100 — ${saved.convergenceLabel}`
+    : `n/a — ${saved.convergenceLabel}`;
+
   const summary = {
     evalId: saved.id,
+    toolName,
     convergenceScore: saved.convergenceScore,
     convergenceLabel: saved.convergenceLabel,
-    topConcerns: [
-      floor_walker?.topConcern,
-      auditor?.topConcern,
-      scout?.topConcern,
-    ].filter(Boolean),
-    personaCount: Object.values(personas).filter(Boolean).length,
+    topConcerns,
+    personaCount: Object.keys(personas).length,
+    personasFound: Object.keys(personas),
     note: note ?? null,
     storage: {
       compactIndex: `~/.merch-connector/evals/${domain}.jsonl`,
@@ -788,7 +813,7 @@ function handleSaveEval({ url, note, save_full_run = true }) {
     isDuplicate: saved.isDuplicate,
     message: saved.isDuplicate
       ? 'Duplicate detected (same top concerns as last run) — compact record not duplicated.'
-      : `Eval saved. Convergence: ${saved.convergenceScore}/100 — ${saved.convergenceLabel}.`,
+      : `Eval saved. Convergence: ${convergenceDisplay}.`,
   };
 
   sendLog('info', `Eval saved for ${domain}`, {

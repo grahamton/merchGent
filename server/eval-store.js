@@ -72,14 +72,16 @@ function generateRunId(domain, runAt) {
 }
 
 /**
- * Compute a dedup hash from the persona topConcern strings.
- * Identical runs (same three top concerns) produce the same hash.
+ * Compute a dedup hash from all available persona top concern strings.
+ * Identical runs (same concerns across all present personas) produce the same hash.
  */
 function computeHash(personas) {
   const concerns = [
     personas.floor_walker?.topConcern,
     personas.auditor?.topConcern,
     personas.scout?.topConcern,
+    personas.b2b_auditor?.topConcern,
+    personas.default?.diagnosisTitle,
   ].filter(Boolean).join('|');
   return crypto.createHash('sha256').update(concerns).digest('hex').slice(0, 8);
 }
@@ -95,25 +97,45 @@ function tokenize(text) {
 }
 
 /**
- * Compute convergence score (0–100) from floor_walker, auditor, and scout
- * persona results. Measures the percentage of top-concern keywords shared
- * by two or more personas — higher means stronger inter-persona consensus.
+ * Extract the top concern string from any persona result, regardless of schema.
+ * - floor_walker / auditor / scout / b2b_auditor → topConcern
+ * - default analyst                              → diagnosisTitle (closest equivalent)
  *
- * @param {{ floor_walker?, auditor?, scout? }} personas
- * @returns {number} 0–100
+ * @param {object|null} persona
+ * @returns {string|null}
+ */
+export function extractTopConcern(persona) {
+  if (!persona) return null;
+  return persona.topConcern || persona.diagnosisTitle || null;
+}
+
+/**
+ * Compute convergence score (0–100) from any combination of persona results.
+ * Measures the percentage of top-concern keywords shared by two or more
+ * personas — higher means stronger inter-persona consensus.
+ *
+ * Returns null when fewer than 2 personas have a top concern (can't measure
+ * convergence with a single data point).
+ *
+ * Supported persona keys: floor_walker, auditor, scout, b2b_auditor, default
+ *
+ * @param {{ floor_walker?, auditor?, scout?, b2b_auditor?, default? }} personas
+ * @returns {number|null} 0–100, or null if insufficient data
  */
 export function computeConvergenceScore(personas) {
   const concerns = [
     personas.floor_walker?.topConcern,
     personas.auditor?.topConcern,
     personas.scout?.topConcern,
+    personas.b2b_auditor?.topConcern,
+    personas.default?.diagnosisTitle,
   ].filter(Boolean);
 
-  if (concerns.length < 2) return 0;
+  if (concerns.length < 2) return null;
 
   const tokenSets = concerns.map(c => new Set(tokenize(c)));
   const allTokens = new Set(tokenSets.flatMap(s => [...s]));
-  if (allTokens.size === 0) return 0;
+  if (allTokens.size === 0) return null;
 
   let shared = 0;
   for (const token of allTokens) {
@@ -125,9 +147,11 @@ export function computeConvergenceScore(personas) {
 
 /**
  * Describe a convergence score in plain English.
+ * Returns null description for null scores (single-persona runs).
  */
 export function describeConvergence(score) {
-  if (score >= 70) return 'strong — all three personas flagged the same core issues';
+  if (score === null) return 'n/a — single persona run, convergence requires 2+';
+  if (score >= 70) return 'strong — personas flagged the same core issues';
   if (score >= 40) return 'moderate — partial agreement; some concerns differ by persona';
   if (score >= 15) return 'low — personas identified mostly different concerns';
   return 'very low — personas saw almost no shared problems';
@@ -166,10 +190,13 @@ export function saveEvalRun(domain, {
   const hash = computeHash(personas);
   const convergenceScore = computeConvergenceScore(personas);
 
+  // All named personas use topConcern; default analyst uses diagnosisTitle
   const topConcerns = [
     personas.floor_walker?.topConcern,
     personas.auditor?.topConcern,
     personas.scout?.topConcern,
+    personas.b2b_auditor?.topConcern,
+    personas.default?.diagnosisTitle,
   ].filter(Boolean);
 
   // Prefer moderator consensus from debate object (various shapes tolerated)
@@ -235,6 +262,8 @@ export function saveEvalRun(domain, {
       floor_walker: personas.floor_walker ?? null,
       auditor: personas.auditor ?? null,
       scout: personas.scout ?? null,
+      b2b_auditor: personas.b2b_auditor ?? null,
+      default: personas.default ?? null,
       debate: debate ?? null,
       judgeScore: null,
     };
