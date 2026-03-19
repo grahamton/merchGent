@@ -243,6 +243,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.4.0** -- Added 10-minute in-memory page data cache. `ask_page`, `audit_storefront`, and `merch_roundtable` now reuse a recent `scrape_page` result instead of re-scraping, cutting latency in half for local models. Unified session store: cookies and cached pages share a single domain-keyed structure, so `clear_session` wipes both automatically. Added configurable server-side timeout (`TOOL_TIMEOUT_MS`, default 120s) that returns an actionable error message instead of hanging.
+
 **v1.3.0** -- Added OpenAI-compatible provider support (LM Studio, Ollama, Groq, Together AI, and any OpenAI-compatible endpoint). Configure with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `MODEL_NAME`. Vision input supported via `OPENAI_VISION=true` for multimodal models. Falls back to JSON prompt mode for models without function calling.
 
 **v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added four expert personas (Floor Walker, Auditor, Scout, B2B Auditor), roundtable mode with progress notifications, persistent site memory injected into all persona analyses, price bucket validation, dual AI provider support (Anthropic + Gemini), and facet/pagination extraction.

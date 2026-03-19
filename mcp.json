@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "merch-connector": {
+      "command": "npx",
+      "args": ["-y", "merch-connector"],
+      "env": {
+        "MODEL_PROVIDER": "openai",
+        "OPENAI_API_KEY": "lm-studio",
+        "OPENAI_BASE_URL": "http://127.0.0.1:9597/v1",
+        "MODEL_NAME": "qwen/qwen3.5-9b",
+        "OPENAI_VISION": "true"
+      }
+    }
+  }
+}

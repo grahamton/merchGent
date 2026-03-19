@@ -7,10 +7,11 @@
  *   interact_with_page → search/click then extract
  *   ask_page           → scrape + free-form Q&A
  *   site_memory        → persistent per-domain memory
- *   clear_session      → reset stored cookies for a domain
+ *   clear_session      → reset stored session (cookies + page cache) for a domain
  *   merch_roundtable   → multi-persona debate (Floor Walker + Auditor + Scout + Moderator)
  *
- * Session cookies are stored per-domain and auto-merged on subsequent calls.
+ * Session state (cookies + page cache) is stored per-domain and auto-managed.
+ * Scraped page data is cached for 10 minutes — subsequent AI tools reuse it without re-scraping.
  * Connect via stdio (Claude Desktop, Claude Code MCP config, etc.)
  */
 import { config as loadEnv } from 'dotenv';
@@ -22,29 +23,76 @@ import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory } from './site-memory.js';
 
-// ─── Session store (cookie jar keyed by domain) ──────────────────────────────
+// ─── Session store (cookies + page cache, keyed by domain) ───────────────────
+//
+// Structure: domain → { cookies: cookie[], pages: Map(url → { data, cachedAt }) }
+// clear_session wipes both cookies and cached pages for a domain in one call.
 
-const sessions = new Map(); // domain → cookie[]
+const sessions = new Map();
+const PAGE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function getDomain(url) {
   try { return new URL(url).hostname; } catch { return null; }
 }
 
+function getSession(domain) {
+  if (!sessions.has(domain)) sessions.set(domain, { cookies: [], pages: new Map() });
+  return sessions.get(domain);
+}
+
 function getSessionCookies(url) {
   const domain = getDomain(url);
-  return domain ? (sessions.get(domain) || []) : [];
+  return domain ? getSession(domain).cookies : [];
 }
 
 function saveSessionCookies(url, cookies) {
   const domain = getDomain(url);
   if (!domain || !cookies?.length) return;
 
-  const existing = sessions.get(domain) || [];
-  // Merge: newer cookies overwrite by name+domain+path
+  const session = getSession(domain);
   const merged = new Map();
-  for (const c of existing) merged.set(`${c.name}|${c.domain}|${c.path}`, c);
+  for (const c of session.cookies) merged.set(`${c.name}|${c.domain}|${c.path}`, c);
   for (const c of cookies) merged.set(`${c.name}|${c.domain}|${c.path}`, c);
-  sessions.set(domain, [...merged.values()]);
+  session.cookies = [...merged.values()];
+}
+
+function getCachedPage(url) {
+  const domain = getDomain(url);
+  if (!domain) return null;
+  const entry = getSession(domain).pages.get(url);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > PAGE_CACHE_TTL_MS) {
+    getSession(domain).pages.delete(url);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedPage(url, data) {
+  const domain = getDomain(url);
+  if (domain) getSession(domain).pages.set(url, { data, cachedAt: Date.now() });
+}
+
+// ─── Timeout wrapper ──────────────────────────────────────────────────────────
+//
+// AI-dependent tools (audit, ask, roundtable) are wrapped with a configurable
+// timeout. On expiry the error message guides the model to use scrape_page first.
+
+const TOOL_TIMEOUT_MS = parseInt(process.env.TOOL_TIMEOUT_MS || '120000', 10);
+
+function withTimeout(promise, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error(
+          `${label} timed out after ${TOOL_TIMEOUT_MS / 1000}s. ` +
+          'For slower models, try calling scrape_page first and then ask_page with a specific question.'
+        )),
+        TOOL_TIMEOUT_MS
+      )
+    ),
+  ]);
 }
 
 // ─── Tool definitions ─────────────────────────────────────────────────────────
@@ -56,6 +104,7 @@ const TOOLS = [
       'Scrape a product listing or PDP URL and run a full merchandising audit. ' +
       'Returns a diagnosis, 4-dimension audit matrix (Trust / Guidance / Persuasion / Friction), ' +
       'standards checks, and prioritized recommendations. Attaches a screenshot for visual analysis. ' +
+      'Reuses cached page data if scrape_page was called on the same URL within the last 10 minutes — no re-scrape needed. ' +
       'Session cookies are stored automatically — subsequent calls to the same domain reuse the session.',
     inputSchema: {
       type: 'object',
@@ -87,6 +136,7 @@ const TOOLS = [
       'Extract raw structured data from any storefront URL without running AI analysis. ' +
       'Returns product catalog (title, price, stock, CTA, description, B2B/B2C signals), ' +
       'facets/filters, page metadata, performance timing, data layer contents, and interactable elements. ' +
+      'Results are cached for 10 minutes — calling audit_storefront or ask_page on the same URL afterward will reuse this data. ' +
       'Session cookies are managed automatically.',
     inputSchema: {
       type: 'object',
@@ -148,10 +198,12 @@ const TOOLS = [
   {
     name: 'ask_page',
     description:
-      'Scrape a page and then ask any natural language question about it. ' +
+      'Ask any natural language question about a storefront page. ' +
       'The AI sees the full product data, facets, performance metrics, and a screenshot. ' +
+      'If scrape_page was called on this URL within the last 10 minutes, the cached data is reused — no re-scrape. ' +
       'Use this for ad-hoc questions like "which products are on sale?", "can users filter by size?", ' +
-      '"what\'s the average price?", or "is this page fast enough?".',
+      '"what\'s the average price?", or "is this page fast enough?". ' +
+      'Tip: for slow or local AI models, call scrape_page first, then ask_page — the scrape will be reused.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -178,7 +230,8 @@ const TOOLS = [
   {
     name: 'clear_session',
     description:
-      'Clear stored session cookies for a domain. Use this to start fresh (e.g., test logged-out vs logged-in experience).',
+      'Clear the stored session for a domain — wipes both cookies and cached page data. ' +
+      'Use this to start fresh (e.g., test logged-out vs logged-in experience, or force a fresh scrape).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -233,7 +286,8 @@ const TOOLS = [
       'that independently evaluate the page, then debate their findings to produce a consensus. ' +
       'The Floor Walker reacts as a real shopper, the Auditor evaluates against a structured framework, ' +
       'and the Scout analyzes competitive positioning. A moderator then synthesizes all three views into ' +
-      'prioritized recommendations with endorsements from each persona.',
+      'prioritized recommendations with endorsements from each persona. ' +
+      'Reuses cached page data if scrape_page was called on the same URL within the last 10 minutes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -295,9 +349,15 @@ function buildPageOutput(result) {
 async function handleAuditStorefront({ url, depth = 1, max_products = 10, persona }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
-  const cookies = getSessionCookies(url);
-  const pageData = await scrapePage(url, cookies, depth, max_products);
-  saveSessionCookies(url, pageData.cookies);
+  let pageData = getCachedPage(url);
+  if (!pageData) {
+    const cookies = getSessionCookies(url);
+    pageData = await scrapePage(url, cookies, depth, max_products);
+    saveSessionCookies(url, pageData.cookies);
+    setCachedPage(pageData.url, pageData);
+  } else {
+    console.error(`[audit_storefront] Using cached page data for ${url}`);
+  }
 
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
 
@@ -324,6 +384,7 @@ async function handleScrapePage({ url, depth = 1, max_products = 10, include_scr
   const cookies = getSessionCookies(url);
   const result = await scrapePage(url, cookies, depth, max_products);
   saveSessionCookies(url, result.cookies);
+  setCachedPage(result.url, result);
 
   const content = [{ type: 'text', text: JSON.stringify(buildPageOutput(result), null, 2) }];
 
@@ -342,6 +403,7 @@ async function handleInteractWithPage({ url, action, selector, value, include_sc
   const cookies = getSessionCookies(url);
   const result = await interactWithPage(url, action, selector, value, cookies);
   saveSessionCookies(result.url, result.cookies);
+  setCachedPage(result.url, result);
 
   const output = buildPageOutput(result);
   output.originalUrl = url;
@@ -360,9 +422,15 @@ async function handleAskPage({ url, question, depth = 1, max_products = 10 }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
   if (!question?.trim()) throw new Error('A question is required.');
 
-  const cookies = getSessionCookies(url);
-  const result = await scrapePage(url, cookies, depth, max_products);
-  saveSessionCookies(url, result.cookies);
+  let result = getCachedPage(url);
+  if (!result) {
+    const cookies = getSessionCookies(url);
+    result = await scrapePage(url, cookies, depth, max_products);
+    saveSessionCookies(url, result.cookies);
+    setCachedPage(result.url, result);
+  } else {
+    console.error(`[ask_page] Using cached page data for ${url}`);
+  }
 
   const answer = await askPage(result, question, result.screenshotBuffer);
   return [{ type: 'text', text: answer }];
@@ -388,7 +456,6 @@ function handleSiteMemory({ action, url, note, key, value }) {
     const existing = loadMemory(domain);
 
     if (key && value !== undefined) {
-      // Set a custom field
       const customFields = existing.customFields || {};
       customFields[key] = value;
       saveMemory(domain, { customFields });
@@ -396,7 +463,6 @@ function handleSiteMemory({ action, url, note, key, value }) {
     }
 
     if (note) {
-      // Append a note
       const notes = existing.notes || [];
       notes.push({ text: note, addedAt: new Date().toISOString() });
       saveMemory(domain, { notes });
@@ -417,9 +483,15 @@ function handleSiteMemory({ action, url, note, key, value }) {
 async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
-  const cookies = getSessionCookies(url);
-  const pageData = await scrapePage(url, cookies, depth, max_products);
-  saveSessionCookies(url, pageData.cookies);
+  let pageData = getCachedPage(url);
+  if (!pageData) {
+    const cookies = getSessionCookies(url);
+    pageData = await scrapePage(url, cookies, depth, max_products);
+    saveSessionCookies(url, pageData.cookies);
+    setCachedPage(pageData.url, pageData);
+  } else {
+    console.error(`[merch_roundtable] Using cached page data for ${url}`);
+  }
 
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
 
@@ -448,7 +520,7 @@ function handleClearSession({ url }) {
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'merch-connector', version: '1.3.0' },
+  { name: 'merch-connector', version: '1.4.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -460,7 +532,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   try {
     switch (name) {
       case 'audit_storefront': {
-        const result = await handleAuditStorefront(args);
+        const result = await withTimeout(handleAuditStorefront(args), 'audit_storefront');
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       case 'scrape_page':
@@ -468,11 +540,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       case 'interact_with_page':
         return { content: await handleInteractWithPage(args) };
       case 'ask_page':
-        return { content: await handleAskPage(args) };
+        return { content: await withTimeout(handleAskPage(args), 'ask_page') };
       case 'site_memory':
         return { content: handleSiteMemory(args) };
       case 'merch_roundtable': {
-        const result = await handleRoundtable(args, extra);
+        const result = await withTimeout(handleRoundtable(args, extra), 'merch_roundtable');
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       case 'clear_session':
