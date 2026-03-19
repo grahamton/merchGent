@@ -17,6 +17,7 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 | —  | Server-side timeout wrapper with actionable fallback message | v1.4.0 |
 | —  | Unified session store (cookies + page cache in one domain Map) | v1.4.0 |
 | #2 | Badge & Trust Signal Inventory (per-product: star rating, review count, sale badge, best seller, stock warning, sustainability, new) | v1.5.0 |
+| #3 | Sort Order Extractor (`sortOptions` in scrape output: type, current sort, all available options) | v1.5.0 |
 
 ---
 

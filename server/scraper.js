@@ -218,6 +218,87 @@ const extractFacets = async (page) => {
   });
 };
 
+// ─── Sort order extraction ────────────────────────────────────────────────────
+
+const extractSortOptions = async (page) => {
+  return await page.evaluate(() => {
+    const SORT_LABEL_RE = /sort|order\s+by|display/i;
+    const SORT_OPTION_RE = /relevance|featured|best\s*sell|top\s*rat|price|newest|popular|review|recommend/i;
+
+    // Strategy 1: <select> whose label or id/name mentions "sort"
+    for (const sel of document.querySelectorAll('select')) {
+      const id = sel.id || sel.name || '';
+      const label = document.querySelector(`label[for="${id}"]`)?.innerText || '';
+      const ariaLabel = sel.getAttribute('aria-label') || '';
+      if (!SORT_LABEL_RE.test(id + label + ariaLabel)) continue;
+
+      const options = Array.from(sel.options).map((o) => ({
+        label: o.text.trim(),
+        value: o.value,
+        selected: o.selected,
+      })).filter((o) => o.label.length > 0);
+
+      if (options.length > 1) {
+        const current = options.find((o) => o.selected) || options[0];
+        return { type: 'select', current: current.label, options };
+      }
+    }
+
+    // Strategy 2: stable data-* and aria sort patterns
+    const stableSortSelectors = [
+      '[data-automation*="sort"]',
+      '[data-testid*="sort"]',
+      '[data-test*="sort"]',
+      '[aria-label*="sort" i]',
+      '[class*="sort-by"]',
+      '[class*="sortby"]',
+      '[class*="sort-options"]',
+    ];
+    for (const sel of stableSortSelectors) {
+      const container = document.querySelector(sel);
+      if (!container) continue;
+
+      const items = Array.from(container.querySelectorAll('a, button, li, option, [role="option"], [role="menuitem"]'))
+        .filter((el) => el.innerText?.trim().length > 0 && el.innerText.trim().length < 60);
+
+      if (items.length < 2) continue;
+
+      const options = items.map((el) => ({
+        label: el.innerText.trim(),
+        selected: el.getAttribute('aria-selected') === 'true'
+          || el.classList.contains('selected') || el.classList.contains('active')
+          || el.getAttribute('aria-current') === 'true',
+      }));
+
+      const current = options.find((o) => o.selected)?.label || options[0].label;
+      return { type: 'dropdown', current, options: options.map(({ label, selected }) => ({ label, selected })) };
+    }
+
+    // Strategy 3: heuristic — find any button/link group whose text matches sort terms
+    const allGroups = document.querySelectorAll('ul, [role="listbox"], [role="menu"], [role="tablist"]');
+    for (const group of allGroups) {
+      const items = Array.from(group.querySelectorAll('li, a, button, [role="option"], [role="tab"]'))
+        .filter((el) => el.innerText?.trim().length > 0 && el.innerText.trim().length < 60);
+      if (items.length < 2 || items.length > 12) continue;
+
+      const labels = items.map((el) => el.innerText.trim());
+      const matchCount = labels.filter((l) => SORT_OPTION_RE.test(l)).length;
+      if (matchCount < 2) continue;
+
+      const options = items.map((el) => ({
+        label: el.innerText.trim(),
+        selected: el.getAttribute('aria-selected') === 'true'
+          || el.classList.contains('selected') || el.classList.contains('active'),
+      }));
+
+      const current = options.find((o) => o.selected)?.label || null;
+      return { type: 'button-group', current, options };
+    }
+
+    return null; // no sort UI detected
+  });
+};
+
 // ─── Page data extraction ─────────────────────────────────────────────────────
 
 const extractPageData = async (page, maxProducts = 10) => {
@@ -236,7 +317,7 @@ const extractPageData = async (page, maxProducts = 10) => {
   }
 
   const structure = await detectStructure(page);
-  const facets = await extractFacets(page);
+  const [facets, sortOptions] = await Promise.all([extractFacets(page), extractSortOptions(page)]);
 
   const intelligence = await page.evaluate(() => {
     const getDataLayer = () => {
@@ -432,7 +513,7 @@ const extractPageData = async (page, maxProducts = 10) => {
     b2cKeywords: ['Add to Cart', 'Buy Now', 'Checkout', 'Free Shipping', 'Gift', 'Wishlist', 'Save for Later'],
   });
 
-  return { title, metaDescription, products, structure, facets, ...intelligence };
+  return { title, metaDescription, products, structure, facets, sortOptions, ...intelligence };
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────
