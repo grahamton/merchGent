@@ -10,6 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { scrubEndpointPattern } from './network-intel.js';
 
 const DATA_DIR = process.env.MERCH_CONNECTOR_DATA_DIR
   || path.join(os.homedir(), '.merch-connector', 'data');
@@ -163,6 +164,47 @@ export function diffSnapshot(domain, scrapeResult) {
 export function learnFromScrape(domain, scrapeResult) {
   const existing = loadMemory(domain);
 
+  // Build persistent networkIntel from scrape result
+  let networkIntelUpdate = existing.networkIntel || null;
+  const intelFromScrape = scrapeResult.networkIntel;
+  if (intelFromScrape) {
+    // Merge detected platform IDs (deduplicated)
+    const prevPlatforms = (existing.networkIntel && existing.networkIntel.platforms) || [];
+    const newPlatformIds = (intelFromScrape.platforms || []).map((p) => (typeof p === 'string' ? p : p.id));
+    const mergedPlatforms = [...new Set([...prevPlatforms, ...newPlatformIds])];
+
+    // Scrub and persist discovered API endpoint patterns
+    const prevEndpoints = (existing.networkIntel && existing.networkIntel.apiEndpoints) || [];
+    const newEndpoints = [];
+    if (intelFromScrape.bestApiSource && intelFromScrape.platforms.length > 0) {
+      const bestPlatform = intelFromScrape.platforms.find(
+        (p) => (typeof p === 'object' ? p.id : p) === intelFromScrape.bestApiSource
+      );
+      if (bestPlatform && typeof bestPlatform === 'object' && bestPlatform.detectedAt) {
+        const scrubbed = scrubEndpointPattern(bestPlatform.detectedAt);
+        if (!prevEndpoints.includes(scrubbed)) newEndpoints.push(scrubbed);
+      }
+    }
+    const mergedEndpoints = [...new Set([...prevEndpoints, ...newEndpoints])].slice(0, 20);
+
+    // Collect GTM/GA identifiers from dataLayer
+    const prevDlPlatforms = (existing.networkIntel && existing.networkIntel.dataLayerPlatforms) || [];
+    const newDlPlatforms = [];
+    if (intelFromScrape.dataLayer) {
+      const dl = intelFromScrape.dataLayer;
+      if (dl.gtmContainers) newDlPlatforms.push(...dl.gtmContainers);
+      if (dl.gaProperties) newDlPlatforms.push(...dl.gaProperties);
+    }
+    const mergedDlPlatforms = [...new Set([...prevDlPlatforms, ...newDlPlatforms])].slice(0, 30);
+
+    networkIntelUpdate = {
+      platforms: mergedPlatforms,
+      apiEndpoints: mergedEndpoints,
+      dataLayerPlatforms: mergedDlPlatforms,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
   const learned = {
     // Structural fingerprint
     structure: scrapeResult.structure || existing.structure,
@@ -180,6 +222,9 @@ export function learnFromScrape(domain, scrapeResult) {
     scrapeCount: (existing.scrapeCount || 0) + 1,
     lastScrapedUrl: scrapeResult.url,
     lastScrapedAt: new Date().toISOString(),
+
+    // Network intelligence (persisted across sessions)
+    ...(networkIntelUpdate ? { networkIntel: networkIntelUpdate } : {}),
   };
 
   return saveMemory(domain, learned);

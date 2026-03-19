@@ -89,17 +89,19 @@ function setCachedPage(url, data) {
 // timeout. On expiry the error message guides the model to use scrape_page first.
 
 const TOOL_TIMEOUT_MS = parseInt(process.env.TOOL_TIMEOUT_MS || '120000', 10);
+// Roundtable runs 4 sequential AI calls — give it 4× the base timeout.
+const ROUNDTABLE_TIMEOUT_MS = parseInt(process.env.ROUNDTABLE_TIMEOUT_MS || String(TOOL_TIMEOUT_MS * 4), 10);
 
-function withTimeout(promise, label) {
+function withTimeout(promise, label, timeoutMs = TOOL_TIMEOUT_MS) {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
       setTimeout(
         () => reject(new Error(
-          `${label} timed out after ${TOOL_TIMEOUT_MS / 1000}s. ` +
+          `${label} timed out after ${timeoutMs / 1000}s. ` +
           'For slower models, try calling scrape_page first and then ask_page with a specific question.'
         )),
-        TOOL_TIMEOUT_MS
+        timeoutMs
       )
     ),
   ]);
@@ -146,6 +148,9 @@ const TOOLS = [
       'Extract raw structured data from any storefront URL without running AI analysis. ' +
       'Returns product catalog (title, price, stock, CTA, description, B2B/B2C signals), ' +
       'facets/filters, page metadata, performance timing, data layer contents, and interactable elements. ' +
+      'Also intercepts XHR/fetch network responses to fingerprint the commerce platform (Algolia, Elasticsearch, SFCC, Shopify, etc.), ' +
+      'extract structured product and facet data directly from APIs when confidence is high, ' +
+      'and parse dataLayer/digitalData ecommerce events (GA4, GTM, Adobe, Segment). ' +
       'Results are cached for 10 minutes — calling audit_storefront or ask_page on the same URL afterward will reuse this data. ' +
       'Session cookies are managed automatically.',
     inputSchema: {
@@ -383,11 +388,20 @@ function buildPageOutput(result) {
     b2bMode: rest.b2bMode || null,
     b2bConflictScore: rest.b2bConflictScore ?? null,
     sortOptions: rest.sortOptions || null,
+    dataSource: rest.dataSource || 'dom',
     products: rest.products,
     facets: rest.facets || [],
     findings: rest.findings,
     interactables: rest.interactables,
     dataLayersDetected: Object.keys(rest.dataLayers || {}),
+    networkIntel: rest.networkIntel
+      ? {
+          platforms: rest.networkIntel.platforms || [],
+          apiCount: rest.networkIntel.apiCount || 0,
+          bestApiSource: rest.networkIntel.bestApiSource || null,
+          dataLayer: rest.networkIntel.dataLayer || null,
+        }
+      : undefined,
     siteMemory: Object.keys(memory).length > 0
       ? { scrapeCount: memory.scrapeCount, notes: memory.notes, customFields: memory.customFields }
       : undefined,
@@ -746,7 +760,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       case 'site_memory':
         return { content: handleSiteMemory(args) };
       case 'merch_roundtable': {
-        const result = await withTimeout(handleRoundtable(args, extra), 'merch_roundtable');
+        const result = await withTimeout(handleRoundtable(args, extra), 'merch_roundtable', ROUNDTABLE_TIMEOUT_MS);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       case 'clear_session':

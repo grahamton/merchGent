@@ -4,6 +4,13 @@
  */
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import {
+  interceptNetworkRequests,
+  analyzeNetworkResponses,
+  extractFromBestApi,
+  parseDataLayers,
+  scrubEndpointPattern,
+} from './network-intel.js';
 
 puppeteer.use(StealthPlugin());
 
@@ -576,10 +583,51 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
       try { await page.setCookie(...cookies); } catch { /* non-fatal */ }
     }
 
+    // Set up network interception BEFORE navigation so no responses are missed
+    try { await interceptNetworkRequests(page); } catch { /* non-fatal */ }
+
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise((r) => setTimeout(r, Math.random() * 1000 + 1000));
 
+    // Collect network intelligence after page settles
+    let networkIntel = { platforms: [], apiCount: 0, dataLayer: null, bestApiSource: null };
+    let apiExtraction = null;
+    try {
+      const [parsedDataLayers, analyzedNetwork] = await Promise.all([
+        parseDataLayers(page),
+        Promise.resolve(analyzeNetworkResponses(page._networkResponses || [])),
+      ]);
+
+      const bestApi = extractFromBestApi(analyzedNetwork, 'plp');
+      apiExtraction = bestApi && bestApi.confidence >= 70 ? bestApi : null;
+
+      networkIntel = {
+        platforms: analyzedNetwork.platforms || [],
+        apiCount: (page._networkResponses || []).length,
+        dataLayer: parsedDataLayers,
+        bestApiSource: apiExtraction ? apiExtraction.source : null,
+      };
+    } catch { /* non-fatal — degrade gracefully */ }
+
     const data = await extractPageData(page, maxProducts);
+
+    // Merge API-sourced products/facets when confidence is high enough
+    if (apiExtraction) {
+      data.dataSource = 'api';
+      if (apiExtraction.products.length > 0) {
+        data.products = apiExtraction.products;
+      }
+      // Merge API facets — mark with source flag and deduplicate by name
+      if (apiExtraction.facets.length > 0) {
+        const existingNames = new Set((data.facets || []).map((f) => f.name));
+        const newFacets = apiExtraction.facets.filter((f) => !existingNames.has(f.name));
+        data.facets = [...(data.facets || []), ...newFacets];
+      }
+    } else {
+      data.dataSource = 'dom';
+    }
+
+    data.networkIntel = networkIntel;
     let allProducts = [...data.products];
 
     // Pagination: follow "next" links for additional pages
