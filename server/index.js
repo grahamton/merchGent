@@ -2,13 +2,14 @@
  * merch-connector — MCP Server
  *
  * Gives any agent eyes on a storefront:
- *   audit_storefront   → scrape + AI analysis in one shot (supports persona lens)
- *   scrape_page        → raw structured extraction only
- *   interact_with_page → search/click then extract
- *   ask_page           → scrape + free-form Q&A
- *   site_memory        → persistent per-domain memory
- *   clear_session      → reset stored session (cookies + page cache) for a domain
- *   merch_roundtable   → multi-persona debate (Floor Walker + Auditor + Scout + Moderator)
+ *   audit_storefront    → scrape + AI analysis in one shot (supports persona lens)
+ *   scrape_page         → raw structured extraction only (badges, sort, B2B score, change detection)
+ *   interact_with_page  → multi-step search/click flows then extract
+ *   compare_storefronts → structured diff of two storefront URLs (facets, trust signals, perf)
+ *   ask_page            → scrape + free-form Q&A
+ *   site_memory         → persistent per-domain memory
+ *   clear_session       → reset stored session (cookies + page cache) for a domain
+ *   merch_roundtable    → multi-persona debate (Floor Walker + Auditor + Scout + Moderator)
  *
  * Session state (cookies + page cache) is stored per-domain and auto-managed.
  * Scraped page data is cached for 10 minutes — subsequent AI tools reuse it without re-scraping.
@@ -28,8 +29,8 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets } from './analyzer.js';
-import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory } from './site-memory.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts } from './analyzer.js';
+import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 
 // ─── Session store (cookies + page cache, keyed by domain) ───────────────────
 //
@@ -165,6 +166,10 @@ const TOOLS = [
           type: 'boolean',
           description: 'Set true to include a base64 JPEG screenshot. Default: false.',
         },
+        mobile_screenshot: {
+          type: 'boolean',
+          description: 'Also capture a 390×844 (iPhone 14) mobile viewport screenshot. Returned as a second image. Default: false.',
+        },
       },
       required: ['url'],
     },
@@ -172,8 +177,8 @@ const TOOLS = [
   {
     name: 'interact_with_page',
     description:
-      'Perform a search or click action on a storefront page, then return the resulting page data. ' +
-      'Useful for navigating paginated results, triggering search queries, or following a CTA. ' +
+      'Execute one or more search/click actions on a storefront page in sequence, then return the resulting page data. ' +
+      'Accepts a single action or an array for multi-step flows (e.g. search → filter → click). ' +
       'Session cookies are carried over automatically.',
     inputSchema: {
       type: 'object',
@@ -182,25 +187,55 @@ const TOOLS = [
           type: 'string',
           description: 'Full http/https URL to load.',
         },
+        actions: {
+          type: 'array',
+          description: 'Ordered list of actions to execute. Use this for multi-step flows.',
+          items: {
+            type: 'object',
+            properties: {
+              action:   { type: 'string', enum: ['search', 'click'] },
+              selector: { type: 'string', description: 'CSS selector. Required for "click"; optional for "search".' },
+              value:    { type: 'string', description: 'Text to type. Required for "search".' },
+            },
+            required: ['action'],
+          },
+        },
         action: {
           type: 'string',
           enum: ['search', 'click'],
-          description: '"search" types a query and submits. "click" clicks a CSS selector.',
+          description: 'Single-action shorthand. Ignored when "actions" array is provided.',
         },
         selector: {
           type: 'string',
-          description: 'CSS selector. Required for "click"; optional for "search".',
+          description: 'CSS selector for single-action shorthand.',
         },
         value: {
           type: 'string',
-          description: 'Text to type. Required for "search".',
+          description: 'Text to type for single-action shorthand.',
         },
         include_screenshot: {
           type: 'boolean',
           description: 'Include a base64 JPEG screenshot of the result page.',
         },
       },
-      required: ['url', 'action'],
+      required: ['url'],
+    },
+  },
+  {
+    name: 'compare_storefronts',
+    description:
+      'Scrape two storefront URLs and return a structured side-by-side diff: ' +
+      'product count delta, facet gaps (what site B has that A doesn\'t and vice versa), ' +
+      'trust signal coverage (ratings, reviews, badges), sort option gaps, B2B mode, and performance delta. ' +
+      'Reuses cached page data if either URL was scraped in the last 10 minutes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url_a: { type: 'string', description: 'First storefront URL (your site or baseline).' },
+        url_b: { type: 'string', description: 'Second storefront URL (competitor or variant).' },
+        max_products: { type: 'number', description: 'Max products per page. Default: 10.' },
+      },
+      required: ['url_a', 'url_b'],
     },
   },
   {
@@ -320,11 +355,15 @@ const TOOLS = [
 // ─── Shared output builder ───────────────────────────────────────────────────
 
 function buildPageOutput(result) {
-  const { screenshotBuffer, cookies, ...rest } = result;
+  const { screenshotBuffer, mobileScreenshotBuffer, cookies, ...rest } = result;
 
-  // Auto-learn from every scrape
   const domain = getDomain(rest.url);
+
+  // Diff against stored snapshot before updating it
+  let changes = null;
   if (domain) {
+    try { changes = diffSnapshot(domain, rest); } catch { /* non-fatal */ }
+    try { takeSnapshot(domain, rest); } catch { /* non-fatal */ }
     try { learnFromScrape(domain, rest); } catch { /* non-fatal */ }
   }
 
@@ -340,6 +379,9 @@ function buildPageOutput(result) {
     performance: rest.performance,
     productsFound: rest.products.length,
     pagesScraped: rest.pagesScraped || 1,
+    b2bMode: rest.b2bMode || null,
+    b2bConflictScore: rest.b2bConflictScore ?? null,
+    sortOptions: rest.sortOptions || null,
     products: rest.products,
     facets: rest.facets || [],
     findings: rest.findings,
@@ -349,6 +391,7 @@ function buildPageOutput(result) {
       ? { scrapeCount: memory.scrapeCount, notes: memory.notes, customFields: memory.customFields }
       : undefined,
     priceBucketAnalysis: validatePriceBuckets(rest) || undefined,
+    changes: changes || undefined,
   };
 }
 
@@ -386,11 +429,11 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
   return { ...output, audit: analysis, ...(persona ? { persona } : {}) };
 }
 
-async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false }) {
+async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false, mobile_screenshot = false }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
   const cookies = getSessionCookies(url);
-  const result = await scrapePage(url, cookies, depth, max_products);
+  const result = await scrapePage(url, cookies, depth, max_products, mobile_screenshot);
   saveSessionCookies(url, result.cookies);
   setCachedPage(result.url, result);
 
@@ -399,23 +442,28 @@ async function handleScrapePage({ url, depth = 1, max_products = 10, include_scr
   if (include_screenshot && result.screenshotBuffer) {
     content.push({ type: 'image', data: result.screenshotBuffer.toString('base64'), mimeType: 'image/jpeg' });
   }
+  if (mobile_screenshot && result.mobileScreenshotBuffer) {
+    content.push({ type: 'image', data: result.mobileScreenshotBuffer.toString('base64'), mimeType: 'image/jpeg' });
+  }
 
   return content;
 }
 
-async function handleInteractWithPage({ url, action, selector, value, include_screenshot = false }) {
+async function handleInteractWithPage({ url, actions, action, selector, value, include_screenshot = false }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
-  if (action === 'search' && !value) throw new Error('"value" required for search.');
-  if (action === 'click' && !selector) throw new Error('"selector" required for click.');
+
+  // Normalize: accept either `actions` array or legacy single-action params
+  const steps = actions ?? [{ action, selector, value }];
+  if (!steps[0]?.action) throw new Error('Provide either "actions" array or "action" string.');
 
   const cookies = getSessionCookies(url);
-  const result = await interactWithPage(url, action, selector, value, cookies);
+  const result = await interactWithPage(url, steps, cookies);
   saveSessionCookies(result.url, result.cookies);
   setCachedPage(result.url, result);
 
   const output = buildPageOutput(result);
   output.originalUrl = url;
-  output.action = action;
+  output.actionsExecuted = result.actionsExecuted;
 
   const content = [{ type: 'text', text: JSON.stringify(output, null, 2) }];
 
@@ -424,6 +472,35 @@ async function handleInteractWithPage({ url, action, selector, value, include_sc
   }
 
   return content;
+}
+
+async function handleCompareStorefronts({ url_a, url_b, max_products = 10 }) {
+  if (!isValidHttpUrl(url_a)) throw new Error(`Invalid URL A: "${url_a}"`);
+  if (!isValidHttpUrl(url_b)) throw new Error(`Invalid URL B: "${url_b}"`);
+
+  const [pageDataA, pageDataB] = await Promise.all([
+    (async () => {
+      let data = getCachedPage(url_a);
+      if (!data) {
+        data = await scrapePage(url_a, getSessionCookies(url_a), 1, max_products);
+        saveSessionCookies(data.url, data.cookies);
+        setCachedPage(data.url, data);
+      }
+      return data;
+    })(),
+    (async () => {
+      let data = getCachedPage(url_b);
+      if (!data) {
+        data = await scrapePage(url_b, getSessionCookies(url_b), 1, max_products);
+        saveSessionCookies(data.url, data.cookies);
+        setCachedPage(data.url, data);
+      }
+      return data;
+    })(),
+  ]);
+
+  const comparison = compareStorefronts(pageDataA, pageDataB);
+  return [{ type: 'text', text: JSON.stringify(comparison, null, 2) }];
 }
 
 async function handleAskPage({ url, question, depth = 1, max_products = 10 }) {
@@ -504,14 +581,24 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
 
   const progressToken = extra?._meta?.progressToken;
-  const onProgress = progressToken !== undefined
-    ? async (progress, total, message) => {
-        await extra.sendNotification({
-          method: 'notifications/progress',
-          params: { progressToken, progress, total, message },
-        });
-      }
-    : null;
+  const onProgress = async (progress, total, message, personaData = null) => {
+    // Always emit a progress notification if a token was provided
+    if (progressToken !== undefined) {
+      await extra.sendNotification({
+        method: 'notifications/progress',
+        params: { progressToken, progress, total, message },
+      }).catch(() => {});
+    }
+    // Emit the persona result immediately so clients can display it without waiting
+    if (personaData) {
+      sendLog('info', `[roundtable] ${message}`, {
+        type: 'roundtable_persona_result',
+        progress,
+        total,
+        ...personaData,
+      });
+    }
+  };
 
   const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress);
   return result;
@@ -528,7 +615,7 @@ function handleClearSession({ url }) {
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'merch-connector', version: '1.4.0' },
+  { name: 'merch-connector', version: '1.5.0' },
   { capabilities: { tools: {}, resources: {}, prompts: {}, logging: {} } }
 );
 
@@ -651,6 +738,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         return { content: await handleScrapePage(args) };
       case 'interact_with_page':
         return { content: await handleInteractWithPage(args) };
+      case 'compare_storefronts':
+        return { content: await withTimeout(handleCompareStorefronts(args), 'compare_storefronts') };
       case 'ask_page':
         return { content: await withTimeout(handleAskPage(args), 'ask_page') };
       case 'site_memory':

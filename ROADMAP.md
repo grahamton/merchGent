@@ -16,6 +16,15 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 | —  | Page data cache (10-min TTL, shared across ask/audit/roundtable) | v1.4.0 |
 | —  | Server-side timeout wrapper with actionable fallback message | v1.4.0 |
 | —  | Unified session store (cookies + page cache in one domain Map) | v1.4.0 |
+| #2 | Badge & Trust Signal Inventory (per-product: star rating, review count, sale badge, best seller, stock warning, sustainability, new) | v1.5.0 |
+| #3 | Sort Order Extractor (`sortOptions` in scrape output: type, current sort, all available options) | v1.5.0 |
+| #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) and `b2bMode` (B2B/B2C/Hybrid) as top-level scrape fields | v1.5.0 |
+| #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com laptops with `b2b_auditor` persona | v1.5.0 |
+| #4  | Mobile Viewport Snapshot — optional `mobile_screenshot: true` on `scrape_page` returns 390×844 JPEG | v1.5.0 |
+| #16 | Multi-Step `interact_with_page` Flows — `actions` array executes search/click steps sequentially | v1.5.0 |
+| #14 | Competitor Comparison Tool — `compare_storefronts` tool: product count delta, facet gaps, trust signal coverage, sort/B2B/perf diff | v1.5.0 |
+| #15 | Change Detection — snapshot stored on every scrape, `changes` field returned on subsequent scrapes with new/removed products, price moves, facet/sort changes | v1.5.0 |
+| #9  | Roundtable Streaming Output — each persona result emitted via `notifications/message` as it completes; progress bar still fires via `notifications/progress` | v1.5.0 |
 
 ---
 

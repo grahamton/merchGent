@@ -19,7 +19,8 @@ const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
 const flagVal = (name) => { const i = args.indexOf(`--${name}`); return i !== -1 && args[i + 1] ? args[i + 1] : null; };
 
-const url = flagVal('url') || 'https://www.zappos.com/running-shoes';
+const b2bMode = flag('b2b');
+const url = flagVal('url') || (b2bMode ? 'https://www.insight.com/en_US/shop/product/laptops/laptops.html' : 'https://www.zappos.com/running-shoes');
 const depth = 1;
 const maxProducts = 5;
 
@@ -35,6 +36,10 @@ console.log(`   Products: ${result.products.length}`);
 console.log(`   Facets: ${(result.facets || []).length}`);
 console.log(`   Structure: ${result.structure?.confidence || 'unknown'} confidence`);
 console.log(`   Screenshot: ${result.screenshotBuffer ? `${(result.screenshotBuffer.length / 1024).toFixed(0)}KB` : 'none'}`);
+console.log(`   B2B mode: ${result.b2bMode} (conflict score: ${result.b2bConflictScore}/100)`);
+if (result.sortOptions) {
+  console.log(`   Sort: "${result.sortOptions.current}" (${result.sortOptions.options.length} options)`);
+}
 
 if (result.products.length > 0) {
   console.log(`\n📦 First 3 products:`);
@@ -65,7 +70,7 @@ if (flag('audit')) {
   }
 }
 
-const persona = flagVal('persona');
+const persona = flagVal('persona') || (b2bMode ? 'b2b_auditor' : null);
 if (persona) {
   const fn = { floor_walker: analyzeAsFloorWalker, auditor: analyzeAsAuditor, scout: analyzeAsScout, b2b_auditor: analyzeAsAuditorB2B }[persona];
   if (!fn) { console.error(`Unknown persona: ${persona}`); process.exit(1); }
@@ -105,13 +110,14 @@ if (question) {
 }
 
 // If no AI flags, just show the scrape summary
-if (!flag('audit') && !persona && !flag('roundtable') && !question) {
+if (!flag('audit') && !persona && !flag('roundtable') && !question && !b2bMode) {
   console.log(`\n💡 Scrape-only test passed. Add flags to test AI features:`);
   console.log(`   --audit              Full merchandising audit`);
   console.log(`   --persona scout      Single persona (floor_walker | auditor | scout | b2b_auditor)`);
   console.log(`   --roundtable         All 3 personas + moderator debate`);
   console.log(`   --ask "question"     Ask anything about the page`);
   console.log(`   --url https://...    Override the default URL`);
+  console.log(`   --b2b                B2B validation: Insight.com laptops + b2b_auditor persona (#13)`);
 }
 
 console.log('');

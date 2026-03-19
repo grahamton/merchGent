@@ -218,6 +218,117 @@ const extractFacets = async (page) => {
   });
 };
 
+// ─── B2B/B2C signal scoring ───────────────────────────────────────────────────
+
+/**
+ * Compute a machine-readable B2B/B2C conflict score from scraped products.
+ * Exported so callers can branch on it without re-scraping.
+ *
+ * @param {Array} products - Products array from extractPageData
+ * @returns {{ b2bConflictScore: number, b2bMode: 'B2B'|'B2C'|'Hybrid' }}
+ */
+export function computeB2BSignals(products) {
+  const total = products.length;
+  if (total === 0) return { b2bConflictScore: 0, b2bMode: 'B2C' };
+
+  const b2bCount = products.filter((p) => p.b2bIndicators?.length > 0).length;
+  const b2cCount = products.filter((p) => p.b2cIndicators?.length > 0).length;
+  const bothCount = products.filter((p) => p.b2bIndicators?.length > 0 && p.b2cIndicators?.length > 0).length;
+  const b2bConflictScore = Math.round((bothCount / total) * 100);
+
+  let b2bMode;
+  if (b2bConflictScore >= 30) {
+    b2bMode = 'Hybrid';
+  } else if (b2bCount > b2cCount && b2bCount / total >= 0.5) {
+    b2bMode = 'B2B';
+  } else {
+    b2bMode = 'B2C';
+  }
+
+  return { b2bConflictScore, b2bMode };
+}
+
+// ─── Sort order extraction ────────────────────────────────────────────────────
+
+const extractSortOptions = async (page) => {
+  return await page.evaluate(() => {
+    const SORT_LABEL_RE = /sort|order\s+by|display/i;
+    const SORT_OPTION_RE = /relevance|featured|best\s*sell|top\s*rat|price|newest|popular|review|recommend/i;
+
+    // Strategy 1: <select> whose label or id/name mentions "sort"
+    for (const sel of document.querySelectorAll('select')) {
+      const id = sel.id || sel.name || '';
+      const label = document.querySelector(`label[for="${id}"]`)?.innerText || '';
+      const ariaLabel = sel.getAttribute('aria-label') || '';
+      if (!SORT_LABEL_RE.test(id + label + ariaLabel)) continue;
+
+      const options = Array.from(sel.options).map((o) => ({
+        label: o.text.trim(),
+        value: o.value,
+        selected: o.selected,
+      })).filter((o) => o.label.length > 0);
+
+      if (options.length > 1) {
+        const current = options.find((o) => o.selected) || options[0];
+        return { type: 'select', current: current.label, options };
+      }
+    }
+
+    // Strategy 2: stable data-* and aria sort patterns
+    const stableSortSelectors = [
+      '[data-automation*="sort"]',
+      '[data-testid*="sort"]',
+      '[data-test*="sort"]',
+      '[aria-label*="sort" i]',
+      '[class*="sort-by"]',
+      '[class*="sortby"]',
+      '[class*="sort-options"]',
+    ];
+    for (const sel of stableSortSelectors) {
+      const container = document.querySelector(sel);
+      if (!container) continue;
+
+      const items = Array.from(container.querySelectorAll('a, button, li, option, [role="option"], [role="menuitem"]'))
+        .filter((el) => el.innerText?.trim().length > 0 && el.innerText.trim().length < 60);
+
+      if (items.length < 2) continue;
+
+      const options = items.map((el) => ({
+        label: el.innerText.trim(),
+        selected: el.getAttribute('aria-selected') === 'true'
+          || el.classList.contains('selected') || el.classList.contains('active')
+          || el.getAttribute('aria-current') === 'true',
+      }));
+
+      const current = options.find((o) => o.selected)?.label || options[0].label;
+      return { type: 'dropdown', current, options: options.map(({ label, selected }) => ({ label, selected })) };
+    }
+
+    // Strategy 3: heuristic — find any button/link group whose text matches sort terms
+    const allGroups = document.querySelectorAll('ul, [role="listbox"], [role="menu"], [role="tablist"]');
+    for (const group of allGroups) {
+      const items = Array.from(group.querySelectorAll('li, a, button, [role="option"], [role="tab"]'))
+        .filter((el) => el.innerText?.trim().length > 0 && el.innerText.trim().length < 60);
+      if (items.length < 2 || items.length > 12) continue;
+
+      const labels = items.map((el) => el.innerText.trim());
+      const matchCount = labels.filter((l) => SORT_OPTION_RE.test(l)).length;
+      if (matchCount < 2) continue;
+
+      const options = items.map((el) => ({
+        label: el.innerText.trim(),
+        selected: el.getAttribute('aria-selected') === 'true'
+          || el.classList.contains('selected') || el.classList.contains('active'),
+      }));
+
+      const current = options.find((o) => o.selected)?.label || null;
+      return { type: 'button-group', current, options };
+    }
+
+    return null; // no sort UI detected
+  });
+};
+
 // ─── Page data extraction ─────────────────────────────────────────────────────
 
 const extractPageData = async (page, maxProducts = 10) => {
@@ -236,7 +347,7 @@ const extractPageData = async (page, maxProducts = 10) => {
   }
 
   const structure = await detectStructure(page);
-  const facets = await extractFacets(page);
+  const [facets, sortOptions] = await Promise.all([extractFacets(page), extractSortOptions(page)]);
 
   const intelligence = await page.evaluate(() => {
     const getDataLayer = () => {
@@ -347,11 +458,82 @@ const extractPageData = async (page, maxProducts = 10) => {
       const b2bIndicators = b2bKeywords.filter((kw) => new RegExp(kw, 'i').test(rawText));
       const b2cIndicators = b2cKeywords.filter((kw) => new RegExp(kw, 'i').test(rawText));
 
+      // ── Badge & trust signal extraction ──────────────────────────────────────
+      const ratingEl = el.querySelector(
+        '[class*="rating"], [class*="star"], [aria-label*="rating"], [itemprop="ratingValue"]'
+      );
+      let starRating = null;
+      if (ratingEl) {
+        const ratingText = ratingEl.getAttribute('aria-label') || ratingEl.innerText || '';
+        const ratingMatch = ratingText.match(/(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*\d+|(\d+(?:\.\d+)?)\s*star/i);
+        if (ratingMatch) {
+          starRating = parseFloat(ratingMatch[1] ?? ratingMatch[2]);
+        } else {
+          const numMatch = ratingText.match(/\d+(?:\.\d+)?/);
+          if (numMatch) starRating = parseFloat(numMatch[0]);
+        }
+      }
+
+      const reviewEl = el.querySelector('[class*="review"], [class*="rating-count"], [itemprop="reviewCount"]');
+      let reviewCount = null;
+      if (reviewEl) {
+        const reviewMatch = (reviewEl.innerText || '').match(/\d[\d,]*/);
+        if (reviewMatch) reviewCount = parseInt(reviewMatch[0].replace(/,/g, ''), 10);
+      }
+      if (reviewCount === null) {
+        const reviewMatch = rawText.match(/(\d[\d,]*)\s*(?:review|rating|customer)/i);
+        if (reviewMatch) reviewCount = parseInt(reviewMatch[1].replace(/,/g, ''), 10);
+      }
+
+      const badgeEls = el.querySelectorAll(
+        '[class*="badge"], [class*="label"], [class*="tag"], [class*="flag"], [class*="sticker"], [class*="banner"]'
+      );
+      const badgeTexts = Array.from(badgeEls)
+        .map((b) => b.innerText.trim())
+        .filter((t) => t.length > 0 && t.length < 50);
+
+      const bestSeller = /best\s*seller/i.test(rawText) || badgeTexts.some((t) => /best\s*seller/i.test(t));
+      const isNew = badgeTexts.some((t) => /^\s*new\s*$/i.test(t)) || /\bnew\s+arrival/i.test(rawText);
+      const saleText = (() => {
+        for (const t of badgeTexts) {
+          if (/sale|save|\d+%\s*off|deal/i.test(t)) return t;
+        }
+        const m = rawText.match(/(\d+%\s*off|save\s+\$[\d.]+|\bsale\b)/i);
+        return m ? m[0] : null;
+      })();
+
+      const stockWarning = (() => {
+        const m = rawText.match(/only\s+\d+\s+left|low\s+stock|limited\s+(?:stock|quantity)|selling\s+fast/i);
+        return m ? m[0].trim() : null;
+      })();
+
+      const sustainabilityKeywords = ['eco-friendly', 'sustainable', 'carbon neutral', 'recycled', 'organic', 'fair trade'];
+      const sustainabilityLabel = (() => {
+        for (const kw of sustainabilityKeywords) {
+          if (new RegExp(kw, 'i').test(rawText)) {
+            return badgeTexts.find((t) => new RegExp(kw, 'i').test(t)) || kw;
+          }
+        }
+        return null;
+      })();
+
+      const trustSignals = {
+        starRating,
+        reviewCount,
+        bestSeller,
+        isNew,
+        onSale: saleText !== null,
+        saleText,
+        stockWarning,
+        sustainabilityLabel,
+        badges: badgeTexts.slice(0, 8),
+      };
+
       return {
         title, price, stockStatus,
         imageAlt: img?.alt || null,
         imageSrc: img?.src || null,
-        ctaText, description, b2bIndicators, b2cIndicators,
+        ctaText, description, b2bIndicators, b2cIndicators, trustSignals,
       };
     });
   }, {
@@ -361,7 +543,8 @@ const extractPageData = async (page, maxProducts = 10) => {
     b2cKeywords: ['Add to Cart', 'Buy Now', 'Checkout', 'Free Shipping', 'Gift', 'Wishlist', 'Save for Later'],
   });
 
-  return { title, metaDescription, products, structure, facets, ...intelligence };
+  const { b2bConflictScore, b2bMode } = computeB2BSignals(products);
+  return { title, metaDescription, products, structure, facets, sortOptions, b2bConflictScore, b2bMode, ...intelligence };
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -370,12 +553,13 @@ const extractPageData = async (page, maxProducts = 10) => {
  * Scrape a product listing page.
  * Returns structured page data + a JPEG screenshot buffer.
  *
- * @param {string} url
- * @param {Array}  cookies
- * @param {number} depth        - Pages to scrape (1 = current page only, 2+ = follow pagination)
- * @param {number} maxProducts  - Max products per page (default 10)
+ * @param {string}  url
+ * @param {Array}   cookies
+ * @param {number}  depth           - Pages to scrape (1 = current page only, 2+ = follow pagination)
+ * @param {number}  maxProducts     - Max products per page (default 10)
+ * @param {boolean} mobileScreenshot - Also capture a 390×844 mobile viewport screenshot
  */
-export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10) {
+export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10, mobileScreenshot = false) {
   if (!isValidHttpUrl(url)) throw new Error('Invalid URL — must be http or https.');
 
   let page;
@@ -439,6 +623,14 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10)
     data.products = allProducts;
     const currentCookies = await page.cookies();
     const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
+
+    let mobileScreenshotBuffer = null;
+    if (mobileScreenshot) {
+      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+      await new Promise((r) => setTimeout(r, 800));
+      mobileScreenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
+      await page.setViewport({ width: 1920, height: 1080 }); // restore
+    }
     const performance = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];
       const paint = performance.getEntriesByType('paint');
@@ -451,18 +643,28 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10)
       };
     });
 
-    return { url: page.url(), ...data, performance, cookies: currentCookies, screenshotBuffer, pagesScraped: Math.min(depth, maxDepth) };
+    return { url: page.url(), ...data, performance, cookies: currentCookies, screenshotBuffer, mobileScreenshotBuffer, pagesScraped: Math.min(depth, maxDepth) };
   } finally {
     if (page) await page.close();
   }
 }
 
 /**
- * Perform a search or click action on a page, then return the resulting page data.
+ * Execute one or more actions on a page sequentially, then return the resulting page data.
+ *
+ * @param {string} url
+ * @param {Array}  actions  - Array of { action: 'search'|'click', selector?, value? }
+ * @param {Array}  cookies
  */
-export async function interactWithPage(url, action, selector, value, cookies = []) {
+export async function interactWithPage(url, actions, cookies = []) {
   if (!isValidHttpUrl(url)) throw new Error('Invalid URL — must be http or https.');
-  if (!['search', 'click'].includes(action)) throw new Error('Action must be "search" or "click".');
+  if (!Array.isArray(actions) || actions.length === 0) throw new Error('"actions" must be a non-empty array.');
+
+  for (const step of actions) {
+    if (!['search', 'click'].includes(step.action)) throw new Error(`action must be "search" or "click", got "${step.action}".`);
+    if (step.action === 'search' && !step.value) throw new Error('"value" required for search action.');
+    if (step.action === 'click' && !step.selector) throw new Error('"selector" required for click action.');
+  }
 
   let page;
   try {
@@ -477,23 +679,25 @@ export async function interactWithPage(url, action, selector, value, cookies = [
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise((r) => setTimeout(r, 1000));
 
-    if (action === 'search') {
-      const searchSel = selector || 'input[type="search"], input[name="q"], input[name="search"]';
-      await page.waitForSelector(searchSel, { timeout: 5000 });
-      await page.type(searchSel, value);
-      await page.keyboard.press('Enter');
-      await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-    } else if (action === 'click') {
-      await page.waitForSelector(selector, { timeout: 5000 });
-      await page.click(selector);
-      await new Promise((r) => setTimeout(r, 2000));
+    for (const step of actions) {
+      if (step.action === 'search') {
+        const searchSel = step.selector || 'input[type="search"], input[name="q"], input[name="search"]';
+        await page.waitForSelector(searchSel, { timeout: 5000 });
+        await page.type(searchSel, step.value);
+        await page.keyboard.press('Enter');
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+      } else if (step.action === 'click') {
+        await page.waitForSelector(step.selector, { timeout: 5000 });
+        await page.click(step.selector);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
     }
 
     const data = await extractPageData(page);
     const currentCookies = await page.cookies();
     const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
 
-    return { url: page.url(), ...data, cookies: currentCookies, screenshotBuffer };
+    return { url: page.url(), ...data, cookies: currentCookies, screenshotBuffer, actionsExecuted: actions.length };
   } finally {
     if (page) await page.close();
   }

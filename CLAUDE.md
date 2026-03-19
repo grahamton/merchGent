@@ -4,7 +4,7 @@
 
 An MCP server that gives AI agents visual access to e-commerce storefronts for automated merchandising analysis. It bridges AI and real product pages through a stealth headless browser, a multi-provider AI abstraction layer, and a persona-based expert analysis system.
 
-**7 MCP tools**: `scrape_page`, `interact_with_page`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`
+**8 MCP tools**: `scrape_page`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`
 
 **5 MCP prompts** (persona instructions): `floor-walker`, `auditor`, `auditor-b2b`, `scout`, `merch-roundtable`
 
@@ -88,6 +88,9 @@ npm run test:persona floor_walker
 # All 3 personas + moderator debate
 npm run test:roundtable
 
+# B2B validation: Insight.com laptops + b2b_auditor persona
+node test/smoke.js --b2b
+
 # Ad-hoc question against a live page
 node test/smoke.js --ask "what colors are available?"
 
@@ -95,7 +98,7 @@ node test/smoke.js --ask "what colors are available?"
 node test/smoke.js --url https://www.nike.com/w/mens-shoes
 ```
 
-`test/smoke.js` supports `--url`, `--audit`, `--persona <name>`, `--ask "<question>"`, `--roundtable` flags.
+`test/smoke.js` supports `--url`, `--audit`, `--persona <name>`, `--ask "<question>"`, `--roundtable`, `--b2b` flags.
 
 Default test URL: `https://www.zappos.com/running-shoes` (reliable product grid).
 
@@ -114,11 +117,27 @@ Each analysis mode has parallel implementations for Anthropic / Gemini / OpenAI-
 ### Scraper structure detection
 Two-pass heuristic: tries stable selectors (data-automation, itemprop, common class patterns) first, then falls back to a scoring algorithm that finds the DOM container with the most repeated children carrying price/image/CTA signals.
 
+### Scrape output fields (v1.5.0)
+Every `scrapePage` call returns:
+- `products[]` — title, price, stockStatus, CTA, description, b2bIndicators, b2cIndicators, `trustSignals` (star rating, review count, sale badge, best seller, stock warning, sustainability label, raw badge texts)
+- `facets[]` — name, type, options, selectedCount
+- `sortOptions` — type (`select`|`dropdown`|`button-group`), current sort, full options list; `null` if not detected
+- `b2bMode` — `"B2B"` | `"B2C"` | `"Hybrid"`
+- `b2bConflictScore` — 0–100; percentage of products carrying both B2B and B2C signals
+- `changes` — diff vs. stored snapshot (new/removed products, price changes, facet/sort changes); `undefined` on first scrape of a domain
+- `performance`, `structure`, `findings`, `interactables`, `dataLayers`
+
 ### Personas
-Each persona returns a typed JSON schema validated against a strict schema before use. Personas are independent — `merch_roundtable` runs all three in sequence then passes all results to a moderator that synthesizes consensus and disagreements.
+Each persona returns a typed JSON schema validated against a strict schema before use. Personas are independent — `merch_roundtable` runs all three in sequence then passes all results to a moderator that synthesizes consensus and disagreements. Each persona result is streamed as a `notifications/message` as it completes (type: `roundtable_persona_result`) so clients don't have to wait for all four AI calls.
 
 ### Site memory
-Auto-populated on every `scrapePage` call (`learnFromScrape()`). Loaded and injected into all persona analyses for cross-session learning. Manual notes supported via the `site_memory` tool.
+Auto-populated on every `scrapePage` call (`learnFromScrape()`). Loaded and injected into all persona analyses for cross-session learning. Manual notes supported via the `site_memory` tool. A normalized snapshot is also stored on every scrape and diffed against the previous one — the `changes` field in scrape output is driven by this.
+
+### Change detection
+`takeSnapshot()` and `diffSnapshot()` in `site-memory.js` normalize products (title/price/stock), facet names, sort options, and `b2bMode` into a compact baseline. On every subsequent scrape, the diff is computed before the snapshot is updated and included in the output as `changes`.
+
+### Competitor comparison
+`compare_storefronts` scrapes two URLs concurrently (cache-aware) and returns a pure structural diff — no AI call. Fields: product count delta, facet gap analysis (onlyInA/onlyInB/shared), trust signal coverage per site, sort option gaps, B2B mode comparison, performance delta (FCP + full load).
 
 ---
 
@@ -131,6 +150,7 @@ Auto-populated on every `scrapePage` call (`learnFromScrape()`). Loaded and inje
 - Tool errors are returned as `{ content: [...], isError: true }` (MCP spec compliant), not thrown.
 - Page data is embedded as formatted JSON blocks in prompts — never interpolated raw strings — to prevent prompt injection.
 - Do not add browser launch logic outside `server/scraper.js`. The `BrowserManager` singleton in that file owns the headless browser lifecycle.
+- `computeB2BSignals(products)` is exported from `scraper.js` — callers can use it to classify page data without re-scraping.
 
 ---
 
@@ -143,3 +163,5 @@ Auto-populated on every `scrapePage` call (`learnFromScrape()`). Loaded and inje
 **Change default model**: Set `MODEL_NAME` in `.env`. Do not hard-code model names in source — they belong in `.env`.
 
 **Adjust AI timeout**: Set `TOOL_TIMEOUT_MS` in `.env`.
+
+**Add a scrape output field**: Add extraction logic in `extractPageData()` in `scraper.js`, include it in the return object, and add it to `buildPageOutput()` in `index.js` so it reaches MCP callers. If it should appear in change detection, also update `normalizeSnapshot()` in `site-memory.js`.
