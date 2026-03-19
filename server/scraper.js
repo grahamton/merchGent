@@ -553,12 +553,13 @@ const extractPageData = async (page, maxProducts = 10) => {
  * Scrape a product listing page.
  * Returns structured page data + a JPEG screenshot buffer.
  *
- * @param {string} url
- * @param {Array}  cookies
- * @param {number} depth        - Pages to scrape (1 = current page only, 2+ = follow pagination)
- * @param {number} maxProducts  - Max products per page (default 10)
+ * @param {string}  url
+ * @param {Array}   cookies
+ * @param {number}  depth           - Pages to scrape (1 = current page only, 2+ = follow pagination)
+ * @param {number}  maxProducts     - Max products per page (default 10)
+ * @param {boolean} mobileScreenshot - Also capture a 390×844 mobile viewport screenshot
  */
-export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10) {
+export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10, mobileScreenshot = false) {
   if (!isValidHttpUrl(url)) throw new Error('Invalid URL — must be http or https.');
 
   let page;
@@ -622,6 +623,14 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10)
     data.products = allProducts;
     const currentCookies = await page.cookies();
     const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
+
+    let mobileScreenshotBuffer = null;
+    if (mobileScreenshot) {
+      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+      await new Promise((r) => setTimeout(r, 800));
+      mobileScreenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
+      await page.setViewport({ width: 1920, height: 1080 }); // restore
+    }
     const performance = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];
       const paint = performance.getEntriesByType('paint');
@@ -634,18 +643,28 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10)
       };
     });
 
-    return { url: page.url(), ...data, performance, cookies: currentCookies, screenshotBuffer, pagesScraped: Math.min(depth, maxDepth) };
+    return { url: page.url(), ...data, performance, cookies: currentCookies, screenshotBuffer, mobileScreenshotBuffer, pagesScraped: Math.min(depth, maxDepth) };
   } finally {
     if (page) await page.close();
   }
 }
 
 /**
- * Perform a search or click action on a page, then return the resulting page data.
+ * Execute one or more actions on a page sequentially, then return the resulting page data.
+ *
+ * @param {string} url
+ * @param {Array}  actions  - Array of { action: 'search'|'click', selector?, value? }
+ * @param {Array}  cookies
  */
-export async function interactWithPage(url, action, selector, value, cookies = []) {
+export async function interactWithPage(url, actions, cookies = []) {
   if (!isValidHttpUrl(url)) throw new Error('Invalid URL — must be http or https.');
-  if (!['search', 'click'].includes(action)) throw new Error('Action must be "search" or "click".');
+  if (!Array.isArray(actions) || actions.length === 0) throw new Error('"actions" must be a non-empty array.');
+
+  for (const step of actions) {
+    if (!['search', 'click'].includes(step.action)) throw new Error(`action must be "search" or "click", got "${step.action}".`);
+    if (step.action === 'search' && !step.value) throw new Error('"value" required for search action.');
+    if (step.action === 'click' && !step.selector) throw new Error('"selector" required for click action.');
+  }
 
   let page;
   try {
@@ -660,23 +679,25 @@ export async function interactWithPage(url, action, selector, value, cookies = [
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise((r) => setTimeout(r, 1000));
 
-    if (action === 'search') {
-      const searchSel = selector || 'input[type="search"], input[name="q"], input[name="search"]';
-      await page.waitForSelector(searchSel, { timeout: 5000 });
-      await page.type(searchSel, value);
-      await page.keyboard.press('Enter');
-      await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-    } else if (action === 'click') {
-      await page.waitForSelector(selector, { timeout: 5000 });
-      await page.click(selector);
-      await new Promise((r) => setTimeout(r, 2000));
+    for (const step of actions) {
+      if (step.action === 'search') {
+        const searchSel = step.selector || 'input[type="search"], input[name="q"], input[name="search"]';
+        await page.waitForSelector(searchSel, { timeout: 5000 });
+        await page.type(searchSel, step.value);
+        await page.keyboard.press('Enter');
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+      } else if (step.action === 'click') {
+        await page.waitForSelector(step.selector, { timeout: 5000 });
+        await page.click(step.selector);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
     }
 
     const data = await extractPageData(page);
     const currentCookies = await page.cookies();
     const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
 
-    return { url: page.url(), ...data, cookies: currentCookies, screenshotBuffer };
+    return { url: page.url(), ...data, cookies: currentCookies, screenshotBuffer, actionsExecuted: actions.length };
   } finally {
     if (page) await page.close();
   }

@@ -165,6 +165,10 @@ const TOOLS = [
           type: 'boolean',
           description: 'Set true to include a base64 JPEG screenshot. Default: false.',
         },
+        mobile_screenshot: {
+          type: 'boolean',
+          description: 'Also capture a 390×844 (iPhone 14) mobile viewport screenshot. Returned as a second image. Default: false.',
+        },
       },
       required: ['url'],
     },
@@ -172,8 +176,8 @@ const TOOLS = [
   {
     name: 'interact_with_page',
     description:
-      'Perform a search or click action on a storefront page, then return the resulting page data. ' +
-      'Useful for navigating paginated results, triggering search queries, or following a CTA. ' +
+      'Execute one or more search/click actions on a storefront page in sequence, then return the resulting page data. ' +
+      'Accepts a single action or an array for multi-step flows (e.g. search → filter → click). ' +
       'Session cookies are carried over automatically.',
     inputSchema: {
       type: 'object',
@@ -182,25 +186,38 @@ const TOOLS = [
           type: 'string',
           description: 'Full http/https URL to load.',
         },
+        actions: {
+          type: 'array',
+          description: 'Ordered list of actions to execute. Use this for multi-step flows.',
+          items: {
+            type: 'object',
+            properties: {
+              action:   { type: 'string', enum: ['search', 'click'] },
+              selector: { type: 'string', description: 'CSS selector. Required for "click"; optional for "search".' },
+              value:    { type: 'string', description: 'Text to type. Required for "search".' },
+            },
+            required: ['action'],
+          },
+        },
         action: {
           type: 'string',
           enum: ['search', 'click'],
-          description: '"search" types a query and submits. "click" clicks a CSS selector.',
+          description: 'Single-action shorthand. Ignored when "actions" array is provided.',
         },
         selector: {
           type: 'string',
-          description: 'CSS selector. Required for "click"; optional for "search".',
+          description: 'CSS selector for single-action shorthand.',
         },
         value: {
           type: 'string',
-          description: 'Text to type. Required for "search".',
+          description: 'Text to type for single-action shorthand.',
         },
         include_screenshot: {
           type: 'boolean',
           description: 'Include a base64 JPEG screenshot of the result page.',
         },
       },
-      required: ['url', 'action'],
+      required: ['url'],
     },
   },
   {
@@ -386,11 +403,11 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
   return { ...output, audit: analysis, ...(persona ? { persona } : {}) };
 }
 
-async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false }) {
+async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false, mobile_screenshot = false }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
   const cookies = getSessionCookies(url);
-  const result = await scrapePage(url, cookies, depth, max_products);
+  const result = await scrapePage(url, cookies, depth, max_products, mobile_screenshot);
   saveSessionCookies(url, result.cookies);
   setCachedPage(result.url, result);
 
@@ -399,23 +416,28 @@ async function handleScrapePage({ url, depth = 1, max_products = 10, include_scr
   if (include_screenshot && result.screenshotBuffer) {
     content.push({ type: 'image', data: result.screenshotBuffer.toString('base64'), mimeType: 'image/jpeg' });
   }
+  if (mobile_screenshot && result.mobileScreenshotBuffer) {
+    content.push({ type: 'image', data: result.mobileScreenshotBuffer.toString('base64'), mimeType: 'image/jpeg' });
+  }
 
   return content;
 }
 
-async function handleInteractWithPage({ url, action, selector, value, include_screenshot = false }) {
+async function handleInteractWithPage({ url, actions, action, selector, value, include_screenshot = false }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
-  if (action === 'search' && !value) throw new Error('"value" required for search.');
-  if (action === 'click' && !selector) throw new Error('"selector" required for click.');
+
+  // Normalize: accept either `actions` array or legacy single-action params
+  const steps = actions ?? [{ action, selector, value }];
+  if (!steps[0]?.action) throw new Error('Provide either "actions" array or "action" string.');
 
   const cookies = getSessionCookies(url);
-  const result = await interactWithPage(url, action, selector, value, cookies);
+  const result = await interactWithPage(url, steps, cookies);
   saveSessionCookies(result.url, result.cookies);
   setCachedPage(result.url, result);
 
   const output = buildPageOutput(result);
   output.originalUrl = url;
-  output.action = action;
+  output.actionsExecuted = result.actionsExecuted;
 
   const content = [{ type: 'text', text: JSON.stringify(output, null, 2) }];
 

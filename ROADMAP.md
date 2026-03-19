@@ -20,6 +20,8 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 | #3 | Sort Order Extractor (`sortOptions` in scrape output: type, current sort, all available options) | v1.5.0 |
 | #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) and `b2bMode` (B2B/B2C/Hybrid) as top-level scrape fields | v1.5.0 |
 | #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com laptops with `b2b_auditor` persona | v1.5.0 |
+| #4  | Mobile Viewport Snapshot — optional `mobile_screenshot: true` on `scrape_page` returns 390×844 JPEG | v1.5.0 |
+| #16 | Multi-Step `interact_with_page` Flows — `actions` array executes search/click steps sequentially | v1.5.0 |
 
 ---
 
