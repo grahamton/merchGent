@@ -150,6 +150,10 @@ const extractFacets = async (page) => {
       '[class*="facet"]',
       '[class*="filter-section"]',
       '[class*="refinement"]',
+      // BEM c- prefix (Insight.com and similar enterprise storefronts)
+      '[class*="c-facet"]',
+      '[class*="c-filter"]',
+      '[class*="c-refinement"]',
     ];
 
     for (const sel of stableFacetSelectors) {
@@ -437,12 +441,12 @@ const extractPageData = async (page, maxProducts = 10) => {
 
       const priceEl = el.querySelector('.price, .amount, span[class*="price"], div[class*="price"]');
       const priceMatch = (rawText.match(/(\$|USD|EUR|GBP|JPY)\s?\d+([.,]\d{2})?/) || [])[0];
-      const priceText = priceEl ? priceEl.innerText.trim() : priceMatch || null;
+      const priceText = priceEl ? (priceEl.innerText?.trim() || priceMatch || null) : priceMatch || null;
       const price = priceText || (/Call for Price|Login for Pricing|See Price/i.test(rawText) ? 'Hidden/Action Required' : null);
 
       const stockEl = el.querySelector('.stock, .availability, [class*="stock"], [class*="availability"]');
       const stockStatus = stockEl
-        ? stockEl.innerText.trim()
+        ? (stockEl.innerText?.trim() || 'Unknown')
         : (/In Stock|Out of Stock|Backorder/i.test(rawText)
             ? (rawText.match(/In Stock|Out of Stock|Backorder/i) || [])[0]
             : 'Unknown');
@@ -489,7 +493,7 @@ const extractPageData = async (page, maxProducts = 10) => {
         '[class*="badge"], [class*="label"], [class*="tag"], [class*="flag"], [class*="sticker"], [class*="banner"]'
       );
       const badgeTexts = Array.from(badgeEls)
-        .map((b) => b.innerText.trim())
+        .map((b) => b.innerText?.trim() ?? '')
         .filter((t) => t.length > 0 && t.length < 50);
 
       const bestSeller = /best\s*seller/i.test(rawText) || badgeTexts.some((t) => /best\s*seller/i.test(t));
@@ -539,8 +543,8 @@ const extractPageData = async (page, maxProducts = 10) => {
   }, {
     cardSelector: structure.cardSelector,
     maxProducts,
-    b2bKeywords: ['Request Quote', 'Login for Pricing', 'Contract Pricing', 'Bulk Order', 'Wholesale', 'Volume Pricing', 'MOQ', 'Net 30', 'PO Number', 'SKU'],
-    b2cKeywords: ['Add to Cart', 'Buy Now', 'Checkout', 'Free Shipping', 'Gift', 'Wishlist', 'Save for Later'],
+    b2bKeywords: ['Request Quote', 'Get Quote', 'Login for Pricing', 'Login to see price', 'Contract Pricing', 'Contract price', 'Account price', 'Account pricing', 'Your price', 'Bulk Order', 'Wholesale', 'Volume Pricing', 'Volume discount', 'MOQ', 'Net 30', 'Net 60', 'PO Number', 'Purchase Order', 'Call for price', 'Tax exempt', 'RFQ', 'Punch-out', 'Requisition'],
+    b2cKeywords: ['Add to Cart', 'Add to Bag', 'Buy Now', 'Free Shipping', 'Ships free', 'Free Returns', 'Gift', 'Wishlist', 'Save for Later'],
   });
 
   const { b2bConflictScore, b2bMode } = computeB2BSignals(products);
