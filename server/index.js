@@ -2,13 +2,14 @@
  * merch-connector — MCP Server
  *
  * Gives any agent eyes on a storefront:
- *   audit_storefront   → scrape + AI analysis in one shot (supports persona lens)
- *   scrape_page        → raw structured extraction only
- *   interact_with_page → search/click then extract
- *   ask_page           → scrape + free-form Q&A
- *   site_memory        → persistent per-domain memory
- *   clear_session      → reset stored session (cookies + page cache) for a domain
- *   merch_roundtable   → multi-persona debate (Floor Walker + Auditor + Scout + Moderator)
+ *   audit_storefront    → scrape + AI analysis in one shot (supports persona lens)
+ *   scrape_page         → raw structured extraction only (badges, sort, B2B score, change detection)
+ *   interact_with_page  → multi-step search/click flows then extract
+ *   compare_storefronts → structured diff of two storefront URLs (facets, trust signals, perf)
+ *   ask_page            → scrape + free-form Q&A
+ *   site_memory         → persistent per-domain memory
+ *   clear_session       → reset stored session (cookies + page cache) for a domain
+ *   merch_roundtable    → multi-persona debate (Floor Walker + Auditor + Scout + Moderator)
  *
  * Session state (cookies + page cache) is stored per-domain and auto-managed.
  * Scraped page data is cached for 10 minutes — subsequent AI tools reuse it without re-scraping.
