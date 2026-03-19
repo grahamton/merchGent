@@ -18,6 +18,8 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 | —  | Unified session store (cookies + page cache in one domain Map) | v1.4.0 |
 | #2 | Badge & Trust Signal Inventory (per-product: star rating, review count, sale badge, best seller, stock warning, sustainability, new) | v1.5.0 |
 | #3 | Sort Order Extractor (`sortOptions` in scrape output: type, current sort, all available options) | v1.5.0 |
+| #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) and `b2bMode` (B2B/B2C/Hybrid) as top-level scrape fields | v1.5.0 |
+| #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com laptops with `b2b_auditor` persona | v1.5.0 |
 
 ---
 

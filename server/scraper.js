@@ -218,6 +218,36 @@ const extractFacets = async (page) => {
   });
 };
 
+// ─── B2B/B2C signal scoring ───────────────────────────────────────────────────
+
+/**
+ * Compute a machine-readable B2B/B2C conflict score from scraped products.
+ * Exported so callers can branch on it without re-scraping.
+ *
+ * @param {Array} products - Products array from extractPageData
+ * @returns {{ b2bConflictScore: number, b2bMode: 'B2B'|'B2C'|'Hybrid' }}
+ */
+export function computeB2BSignals(products) {
+  const total = products.length;
+  if (total === 0) return { b2bConflictScore: 0, b2bMode: 'B2C' };
+
+  const b2bCount = products.filter((p) => p.b2bIndicators?.length > 0).length;
+  const b2cCount = products.filter((p) => p.b2cIndicators?.length > 0).length;
+  const bothCount = products.filter((p) => p.b2bIndicators?.length > 0 && p.b2cIndicators?.length > 0).length;
+  const b2bConflictScore = Math.round((bothCount / total) * 100);
+
+  let b2bMode;
+  if (b2bConflictScore >= 30) {
+    b2bMode = 'Hybrid';
+  } else if (b2bCount > b2cCount && b2bCount / total >= 0.5) {
+    b2bMode = 'B2B';
+  } else {
+    b2bMode = 'B2C';
+  }
+
+  return { b2bConflictScore, b2bMode };
+}
+
 // ─── Sort order extraction ────────────────────────────────────────────────────
 
 const extractSortOptions = async (page) => {
@@ -513,7 +543,8 @@ const extractPageData = async (page, maxProducts = 10) => {
     b2cKeywords: ['Add to Cart', 'Buy Now', 'Checkout', 'Free Shipping', 'Gift', 'Wishlist', 'Save for Later'],
   });
 
-  return { title, metaDescription, products, structure, facets, sortOptions, ...intelligence };
+  const { b2bConflictScore, b2bMode } = computeB2BSignals(products);
+  return { title, metaDescription, products, structure, facets, sortOptions, b2bConflictScore, b2bMode, ...intelligence };
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────

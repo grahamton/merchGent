@@ -701,13 +701,14 @@ ${(() => {
   const b2bCount = pageData.products.filter((p) => p.b2bIndicators?.length > 0).length;
   const b2cCount = pageData.products.filter((p) => p.b2cIndicators?.length > 0).length;
   const bothCount = pageData.products.filter((p) => p.b2bIndicators?.length > 0 && p.b2cIndicators?.length > 0).length;
-  const conflictScore = total > 0 ? Math.round((bothCount / total) * 100) : 0;
   const allB2bKw = [...new Set(pageData.products.flatMap((p) => p.b2bIndicators || []))];
   const allB2cKw = [...new Set(pageData.products.flatMap((p) => p.b2cIndicators || []))];
-  return `Products with B2B signals: ${b2bCount}/${total} — keywords: ${allB2bKw.join(', ') || 'none'}
+  const conflictScore = pageData.b2bConflictScore ?? (total > 0 ? Math.round((bothCount / total) * 100) : 0);
+  const mode = pageData.b2bMode ?? 'Unknown';
+  return `Mode: ${mode} | Conflict score: ${conflictScore}/100
+Products with B2B signals: ${b2bCount}/${total} — keywords: ${allB2bKw.join(', ') || 'none'}
 Products with B2C signals: ${b2cCount}/${total} — keywords: ${allB2cKw.join(', ') || 'none'}
-Products with both (conflict): ${bothCount}
-Conflict score: ${conflictScore}/100`;
+Products with both (conflict): ${bothCount}`;
 })()}
 
 ## Findings
