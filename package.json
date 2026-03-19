@@ -1,7 +1,7 @@
 {
   "name": "merch-connector",
-  "version": "1.6.2",
-  "description": "MCP server that gives merchandising agents eyes on any storefront — scrape, audit, compare, and roundtable analysis via 8 tools.",
+  "version": "1.6.3",
+  "description": "MCP server that gives merchandising agents eyes on any storefront — scrape, audit, compare, roundtable analysis, and eval tracking via 10 tools.",
   "type": "module",
   "bin": {
     "merch-connector": "bin/merch-connector.js"

@@ -268,6 +268,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.6.3** -- Eval store: two new tools (`save_eval`, `list_evals`) add persistent run tracking to roundtable and audit workflows. After any `merch_roundtable` or `audit_storefront` call, `save_eval` reads persona results from the session cache, computes a convergence score (0–100 measuring inter-persona agreement on top concerns), and writes a compact JSONL record to `~/.merch-connector/evals/<domain>.jsonl`. Full persona outputs are saved separately (up to 10 per domain). `list_evals` returns history for a domain or all domains. Dedup hashing prevents double-saving identical runs. Protocol test suite expanded to 29 checks.
+
 **v1.6.2** -- Roundtable timeout fixes. The three personas (Floor Walker, Auditor, Scout) now run in parallel via `Promise.all`, cutting wall-clock time from ~90s sequential to ~30s. The moderator synthesis fires async after the tool returns, so the MCP client timeout can no longer kill the whole run. Persona results are written to cache the moment each resolves — a retry after a timeout picks up where it left off with no re-work.
 
 **v1.6.1** -- Automated CI/CD publishing via GitHub Actions. Pushing a version tag now publishes to both npmjs.org (`merch-connector`) and GitHub Packages (`@grahamton/merch-connector`) automatically — no manual `npm publish` or 2FA required.

@@ -32,6 +32,7 @@ import {
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
+import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains, computeConvergenceScore, describeConvergence } from './eval-store.js';
 
 // ─── Session store (cookies + page cache, keyed by domain) ───────────────────
 //
@@ -378,6 +379,60 @@ const TOOLS = [
       required: ['url'],
     },
   },
+  {
+    name: 'save_eval',
+    description:
+      'Save the current roundtable or audit persona results for a URL to the eval store. ' +
+      'Reads persona results from the session cache — call merch_roundtable or audit_storefront first on the same URL. ' +
+      'Returns an eval ID, a convergence score (0–100 measuring how much the three personas agreed on their top concerns), ' +
+      'and the storage path. ' +
+      'Evals persist across sessions in ~/.merch-connector/evals/ (up to 100 compact records + 10 full runs per domain). ' +
+      'Use list_evals to review history and track whether findings are consistent across runs.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL that was analyzed. Must match a URL with cached persona results in this session.',
+        },
+        note: {
+          type: 'string',
+          description: 'Optional note to attach (e.g., "baseline before redesign", "post-holiday restock").',
+        },
+        save_full_run: {
+          type: 'boolean',
+          description: 'Save the full persona outputs as a JSON file (default: true). Set false for a compact-only record.',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'list_evals',
+    description:
+      'List saved eval runs from the eval store. ' +
+      'If a URL or domain is provided, returns the eval history for that domain (newest first) with convergence scores, ' +
+      'top concerns, and moderator summaries. ' +
+      'If no URL is provided, returns a summary of all domains with saved evals. ' +
+      'Use this to track trends, compare runs before/after changes, or retrieve a full run ID for deeper inspection.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Any URL on the domain to list evals for. Omit to list all domains.',
+        },
+        run_id: {
+          type: 'string',
+          description: 'A specific eval run ID to retrieve the full run details (including complete persona outputs).',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max records to return (default: 10).',
+        },
+      },
+    },
+  },
 ];
 
 // ─── Shared output builder ───────────────────────────────────────────────────
@@ -674,6 +729,105 @@ function handleClearSession({ url }) {
   return [{ type: 'text', text: had ? `Session cleared for ${domain}.` : `No session stored for ${domain}.` }];
 }
 
+function handleSaveEval({ url, note, save_full_run = true }) {
+  if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
+
+  const domain = getDomain(url);
+  if (!domain) throw new Error(`Cannot extract domain from: "${url}"`);
+
+  // Pull persona results from session cache
+  const floor_walker = getCachedPersona(url, 'floor_walker');
+  const auditor      = getCachedPersona(url, 'auditor');
+  const scout        = getCachedPersona(url, 'scout');
+
+  if (!floor_walker && !auditor && !scout) {
+    throw new Error(
+      `No cached persona results found for ${url}. ` +
+      'Run merch_roundtable or audit_storefront (with persona) on this URL first, then call save_eval.'
+    );
+  }
+
+  const personas = { floor_walker, auditor, scout };
+
+  // Attach lightweight page context from page cache if available
+  const pageData = getCachedPage(url);
+  const pageContext = pageData ? {
+    productCount: pageData.products?.length ?? null,
+    b2bMode: pageData.b2bMode ?? null,
+    facetCount: pageData.facets?.length ?? null,
+    platform: pageData.networkIntel?.platforms?.[0] ?? null,
+  } : null;
+
+  const saved = saveEvalRun(domain, {
+    url,
+    personas,
+    debate: null,            // moderator arrives async; no guarantee it's in cache
+    toolName: 'merch_roundtable',
+    note: note ?? null,
+    saveFullRun: save_full_run,
+    pageContext,
+  });
+
+  const summary = {
+    evalId: saved.id,
+    convergenceScore: saved.convergenceScore,
+    convergenceLabel: saved.convergenceLabel,
+    topConcerns: [
+      floor_walker?.topConcern,
+      auditor?.topConcern,
+      scout?.topConcern,
+    ].filter(Boolean),
+    personaCount: Object.values(personas).filter(Boolean).length,
+    note: note ?? null,
+    storage: {
+      compactIndex: `~/.merch-connector/evals/${domain}.jsonl`,
+      fullRun: save_full_run && !saved.isDuplicate
+        ? `~/.merch-connector/evals/runs/${saved.id}.json`
+        : null,
+    },
+    isDuplicate: saved.isDuplicate,
+    message: saved.isDuplicate
+      ? 'Duplicate detected (same top concerns as last run) — compact record not duplicated.'
+      : `Eval saved. Convergence: ${saved.convergenceScore}/100 — ${saved.convergenceLabel}.`,
+  };
+
+  sendLog('info', `Eval saved for ${domain}`, {
+    evalId: saved.id,
+    convergenceScore: saved.convergenceScore,
+    personaCount: summary.personaCount,
+  });
+
+  return [{ type: 'text', text: JSON.stringify(summary, null, 2) }];
+}
+
+function handleListEvals({ url, run_id, limit = 10 } = {}) {
+  // Retrieve a specific full run by ID
+  if (run_id) {
+    const run = getEvalRun(run_id);
+    if (!run) throw new Error(`No eval run found with ID: "${run_id}"`);
+    return [{ type: 'text', text: JSON.stringify(run, null, 2) }];
+  }
+
+  // List runs for a specific domain
+  if (url) {
+    if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
+    const domain = getDomain(url);
+    if (!domain) throw new Error(`Cannot extract domain from: "${url}"`);
+    const records = listEvalRuns(domain).slice(0, limit);
+    if (records.length === 0) {
+      return [{ type: 'text', text: `No eval runs saved for ${domain} yet. Run merch_roundtable then save_eval first.` }];
+    }
+    return [{ type: 'text', text: JSON.stringify({ domain, totalRuns: records.length, runs: records }, null, 2) }];
+  }
+
+  // List all domains with evals
+  const domains = listEvalDomains();
+  if (domains.length === 0) {
+    return [{ type: 'text', text: 'No eval runs saved yet. Run merch_roundtable then save_eval to start tracking.' }];
+  }
+  return [{ type: 'text', text: JSON.stringify({ evalDomains: domains }, null, 2) }];
+}
+
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
@@ -812,6 +966,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       }
       case 'clear_session':
         return { content: handleClearSession(args) };
+      case 'save_eval':
+        return { content: handleSaveEval(args) };
+      case 'list_evals':
+        return { content: handleListEvals(args) };
       default:
         return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
     }

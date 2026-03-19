@@ -4,7 +4,7 @@
 
 An MCP server that gives AI agents visual access to e-commerce storefronts for automated merchandising analysis. It bridges AI and real product pages through a stealth headless browser, a multi-provider AI abstraction layer, and a persona-based expert analysis system.
 
-**8 MCP tools**: `scrape_page`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`
+**10 MCP tools**: `scrape_page`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`, `save_eval`, `list_evals`
 
 **5 MCP prompts** (persona instructions): `floor-walker`, `auditor`, `auditor-b2b`, `scout`, `merch-roundtable`
 
@@ -23,6 +23,8 @@ server/
   scraper.js                  # Puppeteer scraping + structure detection
   analyzer.js                 # Multi-provider AI analysis + persona logic
   site-memory.js              # Persistent per-domain JSON store
+  eval-store.js               # Eval run storage: JSONL compact index + full run JSON
+  network-intel.js            # XHR/fetch interception, platform fingerprints, dataLayer parsing
   prompts/                    # Markdown files for each persona + system prompt
 test/
   smoke.js                    # Direct function tests (needs browser + optional API key)
@@ -30,6 +32,8 @@ test/
 ```
 
 Site memory files live in `~/.merch-connector/data/<domain>.json` (configurable via `MERCH_CONNECTOR_DATA_DIR`).
+
+Eval runs live in `~/.merch-connector/evals/<domain>.jsonl` (compact, up to 100 per domain) and `~/.merch-connector/evals/runs/<id>.json` (full, up to 10 per domain).
 
 ---
 
@@ -138,6 +142,15 @@ Auto-populated on every `scrapePage` call (`learnFromScrape()`). Loaded and inje
 
 ### Competitor comparison
 `compare_storefronts` scrapes two URLs concurrently (cache-aware) and returns a pure structural diff — no AI call. Fields: product count delta, facet gap analysis (onlyInA/onlyInB/shared), trust signal coverage per site, sort option gaps, B2B mode comparison, performance delta (FCP + full load).
+
+### Eval store
+`server/eval-store.js` implements two-tier storage aligned with industry JSONL conventions (mcp-eval, letta-evals):
+- **Compact index** — `~/.merch-connector/evals/<domain>.jsonl` — one JSON line per run, max 100 per domain. Fields use OpenTelemetry MCP semantic conventions (`mcp.tool.name`). Contains `convergenceScore`, `topConcerns[]`, `moderatorSummary`, `hash`, optional `note` and `judgeScore`.
+- **Full run** — `~/.merch-connector/evals/runs/<id>.json` — complete persona outputs (`floor_walker`, `auditor`, `scout`, `debate`), max 10 per domain (oldest deleted on overflow).
+- **Convergence score** (0–100) — keyword overlap across the three persona `topConcern` strings. High = strong inter-persona consensus. Mirrors the "mcpx-eval" judge-agreement approach.
+- **Dedup** — runs with identical `hash` (same three top concerns) are not re-appended to the compact index.
+- `save_eval` reads from the session persona cache — no data round-trip through the model. Must call `merch_roundtable` or `audit_storefront` (with persona) on the same URL first.
+- `list_evals` without a URL returns all domains with eval history.
 
 ---
 
