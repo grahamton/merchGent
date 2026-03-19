@@ -4,7 +4,7 @@
   "description": "MCP server that gives merchandising agents eyes on any storefront — scrape, audit, and roundtable analysis via 7 tools.",
   "type": "module",
   "bin": {
-    "merch-connector": "./bin/merch-connector.js"
+    "merch-connector": "bin/merch-connector.js"
   },
   "files": [
     "bin/",
@@ -37,7 +37,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/grahamton/merchGent.git"
+    "url": "git+https://github.com/grahamton/merchGent.git"
   },
   "engines": {
     "node": ">=18"
