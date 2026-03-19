@@ -12,7 +12,7 @@
  */
 import 'dotenv/config';
 import { scrapePage } from '../server/scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsScout, runRoundtable } from '../server/analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable } from '../server/analyzer.js';
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
@@ -66,7 +66,7 @@ if (flag('audit')) {
 
 const persona = flagVal('persona');
 if (persona) {
-  const fn = { floor_walker: analyzeAsFloorWalker, auditor: analyzeAsAuditor, scout: analyzeAsScout }[persona];
+  const fn = { floor_walker: analyzeAsFloorWalker, auditor: analyzeAsAuditor, scout: analyzeAsScout, b2b_auditor: analyzeAsAuditorB2B }[persona];
   if (!fn) { console.error(`Unknown persona: ${persona}`); process.exit(1); }
   console.log(`\n🎭 Running ${persona} analysis...`);
   const t1 = Date.now();
@@ -107,7 +107,7 @@ if (question) {
 if (!flag('audit') && !persona && !flag('roundtable') && !question) {
   console.log(`\n💡 Scrape-only test passed. Add flags to test AI features:`);
   console.log(`   --audit              Full merchandising audit`);
-  console.log(`   --persona scout      Single persona (floor_walker | auditor | scout)`);
+  console.log(`   --persona scout      Single persona (floor_walker | auditor | scout | b2b_auditor)`);
   console.log(`   --roundtable         All 3 personas + moderator debate`);
   console.log(`   --ask "question"     Ask anything about the page`);
   console.log(`   --url https://...    Override the default URL`);

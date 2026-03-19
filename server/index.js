@@ -13,12 +13,13 @@
  * Session cookies are stored per-domain and auto-merged on subsequent calls.
  * Connect via stdio (Claude Desktop, Claude Code MCP config, etc.)
  */
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+loadEnv({ path: new URL('../.env', import.meta.url), quiet: true });
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsScout, runRoundtable } from './analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory } from './site-memory.js';
 
 // ─── Session store (cookie jar keyed by domain) ──────────────────────────────
@@ -73,8 +74,8 @@ const TOOLS = [
         },
         persona: {
           type: 'string',
-          enum: ['floor_walker', 'auditor', 'scout'],
-          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis.',
+          enum: ['floor_walker', 'auditor', 'scout', 'b2b_auditor'],
+          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis, "b2b_auditor" evaluates the page for B2B procurement buyers (steps-to-PO, spec completeness, pricing transparency, self-serve viability).',
         },
       },
       required: ['url'],
@@ -285,6 +286,7 @@ function buildPageOutput(result) {
     siteMemory: Object.keys(memory).length > 0
       ? { scrapeCount: memory.scrapeCount, notes: memory.notes, customFields: memory.customFields }
       : undefined,
+    priceBucketAnalysis: validatePriceBuckets(rest) || undefined,
   };
 }
 
@@ -297,13 +299,17 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
   const pageData = await scrapePage(url, cookies, depth, max_products);
   saveSessionCookies(url, pageData.cookies);
 
+  const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
+
   let analysis;
   if (persona === 'floor_walker') {
-    analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer);
+    analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer, memory);
   } else if (persona === 'auditor') {
-    analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer);
+    analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer, memory);
   } else if (persona === 'scout') {
-    analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer);
+    analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer, memory);
+  } else if (persona === 'b2b_auditor') {
+    analysis = await analyzeAsAuditorB2B(pageData, pageData.screenshotBuffer, memory);
   } else {
     analysis = await analyzePage(pageData, pageData.screenshotBuffer);
   }
@@ -408,14 +414,26 @@ function handleSiteMemory({ action, url, note, key, value }) {
   throw new Error(`Unknown action: "${action}". Use read, write, list, or delete.`);
 }
 
-async function handleRoundtable({ url, depth = 1, max_products = 10 }) {
+async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
   const cookies = getSessionCookies(url);
   const pageData = await scrapePage(url, cookies, depth, max_products);
   saveSessionCookies(url, pageData.cookies);
 
-  const result = await runRoundtable(pageData, pageData.screenshotBuffer);
+  const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
+
+  const progressToken = extra?._meta?.progressToken;
+  const onProgress = progressToken !== undefined
+    ? async (progress, total, message) => {
+        await extra.sendNotification({
+          method: 'notifications/progress',
+          params: { progressToken, progress, total, message },
+        });
+      }
+    : null;
+
+  const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress);
   return result;
 }
 
@@ -436,7 +454,7 @@ const server = new Server(
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
 
   try {
@@ -454,7 +472,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'site_memory':
         return { content: handleSiteMemory(args) };
       case 'merch_roundtable': {
-        const result = await handleRoundtable(args);
+        const result = await handleRoundtable(args, extra);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       case 'clear_session':

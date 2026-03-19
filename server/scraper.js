@@ -23,7 +23,7 @@ const BrowserManager = {
   async getBrowser() {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
-        headless: 'new',
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -305,7 +305,7 @@ const extractPageData = async (page, maxProducts = 10) => {
     return { dataLayers: getDataLayer(), interactables: getInteractables(), findings: getFindings() };
   });
 
-  const products = await page.evaluate(({ cardSelector, maxProducts }) => {
+  const products = await page.evaluate(({ cardSelector, maxProducts, b2bKeywords, b2cKeywords }) => {
     const fallback = '.product-tile, .result-item, .card, .product-item';
     const selector = cardSelector || fallback;
     const elements = Array.from(document.querySelectorAll(selector));
@@ -344,10 +344,8 @@ const extractPageData = async (page, maxProducts = 10) => {
       const descEl = descSelectors.map((s) => el.querySelector(s)).find(Boolean);
       const description = descEl ? descEl.innerText.trim().slice(0, 240) : null;
 
-      const b2bIndicators = /Request Quote|Login for Pricing|Contract Pricing|Bulk Order|Wholesale/i.test(rawText)
-        ? ['Detected B2B Text'] : [];
-      const b2cIndicators = /Add to Cart|Buy Now|Checkout/i.test(rawText)
-        ? ['Detected B2C Text'] : [];
+      const b2bIndicators = b2bKeywords.filter((kw) => new RegExp(kw, 'i').test(rawText));
+      const b2cIndicators = b2cKeywords.filter((kw) => new RegExp(kw, 'i').test(rawText));
 
       return {
         title, price, stockStatus,
@@ -356,7 +354,12 @@ const extractPageData = async (page, maxProducts = 10) => {
         ctaText, description, b2bIndicators, b2cIndicators,
       };
     });
-  }, { cardSelector: structure.cardSelector, maxProducts });
+  }, {
+    cardSelector: structure.cardSelector,
+    maxProducts,
+    b2bKeywords: ['Request Quote', 'Login for Pricing', 'Contract Pricing', 'Bulk Order', 'Wholesale', 'Volume Pricing', 'MOQ', 'Net 30', 'PO Number', 'SKU'],
+    b2cKeywords: ['Add to Cart', 'Buy Now', 'Checkout', 'Free Shipping', 'Gift', 'Wishlist', 'Save for Later'],
+  });
 
   return { title, metaDescription, products, structure, facets, ...intelligence };
 };

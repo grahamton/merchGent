@@ -342,6 +342,48 @@ const SCOUT_SCHEMA = {
   },
 };
 
+const B2B_AUDITOR_DIMENSION = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['status', 'finding', 'b2bImpact'],
+  properties: {
+    status:    { type: 'string', enum: ['pass', 'fail', 'check'] },
+    finding:   { type: 'string' },
+    b2bImpact: { type: 'string' },
+  },
+};
+
+const B2B_AUDITOR_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['matrix', 'procurementFrictionScore', 'topConcern', 'selfServeViability', 'summary'],
+  properties: {
+    matrix: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['trust', 'guidance', 'persuasion', 'friction'],
+      properties: {
+        trust:      B2B_AUDITOR_DIMENSION,
+        guidance:   B2B_AUDITOR_DIMENSION,
+        persuasion: B2B_AUDITOR_DIMENSION,
+        friction:   B2B_AUDITOR_DIMENSION,
+      },
+    },
+    procurementFrictionScore: { type: 'number' },
+    topConcern: { type: 'string' },
+    selfServeViability: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['status', 'evidence'],
+      properties: {
+        status:   { type: 'string', enum: ['pass', 'partial', 'fail'] },
+        evidence: { type: 'string' },
+      },
+    },
+    summary: { type: 'string' },
+  },
+};
+
 const ROUNDTABLE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -507,10 +549,23 @@ async function callWithPersona(systemPrompt, contextText, screenshot, outputSche
 
 // ─── Persona analysis functions ───────────────────────────────────────────
 
+function buildMemoryBlock(memory) {
+  if (!memory || Object.keys(memory).length === 0) return '';
+  const lines = ['## Site Memory (learned from prior scrapes)'];
+  if (memory.scrapeCount) lines.push(`Scrape count: ${memory.scrapeCount}`);
+  if (memory.facetNames?.length) lines.push(`Known facets: ${memory.facetNames.join(', ')}`);
+  if (memory.performance) lines.push(`Perf baseline — DOM: ${memory.performance.domContentLoaded}ms, FCP: ${memory.performance.firstContentfulPaint}ms`);
+  if (memory.notes?.length) lines.push(`Notes:\n${memory.notes.map((n) => `  - ${n}`).join('\n')}`);
+  if (memory.customFields && Object.keys(memory.customFields).length > 0) {
+    for (const [k, v] of Object.entries(memory.customFields)) lines.push(`  ${k}: ${v}`);
+  }
+  return lines.join('\n');
+}
+
 /**
  * Build a rich context block for persona analysis (includes more detail than the audit context).
  */
-function buildPersonaContext(pageData) {
+function buildPersonaContext(pageData, memory = {}) {
   const withDesc = pageData.products.filter((p) => p.description && p.description.length > 20).length;
 
   const facetSummary = (pageData.facets || []).length > 0
@@ -542,24 +597,37 @@ ${JSON.stringify(pageData.products, null, 2)}
 ## Facets/Filters
 ${facetSummary}
 
-## Heuristic Signals
-B2B indicators present: ${pageData.products.some((p) => p.b2bIndicators?.length > 0)}
-B2C indicators present: ${pageData.products.some((p) => p.b2cIndicators?.length > 0)}
+## B2B/B2C Signal Analysis
+${(() => {
+  const total = pageData.products.length;
+  const b2bCount = pageData.products.filter((p) => p.b2bIndicators?.length > 0).length;
+  const b2cCount = pageData.products.filter((p) => p.b2cIndicators?.length > 0).length;
+  const bothCount = pageData.products.filter((p) => p.b2bIndicators?.length > 0 && p.b2cIndicators?.length > 0).length;
+  const conflictScore = total > 0 ? Math.round((bothCount / total) * 100) : 0;
+  const allB2bKw = [...new Set(pageData.products.flatMap((p) => p.b2bIndicators || []))];
+  const allB2cKw = [...new Set(pageData.products.flatMap((p) => p.b2cIndicators || []))];
+  return `Products with B2B signals: ${b2bCount}/${total} — keywords: ${allB2bKw.join(', ') || 'none'}
+Products with B2C signals: ${b2cCount}/${total} — keywords: ${allB2cKw.join(', ') || 'none'}
+Products with both (conflict): ${bothCount}
+Conflict score: ${conflictScore}/100`;
+})()}
 
 ## Findings
 ${(pageData.findings || []).map((f) => `[${f.severity}] ${f.title}: ${f.description}`).join('\n') || 'None'}
 
 ## Interactable Elements (first 10)
-${(pageData.interactables || []).slice(0, 10).map((i) => `[${i.type}] "${i.text}" → ${i.selector}`).join('\n') || 'None'}`;
+${(pageData.interactables || []).slice(0, 10).map((i) => `[${i.type}] "${i.text}" → ${i.selector}`).join('\n') || 'None'}
+
+${buildMemoryBlock(memory)}`.trim();
 }
 
 /**
  * Analyze a page as the Floor Walker persona.
  * Returns a shopper-experience focused assessment.
  */
-export async function analyzeAsFloorWalker(pageData, screenshot = null) {
+export async function analyzeAsFloorWalker(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('floor-walker.md');
-  const contextText = buildPersonaContext(pageData);
+  const contextText = buildPersonaContext(pageData, memory);
   return callWithPersona(systemPrompt, contextText, screenshot, FLOOR_WALKER_SCHEMA, 'floor_walker_result');
 }
 
@@ -567,9 +635,9 @@ export async function analyzeAsFloorWalker(pageData, screenshot = null) {
  * Analyze a page as the Auditor persona.
  * Returns a structured framework evaluation.
  */
-export async function analyzeAsAuditor(pageData, screenshot = null) {
+export async function analyzeAsAuditor(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('auditor.md');
-  const contextText = buildPersonaContext(pageData);
+  const contextText = buildPersonaContext(pageData, memory);
   return callWithPersona(systemPrompt, contextText, screenshot, AUDITOR_SCHEMA, 'auditor_result');
 }
 
@@ -577,10 +645,20 @@ export async function analyzeAsAuditor(pageData, screenshot = null) {
  * Analyze a page as the Scout persona.
  * Returns a competitive/strategic assessment.
  */
-export async function analyzeAsScout(pageData, screenshot = null) {
+export async function analyzeAsScout(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('scout.md');
-  const contextText = buildPersonaContext(pageData);
+  const contextText = buildPersonaContext(pageData, memory);
   return callWithPersona(systemPrompt, contextText, screenshot, SCOUT_SCHEMA, 'scout_result');
+}
+
+/**
+ * Analyze a page as the B2B Auditor persona.
+ * Returns a procurement-focused evaluation with steps-to-PO scoring.
+ */
+export async function analyzeAsAuditorB2B(pageData, screenshot = null, memory = {}) {
+  const systemPrompt = loadPrompt('auditor-b2b.md');
+  const contextText = buildPersonaContext(pageData, memory);
+  return callWithPersona(systemPrompt, contextText, screenshot, B2B_AUDITOR_SCHEMA, 'b2b_auditor_result');
 }
 
 /**
@@ -593,7 +671,7 @@ export async function analyzeAsScout(pageData, screenshot = null) {
  * @param {Buffer} [screenshot] - Optional JPEG screenshot buffer
  * @returns {object} Full roundtable output with perspectives and debate
  */
-export async function runRoundtable(pageData, screenshot = null) {
+export async function runRoundtable(pageData, screenshot = null, memory = {}, onProgress = null) {
   if (!pageData.products || pageData.products.length === 0) {
     return {
       url: pageData.url,
@@ -604,13 +682,19 @@ export async function runRoundtable(pageData, screenshot = null) {
   }
 
   console.error('[Roundtable] Starting Floor Walker analysis...');
-  const floorWalker = await analyzeAsFloorWalker(pageData, screenshot);
+  await onProgress?.(0, 8, 'Floor Walker analyzing...');
+  const floorWalker = await analyzeAsFloorWalker(pageData, screenshot, memory);
+  await onProgress?.(1, 8, `Floor Walker ✓ — ${floorWalker.topConcern}`);
 
   console.error('[Roundtable] Starting Auditor analysis...');
-  const auditor = await analyzeAsAuditor(pageData, screenshot);
+  await onProgress?.(2, 8, 'Auditor evaluating...');
+  const auditor = await analyzeAsAuditor(pageData, screenshot, memory);
+  await onProgress?.(3, 8, `Auditor ✓ — ${auditor.topConcern}`);
 
   console.error('[Roundtable] Starting Scout analysis...');
-  const scout = await analyzeAsScout(pageData, screenshot);
+  await onProgress?.(4, 8, 'Scout analyzing...');
+  const scout = await analyzeAsScout(pageData, screenshot, memory);
+  await onProgress?.(5, 8, `Scout ✓ — ${scout.topConcern}`);
 
   // Build the debate brief for the moderator
   const moderatorPrompt = loadPrompt('roundtable-moderator.md');
@@ -639,7 +723,9 @@ ${JSON.stringify(scout, null, 2)}
 Now synthesize these three perspectives. Identify where they agree, where they disagree, and produce prioritized final recommendations that draw from the strongest insights across all three viewpoints.`;
 
   console.error('[Roundtable] Starting Moderator synthesis...');
+  await onProgress?.(6, 8, 'Moderator synthesizing...');
   const debate = await callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result');
+  await onProgress?.(7, 8, 'Moderator ✓ — consensus reached');
 
   return {
     url: pageData.url,
@@ -675,6 +761,48 @@ Now synthesize these three perspectives. Identify where they agree, where they d
     },
     // Include full persona outputs for detailed inspection
     _raw: { floorWalker, auditor, scout },
+  };
+}
+
+// ─── Price bucket validator ────────────────────────────────────────────────────
+
+/**
+ * Validate price facet buckets against actual product prices.
+ * Returns null if no price facet is present or no parseable data exists.
+ */
+export function validatePriceBuckets(pageData) {
+  const priceFacet = (pageData.facets || []).find((f) => /price/i.test(f.name) && f.options?.length > 0);
+  if (!priceFacet) return null;
+
+  const buckets = priceFacet.options.map((o) => {
+    const range = /\$?([\d,]+)\s*[-–]\s*\$?([\d,]+)/i.exec(o.label);
+    const under = /under\s*\$?([\d,]+)/i.exec(o.label);
+    const over  = /\$?([\d,]+)\s*\+/i.exec(o.label);
+    const min = range ? parseFloat(range[1].replace(/,/g, '')) : under ? 0 : over ? parseFloat(over[1].replace(/,/g, '')) : null;
+    const max = range ? parseFloat(range[2].replace(/,/g, '')) : under ? parseFloat(under[1].replace(/,/g, '')) : over ? Infinity : null;
+    return { label: o.label, min, max, parseable: min !== null && max !== null };
+  });
+
+  const parseableProducts = pageData.products
+    .map((p) => ({ title: p.title, price: parseFloat(String(p.price || '').replace(/[^0-9.]/g, '')) }))
+    .filter((p) => !isNaN(p.price) && p.price > 0);
+
+  const parseableBuckets = buckets.filter((b) => b.parseable);
+  if (parseableBuckets.length === 0 || parseableProducts.length === 0) return null;
+
+  const unmatched = parseableProducts.filter(
+    (p) => !parseableBuckets.some((b) => p.price >= b.min && p.price <= b.max)
+  );
+  const empty = parseableBuckets.filter(
+    (b) => !parseableProducts.some((p) => p.price >= b.min && p.price <= b.max)
+  );
+
+  return {
+    facetName: priceFacet.name,
+    buckets,
+    unmatchedProducts: unmatched.map((p) => ({ title: p.title, price: p.price })),
+    emptyBuckets: empty.map((b) => b.label),
+    valid: unmatched.length === 0 && empty.length === 0,
   };
 }
 
@@ -755,7 +883,6 @@ async function askAnthropic(context, question, screenshot) {
   const response = await client.messages.create({
     model,
     max_tokens: 2048,
-    thinking: { type: 'adaptive' },
     system: PAGE_QA_SYSTEM,
     messages: [{ role: 'user', content: userContent }],
   });
