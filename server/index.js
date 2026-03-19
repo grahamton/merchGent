@@ -35,8 +35,10 @@ import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, ta
 
 // ─── Session store (cookies + page cache, keyed by domain) ───────────────────
 //
-// Structure: domain → { cookies: cookie[], pages: Map(url → { data, cachedAt }) }
-// clear_session wipes both cookies and cached pages for a domain in one call.
+// Structure: domain → { cookies: cookie[], pages: Map(url → { data, cachedAt }), personas: Map(key → { data, cachedAt }) }
+// clear_session wipes cookies, cached pages, and persona results for a domain in one call.
+// Persona cache key: `${url}::${personaName}` — reused by roundtable to skip re-running personas
+// that were already computed by a recent audit_storefront call.
 
 const sessions = new Map();
 const PAGE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -46,8 +48,28 @@ function getDomain(url) {
 }
 
 function getSession(domain) {
-  if (!sessions.has(domain)) sessions.set(domain, { cookies: [], pages: new Map() });
+  if (!sessions.has(domain)) sessions.set(domain, { cookies: [], pages: new Map(), personas: new Map() });
   return sessions.get(domain);
+}
+
+function getCachedPersona(url, personaName) {
+  const domain = getDomain(url);
+  if (!domain) return null;
+  const key = `${url}::${personaName}`;
+  const entry = getSession(domain).personas.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > PAGE_CACHE_TTL_MS) {
+    getSession(domain).personas.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedPersona(url, personaName, data) {
+  const domain = getDomain(url);
+  if (!domain) return;
+  const key = `${url}::${personaName}`;
+  getSession(domain).personas.set(key, { data, cachedAt: Date.now() });
 }
 
 function getSessionCookies(url) {
@@ -427,17 +449,25 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
 
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
 
-  let analysis;
-  if (persona === 'floor_walker') {
-    analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer, memory);
-  } else if (persona === 'auditor') {
-    analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer, memory);
-  } else if (persona === 'scout') {
-    analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer, memory);
-  } else if (persona === 'b2b_auditor') {
-    analysis = await analyzeAsAuditorB2B(pageData, pageData.screenshotBuffer, memory);
+  // Resolve the canonical persona name used for cache keys (matches runRoundtable keys)
+  const personaKey = persona || 'default';
+
+  let analysis = getCachedPersona(url, personaKey);
+  if (analysis) {
+    sendLog('debug', `Using cached ${personaKey} persona result for ${url}`, { tool: 'audit_storefront' });
   } else {
-    analysis = await analyzePage(pageData, pageData.screenshotBuffer);
+    if (persona === 'floor_walker') {
+      analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer, memory);
+    } else if (persona === 'auditor') {
+      analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer, memory);
+    } else if (persona === 'scout') {
+      analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer, memory);
+    } else if (persona === 'b2b_auditor') {
+      analysis = await analyzeAsAuditorB2B(pageData, pageData.screenshotBuffer, memory);
+    } else {
+      analysis = await analyzePage(pageData, pageData.screenshotBuffer);
+    }
+    setCachedPersona(url, personaKey, analysis);
   }
 
   const output = buildPageOutput(pageData);
@@ -615,7 +645,24 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
     }
   };
 
-  const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress);
+  // Pull any persona results already computed by prior audit_storefront calls this session
+  const cached = {
+    floor_walker: getCachedPersona(url, 'floor_walker'),
+    auditor:      getCachedPersona(url, 'auditor'),
+    scout:        getCachedPersona(url, 'scout'),
+  };
+  const cachedCount = Object.values(cached).filter(Boolean).length;
+  if (cachedCount > 0) {
+    sendLog('debug', `Reusing ${cachedCount}/3 cached persona result(s) for ${url}`, { tool: 'merch_roundtable' });
+  }
+
+  const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress, cached);
+
+  // Cache any newly computed personas for future calls
+  if (!cached.floor_walker && result.perspectives?.floorWalker) setCachedPersona(url, 'floor_walker', result.perspectives.floorWalker);
+  if (!cached.auditor && result.perspectives?.auditor)           setCachedPersona(url, 'auditor', result.perspectives.auditor);
+  if (!cached.scout && result.perspectives?.scout)               setCachedPersona(url, 'scout', result.perspectives.scout);
+
   return result;
 }
 

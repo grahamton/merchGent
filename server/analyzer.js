@@ -778,7 +778,7 @@ export async function analyzeAsAuditorB2B(pageData, screenshot = null, memory = 
  * @param {Buffer} [screenshot] - Optional JPEG screenshot buffer
  * @returns {object} Full roundtable output with perspectives and debate
  */
-export async function runRoundtable(pageData, screenshot = null, memory = {}, onProgress = null) {
+export async function runRoundtable(pageData, screenshot = null, memory = {}, onProgress = null, cached = {}) {
   if (!pageData.products || pageData.products.length === 0) {
     return {
       url: pageData.url,
@@ -788,36 +788,60 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
     };
   }
 
-  console.error('[Roundtable] Starting Floor Walker analysis...');
-  await onProgress?.(0, 8, 'Floor Walker analyzing...');
-  const floorWalker = await analyzeAsFloorWalker(pageData, screenshot, memory);
-  await onProgress?.(1, 8, `Floor Walker ✓ — ${floorWalker.topConcern}`, {
-    persona: 'floorWalker',
-    topConcern: floorWalker.topConcern,
-    summary: floorWalker.summary,
-    result: floorWalker,
-  });
+  // Reuse pre-computed persona results when available (e.g. from a prior audit_storefront call).
+  // Any persona already in `cached` is skipped — only the missing ones incur an AI call.
+  let floorWalker, auditor, scout;
 
-  console.error('[Roundtable] Starting Auditor analysis...');
-  await onProgress?.(2, 8, 'Auditor evaluating...');
-  const auditor = await analyzeAsAuditor(pageData, screenshot, memory);
-  await onProgress?.(3, 8, `Auditor ✓ — ${auditor.topConcern}`, {
-    persona: 'auditor',
-    topConcern: auditor.topConcern,
-    summary: auditor.summary,
-    siteMode: auditor.siteMode,
-    result: auditor,
-  });
+  if (cached.floor_walker) {
+    console.error('[Roundtable] Reusing cached Floor Walker result.');
+    floorWalker = cached.floor_walker;
+    await onProgress?.(1, 8, `Floor Walker ✓ (cached) — ${floorWalker.topConcern}`, {
+      persona: 'floorWalker', topConcern: floorWalker.topConcern,
+      summary: floorWalker.summary, result: floorWalker, cached: true,
+    });
+  } else {
+    console.error('[Roundtable] Starting Floor Walker analysis...');
+    await onProgress?.(0, 8, 'Floor Walker analyzing...');
+    floorWalker = await analyzeAsFloorWalker(pageData, screenshot, memory);
+    await onProgress?.(1, 8, `Floor Walker ✓ — ${floorWalker.topConcern}`, {
+      persona: 'floorWalker', topConcern: floorWalker.topConcern,
+      summary: floorWalker.summary, result: floorWalker,
+    });
+  }
 
-  console.error('[Roundtable] Starting Scout analysis...');
-  await onProgress?.(4, 8, 'Scout analyzing...');
-  const scout = await analyzeAsScout(pageData, screenshot, memory);
-  await onProgress?.(5, 8, `Scout ✓ — ${scout.topConcern}`, {
-    persona: 'scout',
-    topConcern: scout.topConcern,
-    summary: scout.summary,
-    result: scout,
-  });
+  if (cached.auditor) {
+    console.error('[Roundtable] Reusing cached Auditor result.');
+    auditor = cached.auditor;
+    await onProgress?.(3, 8, `Auditor ✓ (cached) — ${auditor.topConcern}`, {
+      persona: 'auditor', topConcern: auditor.topConcern, summary: auditor.summary,
+      siteMode: auditor.siteMode, result: auditor, cached: true,
+    });
+  } else {
+    console.error('[Roundtable] Starting Auditor analysis...');
+    await onProgress?.(2, 8, 'Auditor evaluating...');
+    auditor = await analyzeAsAuditor(pageData, screenshot, memory);
+    await onProgress?.(3, 8, `Auditor ✓ — ${auditor.topConcern}`, {
+      persona: 'auditor', topConcern: auditor.topConcern, summary: auditor.summary,
+      siteMode: auditor.siteMode, result: auditor,
+    });
+  }
+
+  if (cached.scout) {
+    console.error('[Roundtable] Reusing cached Scout result.');
+    scout = cached.scout;
+    await onProgress?.(5, 8, `Scout ✓ (cached) — ${scout.topConcern}`, {
+      persona: 'scout', topConcern: scout.topConcern,
+      summary: scout.summary, result: scout, cached: true,
+    });
+  } else {
+    console.error('[Roundtable] Starting Scout analysis...');
+    await onProgress?.(4, 8, 'Scout analyzing...');
+    scout = await analyzeAsScout(pageData, screenshot, memory);
+    await onProgress?.(5, 8, `Scout ✓ — ${scout.topConcern}`, {
+      persona: 'scout', topConcern: scout.topConcern,
+      summary: scout.summary, result: scout,
+    });
+  }
 
   // Build the debate brief for the moderator
   const moderatorPrompt = loadPrompt('roundtable-moderator.md');
