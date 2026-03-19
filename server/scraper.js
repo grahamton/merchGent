@@ -347,11 +347,82 @@ const extractPageData = async (page, maxProducts = 10) => {
       const b2bIndicators = b2bKeywords.filter((kw) => new RegExp(kw, 'i').test(rawText));
       const b2cIndicators = b2cKeywords.filter((kw) => new RegExp(kw, 'i').test(rawText));
 
+      // ── Badge & trust signal extraction ──────────────────────────────────────
+      const ratingEl = el.querySelector(
+        '[class*="rating"], [class*="star"], [aria-label*="rating"], [itemprop="ratingValue"]'
+      );
+      let starRating = null;
+      if (ratingEl) {
+        const ratingText = ratingEl.getAttribute('aria-label') || ratingEl.innerText || '';
+        const ratingMatch = ratingText.match(/(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*\d+|(\d+(?:\.\d+)?)\s*star/i);
+        if (ratingMatch) {
+          starRating = parseFloat(ratingMatch[1] ?? ratingMatch[2]);
+        } else {
+          const numMatch = ratingText.match(/\d+(?:\.\d+)?/);
+          if (numMatch) starRating = parseFloat(numMatch[0]);
+        }
+      }
+
+      const reviewEl = el.querySelector('[class*="review"], [class*="rating-count"], [itemprop="reviewCount"]');
+      let reviewCount = null;
+      if (reviewEl) {
+        const reviewMatch = (reviewEl.innerText || '').match(/\d[\d,]*/);
+        if (reviewMatch) reviewCount = parseInt(reviewMatch[0].replace(/,/g, ''), 10);
+      }
+      if (reviewCount === null) {
+        const reviewMatch = rawText.match(/(\d[\d,]*)\s*(?:review|rating|customer)/i);
+        if (reviewMatch) reviewCount = parseInt(reviewMatch[1].replace(/,/g, ''), 10);
+      }
+
+      const badgeEls = el.querySelectorAll(
+        '[class*="badge"], [class*="label"], [class*="tag"], [class*="flag"], [class*="sticker"], [class*="banner"]'
+      );
+      const badgeTexts = Array.from(badgeEls)
+        .map((b) => b.innerText.trim())
+        .filter((t) => t.length > 0 && t.length < 50);
+
+      const bestSeller = /best\s*seller/i.test(rawText) || badgeTexts.some((t) => /best\s*seller/i.test(t));
+      const isNew = badgeTexts.some((t) => /^\s*new\s*$/i.test(t)) || /\bnew\s+arrival/i.test(rawText);
+      const saleText = (() => {
+        for (const t of badgeTexts) {
+          if (/sale|save|\d+%\s*off|deal/i.test(t)) return t;
+        }
+        const m = rawText.match(/(\d+%\s*off|save\s+\$[\d.]+|\bsale\b)/i);
+        return m ? m[0] : null;
+      })();
+
+      const stockWarning = (() => {
+        const m = rawText.match(/only\s+\d+\s+left|low\s+stock|limited\s+(?:stock|quantity)|selling\s+fast/i);
+        return m ? m[0].trim() : null;
+      })();
+
+      const sustainabilityKeywords = ['eco-friendly', 'sustainable', 'carbon neutral', 'recycled', 'organic', 'fair trade'];
+      const sustainabilityLabel = (() => {
+        for (const kw of sustainabilityKeywords) {
+          if (new RegExp(kw, 'i').test(rawText)) {
+            return badgeTexts.find((t) => new RegExp(kw, 'i').test(t)) || kw;
+          }
+        }
+        return null;
+      })();
+
+      const trustSignals = {
+        starRating,
+        reviewCount,
+        bestSeller,
+        isNew,
+        onSale: saleText !== null,
+        saleText,
+        stockWarning,
+        sustainabilityLabel,
+        badges: badgeTexts.slice(0, 8),
+      };
+
       return {
         title, price, stockStatus,
         imageAlt: img?.alt || null,
         imageSrc: img?.src || null,
-        ctaText, description, b2bIndicators, b2cIndicators,
+        ctaText, description, b2bIndicators, b2cIndicators, trustSignals,
       };
     });
   }, {
