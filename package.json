@@ -43,30 +43,13 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
+    "@google/genai": "^1.35.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "dotenv": "^17.2.3",
+    "openai": "^4.104.0",
     "puppeteer": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
-  },
-  "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.54.0",
-    "@google/genai": "^1.35.0",
-    "openai": "^4.104.0"
-  },
-  "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": {
-      "optional": true
-    },
-    "@google/genai": {
-      "optional": true
-    },
-    "openai": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
-    "@google/genai": "^1.46.0"
   }
 }
