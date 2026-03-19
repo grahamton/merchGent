@@ -580,14 +580,24 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
 
   const progressToken = extra?._meta?.progressToken;
-  const onProgress = progressToken !== undefined
-    ? async (progress, total, message) => {
-        await extra.sendNotification({
-          method: 'notifications/progress',
-          params: { progressToken, progress, total, message },
-        });
-      }
-    : null;
+  const onProgress = async (progress, total, message, personaData = null) => {
+    // Always emit a progress notification if a token was provided
+    if (progressToken !== undefined) {
+      await extra.sendNotification({
+        method: 'notifications/progress',
+        params: { progressToken, progress, total, message },
+      }).catch(() => {});
+    }
+    // Emit the persona result immediately so clients can display it without waiting
+    if (personaData) {
+      sendLog('info', `[roundtable] ${message}`, {
+        type: 'roundtable_persona_result',
+        progress,
+        total,
+        ...personaData,
+      });
+    }
+  };
 
   const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress);
   return result;

@@ -24,6 +24,7 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 | #16 | Multi-Step `interact_with_page` Flows — `actions` array executes search/click steps sequentially | v1.5.0 |
 | #14 | Competitor Comparison Tool — `compare_storefronts` tool: product count delta, facet gaps, trust signal coverage, sort/B2B/perf diff | v1.5.0 |
 | #15 | Change Detection — snapshot stored on every scrape, `changes` field returned on subsequent scrapes with new/removed products, price moves, facet/sort changes | v1.5.0 |
+| #9  | Roundtable Streaming Output — each persona result emitted via `notifications/message` as it completes; progress bar still fires via `notifications/progress` | v1.5.0 |
 
 ---
 

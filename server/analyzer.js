@@ -783,17 +783,33 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
   console.error('[Roundtable] Starting Floor Walker analysis...');
   await onProgress?.(0, 8, 'Floor Walker analyzing...');
   const floorWalker = await analyzeAsFloorWalker(pageData, screenshot, memory);
-  await onProgress?.(1, 8, `Floor Walker ✓ — ${floorWalker.topConcern}`);
+  await onProgress?.(1, 8, `Floor Walker ✓ — ${floorWalker.topConcern}`, {
+    persona: 'floorWalker',
+    topConcern: floorWalker.topConcern,
+    summary: floorWalker.summary,
+    result: floorWalker,
+  });
 
   console.error('[Roundtable] Starting Auditor analysis...');
   await onProgress?.(2, 8, 'Auditor evaluating...');
   const auditor = await analyzeAsAuditor(pageData, screenshot, memory);
-  await onProgress?.(3, 8, `Auditor ✓ — ${auditor.topConcern}`);
+  await onProgress?.(3, 8, `Auditor ✓ — ${auditor.topConcern}`, {
+    persona: 'auditor',
+    topConcern: auditor.topConcern,
+    summary: auditor.summary,
+    siteMode: auditor.siteMode,
+    result: auditor,
+  });
 
   console.error('[Roundtable] Starting Scout analysis...');
   await onProgress?.(4, 8, 'Scout analyzing...');
   const scout = await analyzeAsScout(pageData, screenshot, memory);
-  await onProgress?.(5, 8, `Scout ✓ — ${scout.topConcern}`);
+  await onProgress?.(5, 8, `Scout ✓ — ${scout.topConcern}`, {
+    persona: 'scout',
+    topConcern: scout.topConcern,
+    summary: scout.summary,
+    result: scout,
+  });
 
   // Build the debate brief for the moderator
   const moderatorPrompt = loadPrompt('roundtable-moderator.md');
@@ -824,7 +840,11 @@ Now synthesize these three perspectives. Identify where they agree, where they d
   console.error('[Roundtable] Starting Moderator synthesis...');
   await onProgress?.(6, 8, 'Moderator synthesizing...');
   const debate = await callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result');
-  await onProgress?.(7, 8, 'Moderator ✓ — consensus reached');
+  await onProgress?.(7, 8, 'Moderator ✓ — consensus reached', {
+    persona: 'moderator',
+    consensus: debate.consensus,
+    result: debate,
+  });
 
   return {
     url: pageData.url,
