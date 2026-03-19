@@ -1,6 +1,7 @@
 # merch-connector Roadmap
 
-Issues are grouped by theme. Each has a short description, why it matters, and rough effort. Start any of these by dropping the issue number in chat.
+Items are grouped by theme. Each has a short description, why it matters, and rough effort.
+Reference the design doc at `docs/persona-architecture-v2.md` for full specs on Persona Architecture v2 items.
 
 ---
 
@@ -8,164 +9,209 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 
 | # | Item | Shipped |
 |---|------|---------|
+| #2 | Badge & Trust Signal Inventory (per-product: star rating, review count, sale badge, best seller, stock warning, sustainability) | v1.5.0 |
+| #3 | Sort Order Extractor (`sortOptions`: type, current, all options) | v1.5.0 |
+| #4 | Mobile Viewport Snapshot (`mobile_screenshot: true` on `scrape_page`) | v1.5.0 |
 | #5 | Price Bucket Validator | v1.2.0 |
+| #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) + `b2bMode` (B2B/B2C/Hybrid) as top-level scrape fields | v1.5.0 |
 | #7 | B2B Audit Mode (`b2b_auditor` persona) | v1.2.0 |
 | #8 | Persona Memory Integration (site notes injected into all persona contexts) | v1.2.0 |
+| #9 | Roundtable Streaming Output — each persona result emitted via `notifications/message` as it completes | v1.5.0 |
 | #12 | Remove `thinking` param from `askAnthropic` | v1.3.0 |
-| —  | OpenAI-compatible provider (LM Studio, Ollama, Groq, etc.) | v1.3.0 |
-| —  | Page data cache (10-min TTL, shared across ask/audit/roundtable) | v1.4.0 |
-| —  | Server-side timeout wrapper with actionable fallback message | v1.4.0 |
-| —  | Unified session store (cookies + page cache in one domain Map) | v1.4.0 |
-| #2 | Badge & Trust Signal Inventory (per-product: star rating, review count, sale badge, best seller, stock warning, sustainability, new) | v1.5.0 |
-| #3 | Sort Order Extractor (`sortOptions` in scrape output: type, current sort, all available options) | v1.5.0 |
-| #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) and `b2bMode` (B2B/B2C/Hybrid) as top-level scrape fields | v1.5.0 |
-| #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com laptops with `b2b_auditor` persona | v1.5.0 |
-| #4  | Mobile Viewport Snapshot — optional `mobile_screenshot: true` on `scrape_page` returns 390×844 JPEG | v1.5.0 |
+| #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com with `b2b_auditor` persona | v1.5.0 |
+| #14 | Competitor Comparison Tool — `compare_storefronts`: product delta, facet gaps, trust signal coverage, sort/B2B/perf diff | v1.5.0 |
+| #15 | Change Detection — normalized snapshot on every scrape, `changes` field returned with new/removed products, price moves, facet/sort diffs | v1.5.0 |
 | #16 | Multi-Step `interact_with_page` Flows — `actions` array executes search/click steps sequentially | v1.5.0 |
-| #14 | Competitor Comparison Tool — `compare_storefronts` tool: product count delta, facet gaps, trust signal coverage, sort/B2B/perf diff | v1.5.0 |
-| #15 | Change Detection — snapshot stored on every scrape, `changes` field returned on subsequent scrapes with new/removed products, price moves, facet/sort changes | v1.5.0 |
-| #9  | Roundtable Streaming Output — each persona result emitted via `notifications/message` as it completes; progress bar still fires via `notifications/progress` | v1.5.0 |
+| #17 | Network Intelligence Layer — XHR/fetch interception, 35 platform fingerprints (Algolia, Elasticsearch, SFCC, Shopify, etc.), direct API extraction, deep dataLayer/digitalData parsing | v1.6.0 |
+| — | OpenAI-compatible provider (LM Studio, Ollama, Groq, etc.) | v1.3.0 |
+| — | Page data cache (10-min TTL, shared across ask/audit/roundtable) | v1.4.0 |
+| — | Persona result cache — roundtable reuses prior `audit_storefront` persona results | v1.6.0 |
+| — | Server-side timeout wrapper with actionable fallback message (`TOOL_TIMEOUT_MS`) | v1.4.0 |
+| — | Unified session store (cookies + page cache + persona cache in one domain Map) | v1.4.0 |
+| — | Roundtable personas run in parallel via `Promise.all` (~30s vs. ~90s sequential) | v1.6.2 |
+| — | Async moderator — tool returns after personas; moderator synthesis arrives via notification | v1.6.2 |
+| — | Persona results written to cache immediately as each resolves (retry-safe) | v1.6.2 |
+| — | GitHub Actions dual publish (npmjs.org + GitHub Packages) on tag push | v1.6.1 |
+| — | All three AI SDKs promoted to regular dependencies (no manual install) | v1.5.5 |
+| — | Eval store — `save_eval` + `list_evals` tools; two-tier JSONL storage; convergence score; dedup hashing; all 5 persona types supported | v1.6.3–v1.6.4 |
+
+---
+
+## 🧠 Persona Architecture v2
+
+> Full spec: `docs/persona-architecture-v2.md`
+> All six phases are non-breaking and can ship independently.
+
+### PA-1 — PageFingerprint (pre-scan layer)
+**What:** A fast, zero-AI pre-scan step that produces a structured `PageFingerprint` from existing scrape data before any persona runs. Fields: `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]` (up to 4 pre-identified structural issues), `recommendedPersonas[]`.
+
+**Why:** Right now each persona independently re-interprets the same raw scrape data — redundant reasoning, higher token counts, inconsistent baseline. The fingerprint computes these facts once and gives personas shared ground truth.
+
+**How:** Pure synchronous JS function `computePageFingerprint(pageData)` in `analyzer.js`. No AI call. Reads `b2bMode`, `facets[]`, `products[].trustSignals`, `networkIntel`, `performance`, `interactables` from the existing scrape output. Include `fingerprint` in `buildPageOutput` so `scrape_page` callers see it too.
+
+**Effort:** Medium — ~100 lines in `analyzer.js` + wiring in `index.js`
+
+---
+
+### PA-2 — Fingerprint context injection
+**What:** Prepend the `PageFingerprint` to every persona prompt as shared baseline context. Include the pre-identified `topRisks` and the instruction: *"These structural issues are already known. Focus your analysis on what ONLY your lens can reveal beyond this baseline."*
+
+**Why:** Without this, Floor Walker, Auditor, and Scout all spend tokens re-detecting that there are no ratings, or that FCP is 4200ms. With it, each persona focuses on unique insight. Faster responses, better signal-to-noise.
+
+**How:** Update `buildPersonaContext(pageData, memory, fingerprint)` in `analyzer.js` to accept optional `fingerprint`. Pass it from `handleRoundtable` and `handleAuditStorefront`.
+
+**Effort:** Small — ~30 lines change to `analyzer.js` + both handlers
+
+---
+
+### PA-3 — Synchronous moderator
+**What:** Move the moderator from a detached async call to a synchronous `await` at the end of `runRoundtable`. The `debate` field is populated before the tool returns. `moderatorPending` is removed.
+
+**Why:** Currently the moderator result arrives via `notifications/message` *after* the tool call completes. MCP clients that don't implement notification handling miss the synthesis entirely — the most valuable output is the most fragile. A complete, self-contained result in one response is strictly better.
+
+**How:** Replace the detached `.then()` chain in `runRoundtable` with `await callWithPersona(...)`. Total wall clock increases ~8-10s (now ~22s instead of ~18s) in exchange for complete results every time.
+
+**Effort:** Small — ~20 line change in `analyzer.js`
+
+---
+
+### PA-4 — Unified base schema
+**What:** Add a common base shape to all persona schemas: `severity` (`critical` | `major` | `minor`), `findings[]` (`dimension`, `status`, `observation`, `impact`), `uniqueInsight`, `score` (0–100 health from this persona's lens). Each persona retains its unique fields alongside the base.
+
+**Why:** Currently each persona returns a completely different shape, making cross-persona reasoning require persona-specific parsing. A unified base lets the moderator, eval system, and any external consumer reason across personas without special-casing each one. Enables richer eval metrics (score trends, dimension-level comparison).
+
+**How:** Update each schema constant in `analyzer.js`. Update each persona prompt file to instruct the model to populate the new fields. Update `ROUNDTABLE_SCHEMA.disagreements[]` from hardwired `floorWalkerPosition` / `auditorPosition` / `scoutPosition` to `positions: { [personaId]: string }`.
+
+**Effort:** Medium — schema changes + prompt file updates for 4 personas
+
+---
+
+### PA-5 — Smart persona selection
+**What:** Optional `smart_select: true` parameter on `merch_roundtable`. When set, uses `fingerprint.recommendedPersonas` to run only the 2-3 most valuable personas for that specific page rather than always running all three.
+
+**Why:** A pure B2B procurement page (Insight.com) doesn't need Floor Walker's shopper emotional take — it needs B2B Auditor and Scout. Running the wrong personas wastes time and dilutes the synthesis. Smart selection picks the highest-signal set for the page type.
+
+**How:** Add `smart_select: boolean` (default false) to `merch_roundtable` inputSchema. When true, read `fingerprint.recommendedPersonas` and skip excluded personas. Default behavior (all three) unchanged.
+
+**Effort:** Small — ~30 lines in `index.js` + `analyzer.js`
+
+---
+
+### PA-6 — Conversion Architect persona
+**What:** New fifth persona that reasons about the buyer's funnel — awareness → consideration → decision — and grades the page on conversion fitness (A–F). Fields: `funnelGrade`, `awarenessSignals`, `considerationGaps`, `decisionBarriers`, `topConcern`, `severity`, `score`, `summary`.
+
+**Why:** None of the four existing personas answers "does this page convert?" The Floor Walker has emotional reactions. The Auditor measures data quality. Neither traces the funnel path from browsing to buying. Conversion Architect is the only persona that catches price anchoring problems, consideration-stage content gaps, and structural patterns that leak shoppers at the decision moment.
+
+**How:** New `server/prompts/conversion-architect.md`. New `CONVERSION_ARCHITECT_SCHEMA` + `analyzeAsConversionArchitect()` in `analyzer.js`. Register `'conversion_architect'` as valid `persona` enum in `audit_storefront`. Add to `handleSaveEval` persona cache reads. Available as optional fourth persona in roundtable when `smart_select: true` and `fingerprint.funnelReadiness !== 'ready'`.
+
+**Effort:** Medium — new prompt file + schema + function + wiring
 
 ---
 
 ## 🔬 Scraper Intelligence
 
 ### #1 — Category Contamination Detector
-**What:** During scraping, compare each product's title/description against the page category. Flag products that clearly don't belong (e.g., a RAM stick on a laptop page).
+**What:** During scraping, compare each product's title/description against the page category. Flag products that clearly don't belong (e.g., a RAM stick on a laptop page). Return as `contamination: { detected: true, suspects: [...] }` in scrape output.
 
-**Why:** Contaminated categories directly hurt conversion. We caught this live on the Insight laptop page (Crucial RAM appearing in laptop results).
+**Why:** Contaminated categories directly hurt conversion — caught this live on Insight.com (Crucial RAM appearing in laptop results). None of the personas currently detects this explicitly.
 
-**How:** Heuristic keyword matching against the URL category + page title. Return as `contamination: { detected: true, suspects: [...] }` in scrape output.
+**How:** Heuristic keyword matching against URL category + page title in `extractPageData()`. Low false-positive threshold — only flag clear mismatches.
 
-**Effort:** Medium — scraper.js addition, ~50 lines
-
----
-
-### #2 — Badge & Trust Signal Inventory
-**What:** Extract per-product signals: star rating, review count, sale badge, "Best Seller", stock warning ("Only 3 left"), sustainability labels, "New" badge.
-
-**Why:** These signals drive purchase decisions. Auditor and Floor Walker can't evaluate persuasion quality without seeing badge data.
-
-**How:** Add badge extraction in `extractPageData()`. Scan product cards for badge CSS classes and known text patterns.
-
-**Effort:** Medium — scraper.js addition, ~60 lines
+**Effort:** Medium — `scraper.js` addition, ~50 lines
 
 ---
 
-### #3 — Sort Order Extractor
-**What:** Detect available sort options and current/default sort (Relevance, Price, Rating, Best Seller, Newest, etc.).
+## 📊 Eval & Observability
 
-**Why:** Sort order is one of the highest-leverage merchandising levers. The Scout currently has to infer it from what they can't see.
+### EV-1 — LLM-as-judge scoring
+**What:** Optional post-save step that runs a single AI call against a saved eval run and populates the `judgeScore` field in the compact JSONL record. Scores on a 5-dimension rubric: accuracy, completeness, actionability, evidence quality, consensus quality.
 
-**How:** Look for `<select>` and sort UI patterns near product counts. Extract options and selected value.
+**Why:** The convergence score measures inter-persona *agreement* but not output *quality*. An LLM judge provides an independent quality signal — useful for tracking whether prompt changes improved or degraded analysis quality over time.
 
-**Effort:** Small-Medium — scraper.js addition, ~40 lines
+**How:** Add `run_judge: boolean` option to `save_eval`. If true, fire a single AI call with the full persona outputs + a scoring rubric. Write result back to both the compact record and the full run JSON. Use a lightweight model (haiku/flash) to keep cost low.
 
----
-
-### #4 — Mobile Viewport Snapshot
-**What:** Optional `mobile_screenshot: true` on `scrape_page` — re-renders at 390×844 (iPhone 14) and returns a second screenshot.
-
-**Why:** Mobile traffic is 60–70% of e-commerce. A page can look fine on desktop and be broken on mobile.
-
-**How:** Second Puppeteer pass with `setViewport({ width: 390, height: 844 })`.
-
-**Effort:** Small — scraper.js addition, ~20 lines
+**Effort:** Medium — `eval-store.js` + `analyzer.js` judge function, ~80 lines
 
 ---
 
-## 🧠 Analyzer Intelligence
+### EV-2 — `get_logs` tool + circular buffer
+**What:** New `get_logs` MCP tool that returns the last N server log entries from an in-memory circular buffer. Supports `level` filter (`debug` | `info` | `error`) and `tool` filter.
 
-### #6 — B2B/B2C Conflict Scorer (surface as explicit output field)
-**What:** The conflict score is already calculated in `buildPersonaContext` but is only visible in the AI's context text. Promote it to a top-level field in scrape output: `b2bConflictScore: 0–100`, `b2bMode: "B2B" | "B2C" | "Hybrid"`.
+**Why:** Server log notifications from `notifications/message` are sandwiched in the MCP Inspector UI with no way to copy them all. The `get_logs` tool lets any client retrieve recent logs programmatically — no separate terminal needed.
 
-**Why:** Callers and agents need a machine-readable signal, not just text. Makes it trivial to branch logic ("if conflictScore > 50, use b2b_auditor").
+**How:** Add a 500-entry circular buffer in `index.js`. Push every `sendLog()` call to the buffer. Register `get_logs` tool with `level`, `tool`, and `limit` params.
 
-**How:** Move the calculation from the context builder into `scrapePage()` return value. Pass it through to Auditor schema.
-
-**Effort:** Small — refactor + schema addition, ~30 lines
+**Effort:** Small — ~60 lines in `index.js`
 
 ---
 
-### #14 — Competitor Comparison Tool
-**What:** New tool `compare_storefronts` that accepts two URLs, scrapes both (with cache), and returns a structured diff: facet gaps, product count delta, trust signal coverage, performance delta.
+### EV-3 — File logging
+**What:** Optional file logging via `MERCH_LOG_FILE` env var. Appends structured NDJSON to the specified path. Useful for capturing full roundtable notification streams that can't be copied from the Inspector UI.
 
-**Why:** Merchandisers don't think in absolutes — they think relative to competitors. "We have 3 facets, they have 9" is more actionable than any single-site audit.
+**Why:** Notifications disappear. When a roundtable produces 7 notifications (3 personas + moderator + progress ticks), there's currently no way to capture them all reliably outside the Inspector.
 
-**How:** Scrape both URLs (reuse cache), pass both datasets to a new analyzer function with a comparison prompt. New MCP tool entry.
+**How:** In `sendLog()`, if `MERCH_LOG_FILE` is set, append `JSON.stringify({ ts, level, ...data })\n` to the file.
 
-**Effort:** Medium — new tool + analyzer function, ~80 lines
-
----
-
-### #15 — Change Detection / Monitoring
-**What:** Add a `watch` action to `site_memory` (or a new `monitor_storefront` tool) that stores a snapshot of scrape output and, on subsequent calls, diffs it against the stored version. Returns what changed: new products, removed facets, price movements, title changes.
-
-**Why:** Competitive monitoring is a top use case. Right now there's no way to know what changed on a site between visits.
-
-**How:** Serialize a normalized snapshot of products + facets into site memory on each scrape. On next call, diff and return delta.
-
-**Effort:** Medium — site-memory.js extension + scraper.js normalization, ~70 lines
-
----
-
-## 🎭 Persona Improvements
-
-### #9 — Roundtable Streaming Output
-**What:** Emit each persona's result as a progress notification as it completes, rather than waiting for all four to finish.
-
-**Why:** Roundtable takes 60–90s with 4 sequential AI calls. Users currently see nothing until it's all done.
-
-**How:** MCP `notifications/message` after each persona completes. Final response is still the full roundtable output.
-
-**Effort:** Medium-Hard — MCP notification plumbing, ~80 lines
+**Effort:** Small — ~20 lines in `index.js`
 
 ---
 
 ## 🔌 Integrations
 
 ### #10 — LogRocket Session Link
-**What:** Optional `logrocket_session_url` parameter on `audit_storefront` and `ask_page`. Fetch session replay data (clicks, rage clicks, network errors) and include it in analysis context.
+**What:** Optional `logrocket_session_url` param on `audit_storefront` and `ask_page`. Fetch session replay data (clicks, rage clicks, network errors) and include it in analysis context.
 
-**Why:** Pairing behavioral data with page structure analysis was the original vision. Gives the AI real user evidence, not just inferred problems.
+**Why:** Pairing real user behavior data with page structure analysis is the original vision. Gives personas evidence from actual users, not just inferred problems.
 
-**How:** New `server/logrocket.js` module. Fetch + parse session events. Append as "User Behavior" section in context.
+**How:** New `server/logrocket.js`. Fetch + parse session events from LogRocket API. Append as "User Behavior" section in persona context.
 
-**Effort:** Hard — requires LogRocket API integration and event parsing
+**Effort:** Hard — LogRocket API integration + event shape parsing
 
 ---
 
 ### #11 — Coveo Boost/Bury Actions
-**What:** New tool `coveo_action` that translates audit recommendations into Coveo Query Pipeline rules: boost high-trust products, bury contaminated results, configure recommended facets.
+**What:** New `coveo_action` tool that translates audit recommendations into Coveo Query Pipeline rules: boost high-trust products, bury contaminated results, configure recommended facets.
 
-**Why:** Analysis without action is a report. This closes the loop — diagnosis leads directly to a configuration change.
+**Why:** Analysis without action is a report. This closes the loop — diagnosis leads directly to a configuration change in the commerce platform.
 
-**How:** New `server/coveo.js`. Map audit output to Coveo REST API calls. New MCP tool.
+**How:** New `server/coveo.js`. Map audit output fields to Coveo REST API calls. New MCP tool registration.
 
-**Effort:** Hard — requires Coveo org, API credentials, recommendation-to-rule mapping
+**Effort:** Hard — requires Coveo org + API credentials + recommendation-to-rule mapping
+
+---
+
+### INT-3 — MCP Registry Submissions
+**What:** Submit `merch-connector` to public MCP server registries: `mcp.so`, Glama, and the official Anthropic MCP servers list.
+
+**Why:** Discovery. The package is on npm and GitHub Packages but not findable from the places developers look for MCP servers.
+
+**When:** After more real-world testing and at least one of the PA-v2 phases shipped (fingerprint or synchronous moderator).
+
+**Effort:** Small — write submission forms, no code
 
 ---
 
 ## 🧹 Tech Debt
 
-### #13 — Validate `b2b_auditor` end-to-end
-**What:** Run a full audit against Insight.com laptop page using `persona: "b2b_auditor"` and verify the output matches the expected B2B evaluation criteria.
+### TD-1 — Remove `moderatorPending` after PA-3
+Once the synchronous moderator (PA-3) ships, remove `moderatorPending: true` from `runRoundtable` return shape and from any client-side checks. Update CLAUDE.md architecture notes.
 
-**Why:** The prompt is written and wired, but has never been verified against a real B2B page in a formal test run.
-
-**Effort:** Small — test run + prompt tuning if needed
+**Effort:** Tiny — cleanup pass
 
 ---
 
-### #16 — Multi-Step `interact_with_page` Flows
-**What:** Extend `interact_with_page` to accept an array of actions (search → filter → click → extract) rather than a single action. Execute them in sequence and return the final page state.
+### TD-2 — Protocol test coverage for base schema fields
+Once PA-4 (unified base schema) ships, add protocol test assertions that verify `severity`, `findings[]`, `score`, and `uniqueInsight` are present in roundtable persona outputs. Currently `protocol.js` only checks tool registration and handshake.
 
-**Why:** Real user journeys are multi-step. Testing add-to-cart, login walls, or search + filter pipelines requires chained interactions.
-
-**How:** Change `action` param to accept either a single object or an array. Loop through actions, return final extracted page.
-
-**Effort:** Medium — index.js + scraper.js update, ~50 lines
+**Effort:** Small — `test/protocol.js` additions
 
 ---
 
-*Last updated: 2026-03-19. Reflects v1.5.0 shipped state.*
+### TD-3 — `prepublishOnly` check for new server files
+`package.json` `prepublishOnly` script only syntax-checks 4 files. Add `eval-store.js` and `network-intel.js`.
+
+**Effort:** Tiny — one line in `package.json`
+
+---
+
+*Last updated: 2026-03-19. Reflects v1.6.4 shipped state.*

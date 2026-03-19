@@ -19,7 +19,7 @@
     "test:audit": "node test/smoke.js --audit",
     "test:roundtable": "node test/smoke.js --roundtable",
     "test:persona": "node test/smoke.js --persona floor_walker",
-    "prepublishOnly": "node --check server/index.js && node --check server/scraper.js && node --check server/analyzer.js && node --check server/site-memory.js"
+    "prepublishOnly": "node --check server/index.js && node --check server/scraper.js && node --check server/analyzer.js && node --check server/site-memory.js && node --check server/eval-store.js && node --check server/network-intel.js"
   },
   "keywords": [
     "mcp",
