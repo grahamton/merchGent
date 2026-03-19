@@ -268,6 +268,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.6.2** -- Roundtable timeout fixes. The three personas (Floor Walker, Auditor, Scout) now run in parallel via `Promise.all`, cutting wall-clock time from ~90s sequential to ~30s. The moderator synthesis fires async after the tool returns, so the MCP client timeout can no longer kill the whole run. Persona results are written to cache the moment each resolves — a retry after a timeout picks up where it left off with no re-work.
+
 **v1.6.1** -- Automated CI/CD publishing via GitHub Actions. Pushing a version tag now publishes to both npmjs.org (`merch-connector`) and GitHub Packages (`@grahamton/merch-connector`) automatically — no manual `npm publish` or 2FA required.
 
 **v1.6.0** -- Major new Network Intelligence Layer. Every `scrape_page` call now intercepts XHR/fetch responses during page load and fingerprints the commerce stack from 35 platform signatures: Elasticsearch, Algolia, Coveo, Lucidworks Fusion, Solr, Bloomreach, Searchspring, Google Cloud Retail, SFCC, SAP Hybris, Commercetools, Shopify, Bazaarvoice, PowerReviews, and more. When a high-confidence API match is found (≥70%), products and facets are extracted directly from the API response — eliminating DOM parsing failures like "Unknown Facet" on enterprise storefronts. Deep dataLayer/digitalData parsing extracts GA4 ecommerce events, GTM container IDs, GA4 measurement IDs, W3C digitalData objects, user segment signals, and A/B experiment assignments. Discovered API endpoints are persisted to site memory (tokens stripped) so the discovery pass only runs once per domain. Roundtable now reuses persona results cached by prior `audit_storefront` calls — best case reduces from 4 AI calls to 1 (moderator only), cutting timeout risk by 75%.
