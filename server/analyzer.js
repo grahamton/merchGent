@@ -498,23 +498,23 @@ async function callGeminiGeneric(systemPrompt, contextText, screenshot, geminiSc
   return JSON.parse(text);
 }
 
-// ─── Provider: OpenAI-compatible (LM Studio, Ollama, Groq, Together AI, etc.) ──
+// ─── Provider: OpenAI-compatible (Groq, Together AI, OpenAI, etc.) ────────────
 
 /**
  * Call any OpenAI-compatible endpoint with tool_choice forcing, falling back to
  * JSON prompt mode for models that don't support function calling.
  *
  * Key env vars:
- *   OPENAI_API_KEY   — API key (use "lm-studio" for LM Studio, which doesn't validate)
- *   OPENAI_BASE_URL  — Base URL (default: http://localhost:1234/v1 for LM Studio)
+ *   OPENAI_API_KEY   — API key (required)
+ *   OPENAI_BASE_URL  — Base URL (optional; defaults to https://api.openai.com/v1)
  *   MODEL_NAME       — Required: model identifier as the endpoint expects it
  *   OPENAI_VISION    — Set "true" to include screenshot as image_url (vision-capable models only)
  */
 async function callOpenAIGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || 'lm-studio',
-    baseURL: process.env.OPENAI_BASE_URL || 'http://localhost:1234/v1',
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
   });
   const model = getModelName('openai', null);
   if (!model) throw new Error('MODEL_NAME is required for the openai provider (e.g., MODEL_NAME=llama-3.1-8b-instruct).');
@@ -568,8 +568,8 @@ async function callOpenAI(contextText, screenshot) {
 async function askOpenAI(context, question, screenshot) {
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || 'lm-studio',
-    baseURL: process.env.OPENAI_BASE_URL || 'http://localhost:1234/v1',
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
   });
   const model = getModelName('openai', null);
   if (!model) throw new Error('MODEL_NAME is required for the openai provider.');

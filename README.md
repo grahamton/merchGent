@@ -54,8 +54,8 @@ Or install globally: `npm install -g merch-connector`
 |----------|----------|-------------|
 | `ANTHROPIC_API_KEY` | One of these | Anthropic Claude API key |
 | `GEMINI_API_KEY` | One of these | Google Gemini API key |
-| `OPENAI_API_KEY` | One of these | OpenAI-compatible key (use `"lm-studio"` for LM Studio) |
-| `OPENAI_BASE_URL` | No | Base URL for OpenAI-compatible endpoint. Default: `http://localhost:1234/v1` |
+| `OPENAI_API_KEY` | One of these | OpenAI-compatible API key |
+| `OPENAI_BASE_URL` | No | Base URL for OpenAI-compatible endpoint. Defaults to `https://api.openai.com/v1` |
 | `MODEL_PROVIDER` | No | Force `"anthropic"`, `"gemini"`, or `"openai"`. Auto-detected if omitted. |
 | `MODEL_NAME` | No | Override default model. Defaults: `claude-opus-4-6` / `gemini-2.5-pro` |
 | `OPENAI_VISION` | No | Set `"true"` to pass screenshots to OpenAI-compatible vision models |
@@ -278,7 +278,7 @@ Reset cookies for a domain.
 
 **v1.4.0** -- Added 10-minute in-memory page data cache. `ask_page`, `audit_storefront`, and `merch_roundtable` now reuse a recent `scrape_page` result instead of re-scraping, cutting latency in half for local models. Unified session store: cookies and cached pages share a single domain-keyed structure, so `clear_session` wipes both automatically. Added configurable server-side timeout (`TOOL_TIMEOUT_MS`, default 120s) that returns an actionable error message instead of hanging.
 
-**v1.3.0** -- Added OpenAI-compatible provider support (LM Studio, Ollama, Groq, Together AI, and any OpenAI-compatible endpoint). Configure with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `MODEL_NAME`. Vision input supported via `OPENAI_VISION=true` for multimodal models. Falls back to JSON prompt mode for models without function calling.
+**v1.3.0** -- Added OpenAI-compatible provider support (OpenAI, Groq, Together AI, and any OpenAI-compatible endpoint). Configure with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `MODEL_NAME`. Vision input supported via `OPENAI_VISION=true` for multimodal models. Falls back to JSON prompt mode for models without function calling.
 
 **v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added four expert personas (Floor Walker, Auditor, Scout, B2B Auditor), roundtable mode with progress notifications, persistent site memory injected into all persona analyses, price bucket validation, dual AI provider support (Anthropic + Gemini), and facet/pagination extraction.
 
