@@ -863,6 +863,78 @@ Now synthesize these three perspectives. Identify where they agree, where they d
   };
 }
 
+// ─── Competitor comparison ────────────────────────────────────────────────────
+
+/**
+ * Produce a structured diff between two scraped storefronts.
+ * Pure structural analysis — no AI call needed.
+ *
+ * @param {object} pageDataA - Output from scrapePage() for site A
+ * @param {object} pageDataB - Output from scrapePage() for site B
+ * @returns {object} Structured comparison result
+ */
+export function compareStorefronts(pageDataA, pageDataB) {
+  const facetNamesA = new Set((pageDataA.facets || []).map((f) => f.name));
+  const facetNamesB = new Set((pageDataB.facets || []).map((f) => f.name));
+
+  const sortLabelsA = pageDataA.sortOptions?.options?.map((o) => o.label) || [];
+  const sortLabelsB = pageDataB.sortOptions?.options?.map((o) => o.label) || [];
+
+  const trustCoverage = (products) => {
+    const total = products.length;
+    if (total === 0) return { total: 0, withRatings: 0, withReviews: 0, onSale: 0, bestSeller: 0 };
+    return {
+      total,
+      withRatings:  products.filter((p) => p.trustSignals?.starRating != null).length,
+      withReviews:  products.filter((p) => p.trustSignals?.reviewCount != null).length,
+      onSale:       products.filter((p) => p.trustSignals?.onSale).length,
+      bestSeller:   products.filter((p) => p.trustSignals?.bestSeller).length,
+    };
+  };
+
+  const perfA = pageDataA.performance;
+  const perfB = pageDataB.performance;
+  const performance = perfA && perfB ? {
+    a: { fcp: perfA.firstContentfulPaint, load: perfA.loadComplete },
+    b: { fcp: perfB.firstContentfulPaint, load: perfB.loadComplete },
+    fcpDelta:  perfB.firstContentfulPaint - perfA.firstContentfulPaint,
+    loadDelta: perfB.loadComplete - perfA.loadComplete,
+    faster: perfB.firstContentfulPaint < perfA.firstContentfulPaint ? 'b' : 'a',
+  } : null;
+
+  return {
+    urls: { a: pageDataA.url, b: pageDataB.url },
+    titles: { a: pageDataA.title, b: pageDataB.title },
+    productCounts: {
+      a: pageDataA.products.length,
+      b: pageDataB.products.length,
+      delta: pageDataB.products.length - pageDataA.products.length,
+    },
+    facets: {
+      a: { count: facetNamesA.size, names: [...facetNamesA] },
+      b: { count: facetNamesB.size, names: [...facetNamesB] },
+      sharedCount: [...facetNamesA].filter((n) => facetNamesB.has(n)).length,
+      onlyInA: [...facetNamesA].filter((n) => !facetNamesB.has(n)),
+      onlyInB: [...facetNamesB].filter((n) => !facetNamesA.has(n)),
+    },
+    trustSignalCoverage: {
+      a: trustCoverage(pageDataA.products),
+      b: trustCoverage(pageDataB.products),
+    },
+    sortOptions: {
+      a: { current: pageDataA.sortOptions?.current || null, count: sortLabelsA.length, options: sortLabelsA },
+      b: { current: pageDataB.sortOptions?.current || null, count: sortLabelsB.length, options: sortLabelsB },
+      onlyInA: sortLabelsA.filter((s) => !sortLabelsB.includes(s)),
+      onlyInB: sortLabelsB.filter((s) => !sortLabelsA.includes(s)),
+    },
+    b2bMode: {
+      a: { mode: pageDataA.b2bMode || null, conflictScore: pageDataA.b2bConflictScore ?? null },
+      b: { mode: pageDataB.b2bMode || null, conflictScore: pageDataB.b2bConflictScore ?? null },
+    },
+    performance,
+  };
+}
+
 // ─── Price bucket validator ────────────────────────────────────────────────────
 
 /**

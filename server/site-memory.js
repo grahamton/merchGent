@@ -84,6 +84,78 @@ export function deleteMemory(domain) {
   return false;
 }
 
+// ─── Snapshot helpers (normalized, diff-friendly) ────────────────────────────
+
+function normalizeSnapshot(scrapeResult) {
+  return {
+    products: (scrapeResult.products || []).map((p) => ({
+      title: p.title,
+      price: p.price,
+      stockStatus: p.stockStatus,
+    })),
+    facetNames: (scrapeResult.facets || []).map((f) => f.name),
+    productCount: (scrapeResult.products || []).length,
+    b2bMode: scrapeResult.b2bMode || null,
+    sortOptions: scrapeResult.sortOptions?.options?.map((o) => o.label) || [],
+    snapshotAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Store a normalized snapshot of scrape output for this domain.
+ * Call this after every scrape to establish / refresh the baseline.
+ */
+export function takeSnapshot(domain, scrapeResult) {
+  const snapshot = normalizeSnapshot(scrapeResult);
+  saveMemory(domain, { snapshot });
+  return snapshot;
+}
+
+/**
+ * Diff current scrape against the stored snapshot.
+ * Returns null if no baseline snapshot exists yet.
+ */
+export function diffSnapshot(domain, scrapeResult) {
+  const memory = loadMemory(domain);
+  const prev = memory.snapshot;
+  if (!prev) return null;
+
+  const curr = normalizeSnapshot(scrapeResult);
+
+  const prevByTitle = new Map(prev.products.map((p) => [p.title, p]));
+  const currByTitle = new Map(curr.products.map((p) => [p.title, p]));
+
+  const newProducts     = curr.products.filter((p) => !prevByTitle.has(p.title)).map((p) => p.title);
+  const removedProducts = prev.products.filter((p) => !currByTitle.has(p.title)).map((p) => p.title);
+  const priceChanges    = curr.products
+    .filter((p) => prevByTitle.has(p.title) && prevByTitle.get(p.title).price !== p.price && p.price)
+    .map((p) => ({ title: p.title, was: prevByTitle.get(p.title).price, now: p.price }));
+
+  const prevFacets = new Set(prev.facetNames);
+  const currFacets = new Set(curr.facetNames);
+  const facetsAdded   = [...currFacets].filter((f) => !prevFacets.has(f));
+  const facetsRemoved = [...prevFacets].filter((f) => !currFacets.has(f));
+
+  const sortAdded   = curr.sortOptions.filter((s) => !prev.sortOptions.includes(s));
+  const sortRemoved = prev.sortOptions.filter((s) => !curr.sortOptions.includes(s));
+
+  const hasChanges = newProducts.length > 0 || removedProducts.length > 0
+    || priceChanges.length > 0 || facetsAdded.length > 0 || facetsRemoved.length > 0
+    || sortAdded.length > 0 || sortRemoved.length > 0;
+
+  return {
+    hasChanges,
+    baselineAt: prev.snapshotAt,
+    productCount: { was: prev.productCount, now: curr.productCount },
+    newProducts,
+    removedProducts,
+    priceChanges,
+    facets: { added: facetsAdded, removed: facetsRemoved },
+    sortOptions: { added: sortAdded, removed: sortRemoved },
+    b2bMode: prev.b2bMode !== curr.b2bMode ? { was: prev.b2bMode, now: curr.b2bMode } : null,
+  };
+}
+
 /**
  * Auto-learn from a scrape result — store timing, structural selectors,
  * and any detected quirks.

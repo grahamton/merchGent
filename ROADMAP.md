@@ -22,6 +22,8 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 | #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com laptops with `b2b_auditor` persona | v1.5.0 |
 | #4  | Mobile Viewport Snapshot — optional `mobile_screenshot: true` on `scrape_page` returns 390×844 JPEG | v1.5.0 |
 | #16 | Multi-Step `interact_with_page` Flows — `actions` array executes search/click steps sequentially | v1.5.0 |
+| #14 | Competitor Comparison Tool — `compare_storefronts` tool: product count delta, facet gaps, trust signal coverage, sort/B2B/perf diff | v1.5.0 |
+| #15 | Change Detection — snapshot stored on every scrape, `changes` field returned on subsequent scrapes with new/removed products, price moves, facet/sort changes | v1.5.0 |
 
 ---
 

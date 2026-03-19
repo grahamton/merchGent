@@ -28,8 +28,8 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets } from './analyzer.js';
-import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory } from './site-memory.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts } from './analyzer.js';
+import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 
 // ─── Session store (cookies + page cache, keyed by domain) ───────────────────
 //
@@ -221,6 +221,23 @@ const TOOLS = [
     },
   },
   {
+    name: 'compare_storefronts',
+    description:
+      'Scrape two storefront URLs and return a structured side-by-side diff: ' +
+      'product count delta, facet gaps (what site B has that A doesn\'t and vice versa), ' +
+      'trust signal coverage (ratings, reviews, badges), sort option gaps, B2B mode, and performance delta. ' +
+      'Reuses cached page data if either URL was scraped in the last 10 minutes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url_a: { type: 'string', description: 'First storefront URL (your site or baseline).' },
+        url_b: { type: 'string', description: 'Second storefront URL (competitor or variant).' },
+        max_products: { type: 'number', description: 'Max products per page. Default: 10.' },
+      },
+      required: ['url_a', 'url_b'],
+    },
+  },
+  {
     name: 'ask_page',
     description:
       'Ask any natural language question about a storefront page. ' +
@@ -337,11 +354,15 @@ const TOOLS = [
 // ─── Shared output builder ───────────────────────────────────────────────────
 
 function buildPageOutput(result) {
-  const { screenshotBuffer, cookies, ...rest } = result;
+  const { screenshotBuffer, mobileScreenshotBuffer, cookies, ...rest } = result;
 
-  // Auto-learn from every scrape
   const domain = getDomain(rest.url);
+
+  // Diff against stored snapshot before updating it
+  let changes = null;
   if (domain) {
+    try { changes = diffSnapshot(domain, rest); } catch { /* non-fatal */ }
+    try { takeSnapshot(domain, rest); } catch { /* non-fatal */ }
     try { learnFromScrape(domain, rest); } catch { /* non-fatal */ }
   }
 
@@ -357,6 +378,9 @@ function buildPageOutput(result) {
     performance: rest.performance,
     productsFound: rest.products.length,
     pagesScraped: rest.pagesScraped || 1,
+    b2bMode: rest.b2bMode || null,
+    b2bConflictScore: rest.b2bConflictScore ?? null,
+    sortOptions: rest.sortOptions || null,
     products: rest.products,
     facets: rest.facets || [],
     findings: rest.findings,
@@ -366,6 +390,7 @@ function buildPageOutput(result) {
       ? { scrapeCount: memory.scrapeCount, notes: memory.notes, customFields: memory.customFields }
       : undefined,
     priceBucketAnalysis: validatePriceBuckets(rest) || undefined,
+    changes: changes || undefined,
   };
 }
 
@@ -446,6 +471,35 @@ async function handleInteractWithPage({ url, actions, action, selector, value, i
   }
 
   return content;
+}
+
+async function handleCompareStorefronts({ url_a, url_b, max_products = 10 }) {
+  if (!isValidHttpUrl(url_a)) throw new Error(`Invalid URL A: "${url_a}"`);
+  if (!isValidHttpUrl(url_b)) throw new Error(`Invalid URL B: "${url_b}"`);
+
+  const [pageDataA, pageDataB] = await Promise.all([
+    (async () => {
+      let data = getCachedPage(url_a);
+      if (!data) {
+        data = await scrapePage(url_a, getSessionCookies(url_a), 1, max_products);
+        saveSessionCookies(data.url, data.cookies);
+        setCachedPage(data.url, data);
+      }
+      return data;
+    })(),
+    (async () => {
+      let data = getCachedPage(url_b);
+      if (!data) {
+        data = await scrapePage(url_b, getSessionCookies(url_b), 1, max_products);
+        saveSessionCookies(data.url, data.cookies);
+        setCachedPage(data.url, data);
+      }
+      return data;
+    })(),
+  ]);
+
+  const comparison = compareStorefronts(pageDataA, pageDataB);
+  return [{ type: 'text', text: JSON.stringify(comparison, null, 2) }];
 }
 
 async function handleAskPage({ url, question, depth = 1, max_products = 10 }) {
@@ -550,7 +604,7 @@ function handleClearSession({ url }) {
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'merch-connector', version: '1.4.0' },
+  { name: 'merch-connector', version: '1.5.0' },
   { capabilities: { tools: {}, resources: {}, prompts: {}, logging: {} } }
 );
 
@@ -673,6 +727,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         return { content: await handleScrapePage(args) };
       case 'interact_with_page':
         return { content: await handleInteractWithPage(args) };
+      case 'compare_storefronts':
+        return { content: await withTimeout(handleCompareStorefronts(args), 'compare_storefronts') };
       case 'ask_page':
         return { content: await withTimeout(handleAskPage(args), 'ask_page') };
       case 'site_memory':
