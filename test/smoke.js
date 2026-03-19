@@ -10,7 +10,8 @@
  *   node test/smoke.js --ask "what colors are available?"
  *   node test/smoke.js --url https://www.nike.com/w/mens-shoes
  */
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+loadEnv({ path: new URL('../.env', import.meta.url), override: true });
 import { scrapePage } from '../server/scraper.js';
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable } from '../server/analyzer.js';
 

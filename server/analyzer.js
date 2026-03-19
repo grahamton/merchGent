@@ -268,11 +268,12 @@ async function callGemini(contextText, screenshot) {
 
 function detectProvider() {
   const explicit = process.env.MODEL_PROVIDER?.toLowerCase();
-  if (explicit === 'anthropic' || explicit === 'gemini') return explicit;
-  if (explicit) throw new Error(`Unknown MODEL_PROVIDER "${explicit}". Use "anthropic" or "gemini".`);
+  if (explicit === 'anthropic' || explicit === 'gemini' || explicit === 'openai') return explicit;
+  if (explicit) throw new Error(`Unknown MODEL_PROVIDER "${explicit}". Use "anthropic", "gemini", or "openai".`);
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   if (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) return 'gemini';
-  throw new Error('No AI API key found. Set ANTHROPIC_API_KEY or GEMINI_API_KEY (and optionally MODEL_PROVIDER).');
+  if (process.env.OPENAI_API_KEY || process.env.OPENAI_BASE_URL) return 'openai';
+  throw new Error('No AI API key found. Set ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY (and optionally MODEL_PROVIDER).');
 }
 
 // ─── Persona schemas ──────────────────────────────────────────────────────
@@ -489,6 +490,101 @@ async function callGeminiGeneric(systemPrompt, contextText, screenshot, geminiSc
   return JSON.parse(text);
 }
 
+// ─── Provider: OpenAI-compatible (LM Studio, Ollama, Groq, Together AI, etc.) ──
+
+/**
+ * Call any OpenAI-compatible endpoint with tool_choice forcing, falling back to
+ * JSON prompt mode for models that don't support function calling.
+ *
+ * Key env vars:
+ *   OPENAI_API_KEY   — API key (use "lm-studio" for LM Studio, which doesn't validate)
+ *   OPENAI_BASE_URL  — Base URL (default: http://localhost:1234/v1 for LM Studio)
+ *   MODEL_NAME       — Required: model identifier as the endpoint expects it
+ *   OPENAI_VISION    — Set "true" to include screenshot as image_url (vision-capable models only)
+ */
+async function callOpenAIGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
+  const { default: OpenAI } = await import('openai');
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || 'lm-studio',
+    baseURL: process.env.OPENAI_BASE_URL || 'http://localhost:1234/v1',
+  });
+  const model = process.env.MODEL_NAME;
+  if (!model) throw new Error('MODEL_NAME is required for the openai provider (e.g., MODEL_NAME=llama-3.1-8b-instruct).');
+
+  const useVision = process.env.OPENAI_VISION === 'true' && !!screenshot;
+  const userContent = useVision
+    ? [
+        { type: 'text', text: contextText },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${screenshot.toString('base64')}` } },
+      ]
+    : contextText;
+
+  // Attempt 1: structured tool calling (works on most capable models)
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      tools: [{
+        type: 'function',
+        function: { name: toolName, description: `Return the structured ${toolName} result.`, parameters: outputSchema },
+      }],
+      tool_choice: { type: 'function', function: { name: toolName } },
+    });
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) return JSON.parse(toolCall.function.arguments);
+  } catch { /* fall through to JSON prompt mode */ }
+
+  // Attempt 2: JSON prompt mode (works on all instruction-following models)
+  const schemaInstructions = `\n\nRespond with a valid JSON object matching this exact schema. Output only the JSON, no other text:\n${JSON.stringify(outputSchema, null, 2)}`;
+  const response = await client.chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages: [
+      { role: 'system', content: systemPrompt + schemaInstructions },
+      { role: 'user', content: userContent },
+    ],
+  });
+  const text = (response.choices[0]?.message?.content || '{}')
+    .replace(/^```json\s*\n?/i, '').replace(/\n?```$/, '').trim();
+  return JSON.parse(text);
+}
+
+async function callOpenAI(contextText, screenshot) {
+  return callOpenAIGeneric(getSystemPrompt(), contextText, screenshot, AUDIT_SCHEMA, 'audit_result');
+}
+
+async function askOpenAI(context, question, screenshot) {
+  const { default: OpenAI } = await import('openai');
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || 'lm-studio',
+    baseURL: process.env.OPENAI_BASE_URL || 'http://localhost:1234/v1',
+  });
+  const model = process.env.MODEL_NAME;
+  if (!model) throw new Error('MODEL_NAME is required for the openai provider.');
+
+  const useVision = process.env.OPENAI_VISION === 'true' && !!screenshot;
+  const userContent = useVision
+    ? [
+        { type: 'text', text: `${context}\n\n## Question\n${question}` },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${screenshot.toString('base64')}` } },
+      ]
+    : `${context}\n\n## Question\n${question}`;
+
+  const response = await client.chat.completions.create({
+    model,
+    max_tokens: 2048,
+    messages: [
+      { role: 'system', content: PAGE_QA_SYSTEM },
+      { role: 'user', content: userContent },
+    ],
+  });
+  return response.choices[0]?.message?.content || 'No response generated.';
+}
+
 /**
  * Convert a JSON Schema object to Gemini Type schema format.
  * @param {object} jsonSchema - Standard JSON Schema
@@ -540,6 +636,8 @@ async function callWithPersona(systemPrompt, contextText, screenshot, outputSche
 
   if (provider === 'anthropic') {
     return callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName);
+  } else if (provider === 'openai') {
+    return callOpenAIGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName);
   } else {
     const { Type } = await import('@google/genai');
     const geminiSchema = toGeminiSchema(outputSchema, Type);
@@ -847,9 +945,9 @@ export async function analyzePage(pageData, screenshot = null) {
 
   let raw;
   try {
-    raw = provider === 'anthropic'
-      ? await callAnthropic(contextText, screenshot)
-      : await callGemini(contextText, screenshot);
+    if (provider === 'anthropic') raw = await callAnthropic(contextText, screenshot);
+    else if (provider === 'openai') raw = await callOpenAI(contextText, screenshot);
+    else raw = await callGemini(contextText, screenshot);
   } catch (err) {
     throw new Error(`${provider} analysis failed: ${err.message}`);
   }
@@ -955,9 +1053,9 @@ ${(pageData.interactables || []).slice(0, 10).map((i) => `[${i.type}] "${i.text}
   console.error(`[AskPage] Using provider: ${provider}`);
 
   try {
-    return provider === 'anthropic'
-      ? await askAnthropic(context, question, screenshot)
-      : await askGemini(context, question, screenshot);
+    if (provider === 'anthropic') return await askAnthropic(context, question, screenshot);
+    if (provider === 'openai') return await askOpenAI(context, question, screenshot);
+    return await askGemini(context, question, screenshot);
   } catch (err) {
     throw new Error(`${provider} Q&A failed: ${err.message}`);
   }
