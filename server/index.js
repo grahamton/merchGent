@@ -18,6 +18,7 @@
 import { config as loadEnv } from 'dotenv';
 loadEnv({ path: new URL('../.env', import.meta.url), quiet: true });
 import { readFileSync } from 'fs';
+const { version: PKG_VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -615,7 +616,7 @@ function handleClearSession({ url }) {
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'merch-connector', version: '1.5.0' },
+  { name: 'merch-connector', version: PKG_VERSION },
   { capabilities: { tools: {}, resources: {}, prompts: {}, logging: {} } }
 );
 
