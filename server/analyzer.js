@@ -789,59 +789,37 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
   }
 
   // Reuse pre-computed persona results when available (e.g. from a prior audit_storefront call).
-  // Any persona already in `cached` is skipped — only the missing ones incur an AI call.
-  let floorWalker, auditor, scout;
+  // Uncached personas run in parallel via Promise.all — cuts wall-clock time from ~3× to ~1×
+  // before the moderator call, reducing timeout risk significantly.
+  await onProgress?.(0, 8, 'Starting parallel persona analysis...');
+  console.error('[Roundtable] Starting parallel persona analysis...');
 
-  if (cached.floor_walker) {
-    console.error('[Roundtable] Reusing cached Floor Walker result.');
-    floorWalker = cached.floor_walker;
-    await onProgress?.(1, 8, `Floor Walker ✓ (cached) — ${floorWalker.topConcern}`, {
-      persona: 'floorWalker', topConcern: floorWalker.topConcern,
-      summary: floorWalker.summary, result: floorWalker, cached: true,
-    });
-  } else {
-    console.error('[Roundtable] Starting Floor Walker analysis...');
-    await onProgress?.(0, 8, 'Floor Walker analyzing...');
-    floorWalker = await analyzeAsFloorWalker(pageData, screenshot, memory);
-    await onProgress?.(1, 8, `Floor Walker ✓ — ${floorWalker.topConcern}`, {
-      persona: 'floorWalker', topConcern: floorWalker.topConcern,
-      summary: floorWalker.summary, result: floorWalker,
-    });
-  }
+  const [floorWalker, auditor, scout] = await Promise.all([
+    cached.floor_walker
+      ? Promise.resolve(cached.floor_walker)
+      : analyzeAsFloorWalker(pageData, screenshot, memory),
+    cached.auditor
+      ? Promise.resolve(cached.auditor)
+      : analyzeAsAuditor(pageData, screenshot, memory),
+    cached.scout
+      ? Promise.resolve(cached.scout)
+      : analyzeAsScout(pageData, screenshot, memory),
+  ]);
 
-  if (cached.auditor) {
-    console.error('[Roundtable] Reusing cached Auditor result.');
-    auditor = cached.auditor;
-    await onProgress?.(3, 8, `Auditor ✓ (cached) — ${auditor.topConcern}`, {
-      persona: 'auditor', topConcern: auditor.topConcern, summary: auditor.summary,
-      siteMode: auditor.siteMode, result: auditor, cached: true,
-    });
-  } else {
-    console.error('[Roundtable] Starting Auditor analysis...');
-    await onProgress?.(2, 8, 'Auditor evaluating...');
-    auditor = await analyzeAsAuditor(pageData, screenshot, memory);
-    await onProgress?.(3, 8, `Auditor ✓ — ${auditor.topConcern}`, {
-      persona: 'auditor', topConcern: auditor.topConcern, summary: auditor.summary,
-      siteMode: auditor.siteMode, result: auditor,
-    });
-  }
-
-  if (cached.scout) {
-    console.error('[Roundtable] Reusing cached Scout result.');
-    scout = cached.scout;
-    await onProgress?.(5, 8, `Scout ✓ (cached) — ${scout.topConcern}`, {
-      persona: 'scout', topConcern: scout.topConcern,
-      summary: scout.summary, result: scout, cached: true,
-    });
-  } else {
-    console.error('[Roundtable] Starting Scout analysis...');
-    await onProgress?.(4, 8, 'Scout analyzing...');
-    scout = await analyzeAsScout(pageData, screenshot, memory);
-    await onProgress?.(5, 8, `Scout ✓ — ${scout.topConcern}`, {
-      persona: 'scout', topConcern: scout.topConcern,
-      summary: scout.summary, result: scout,
-    });
-  }
+  // Emit progress notifications for each persona once all three resolve
+  await onProgress?.(1, 8, `Floor Walker ✓${cached.floor_walker ? ' (cached)' : ''} — ${floorWalker.topConcern}`, {
+    persona: 'floorWalker', topConcern: floorWalker.topConcern,
+    summary: floorWalker.summary, result: floorWalker, cached: !!cached.floor_walker,
+  });
+  await onProgress?.(3, 8, `Auditor ✓${cached.auditor ? ' (cached)' : ''} — ${auditor.topConcern}`, {
+    persona: 'auditor', topConcern: auditor.topConcern, summary: auditor.summary,
+    siteMode: auditor.siteMode, result: auditor, cached: !!cached.auditor,
+  });
+  await onProgress?.(5, 8, `Scout ✓${cached.scout ? ' (cached)' : ''} — ${scout.topConcern}`, {
+    persona: 'scout', topConcern: scout.topConcern,
+    summary: scout.summary, result: scout, cached: !!cached.scout,
+  });
+  console.error('[Roundtable] All three personas complete.');
 
   // Build the debate brief for the moderator
   const moderatorPrompt = loadPrompt('roundtable-moderator.md');
