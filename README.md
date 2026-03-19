@@ -7,7 +7,7 @@
 
 **An MCP server that gives AI agents eyes on any e-commerce storefront.**
 
-Scrape product listings, extract facets, measure performance, run AI-powered merchandising audits, and build persistent memory about sites -- all through the [Model Context Protocol](https://modelcontextprotocol.io).
+Scrape product listings, extract facets, badges, sort options, and B2B signals; run AI-powered merchandising audits; compare two storefronts side-by-side; detect what changed between visits; and build persistent memory about sites -- all through the [Model Context Protocol](https://modelcontextprotocol.io).
 
 ## Why merch-connector?
 
@@ -54,9 +54,13 @@ Or install globally: `npm install -g merch-connector`
 |----------|----------|-------------|
 | `ANTHROPIC_API_KEY` | One of these | Anthropic Claude API key |
 | `GEMINI_API_KEY` | One of these | Google Gemini API key |
-| `MODEL_PROVIDER` | No | Force `"anthropic"` or `"gemini"`. Auto-detected if omitted. |
+| `OPENAI_API_KEY` | One of these | OpenAI-compatible key (use `"lm-studio"` for LM Studio) |
+| `OPENAI_BASE_URL` | No | Base URL for OpenAI-compatible endpoint. Default: `http://localhost:1234/v1` |
+| `MODEL_PROVIDER` | No | Force `"anthropic"`, `"gemini"`, or `"openai"`. Auto-detected if omitted. |
 | `MODEL_NAME` | No | Override default model. Defaults: `claude-opus-4-6` / `gemini-2.5-pro` |
+| `OPENAI_VISION` | No | Set `"true"` to pass screenshots to OpenAI-compatible vision models |
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files. Default: `~/.merch-connector/data/` |
+| `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms. Default: `120000` (2 min) |
 
 You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `merch_roundtable`). Scraping tools work without one.
 
@@ -64,13 +68,14 @@ You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `
 
 | Tool | Description | Needs AI key? |
 |------|-------------|:---:|
-| `scrape_page` | Extract products, facets, metadata, performance timing from any URL | No |
-| `interact_with_page` | Search or click on a page, then extract the result | No |
+| `scrape_page` | Extract products, facets, badges, sort order, B2B signals, and change detection from any URL | No |
+| `interact_with_page` | Execute one or more search/click actions in sequence, then extract the result | No |
+| `compare_storefronts` | Structured side-by-side diff of two URLs: facet gaps, trust signals, sort options, B2B mode, performance | No |
 | `ask_page` | Scrape a page and ask any question about it in plain language | Yes |
 | `audit_storefront` | Full merchandising audit with structured diagnosis and recommendations | Yes |
-| `merch_roundtable` | Three expert personas independently analyze, then debate to consensus | Yes |
+| `merch_roundtable` | Three expert personas independently analyze, then debate to consensus (results stream as each persona completes) | Yes |
 | `site_memory` | Read/write persistent notes and learned data about any domain | No |
-| `clear_session` | Reset stored cookies for a domain | No |
+| `clear_session` | Reset stored cookies and page cache for a domain | No |
 
 ### Example: ask_page
 
@@ -150,8 +155,10 @@ npm test                              # scrape-only (no API key needed)
 npm run test:audit                    # full merchandising audit
 npm run test:persona                  # single persona (floor_walker)
 npm run test:roundtable               # all 3 personas + moderator
+node test/smoke.js --b2b              # B2B validation: Insight.com laptops + b2b_auditor
 node test/smoke.js --ask "question"   # ask anything about a page
 node test/smoke.js --url https://...  # override default URL
+node test/protocol.js                 # MCP protocol compliance (no browser/API key needed)
 ```
 
 ### Testing with MCP Inspector
@@ -177,26 +184,44 @@ Scrape + AI analysis in one call. Returns diagnosis, 4-dimension audit matrix (T
 
 ### scrape_page
 
-Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals), facets/filters, page metadata, performance timing, data layers, and interactable elements.
+Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals, trust signals), facets/filters, sort options, B2B mode + conflict score, page metadata, performance timing, data layers, and interactable elements. On repeat visits, also returns a `changes` diff (new/removed products, price movements, facet/sort changes).
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
 | `url` | Yes | Full URL to scrape |
 | `depth` | No | Pagination pages to follow (1-5, default 1) |
 | `max_products` | No | Max products per page (default 10) |
-| `include_screenshot` | No | Include base64 JPEG screenshot (default false) |
+| `include_screenshot` | No | Include base64 JPEG desktop screenshot (default false) |
+| `mobile_screenshot` | No | Also capture a 390×844 (iPhone 14) mobile screenshot (default false) |
+
+**Trust signals per product:** star rating, review count, sale badge + text, best seller flag, stock warning ("Only 3 left"), sustainability label, raw badge texts.
+
+### compare_storefronts
+
+Scrape two URLs concurrently and return a structured diff. No AI call — pure structural analysis.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url_a` | Yes | First URL (your site or baseline) |
+| `url_b` | Yes | Second URL (competitor or variant) |
+| `max_products` | No | Max products per page (default 10) |
+
+**Returns:** product count delta, facet gap analysis (onlyInA / onlyInB / shared count), trust signal coverage per site, sort option gaps, B2B mode + conflict score for each, performance delta (FCP + full load, which is faster).
 
 ### interact_with_page
 
-Perform a search or click, then extract the resulting page.
+Execute one or more search/click actions in sequence, then extract the resulting page. Accepts a single action or an `actions` array for multi-step flows.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
 | `url` | Yes | Full URL to load |
-| `action` | Yes | `"search"` or `"click"` |
+| `actions` | One of these | Array of `{ action, selector?, value? }` for multi-step flows |
+| `action` | One of these | Single action shorthand: `"search"` or `"click"` |
 | `selector` | Depends | CSS selector (required for click) |
 | `value` | Depends | Text to type (required for search) |
 | `include_screenshot` | No | Include screenshot of result |
+
+**Multi-step example:** `[{ "action": "search", "value": "laptop" }, { "action": "click", "selector": ".filter-in-stock" }]`
 
 ### ask_page
 
@@ -242,6 +267,8 @@ Reset cookies for a domain.
 | `url` | Yes | Any URL on the domain to clear |
 
 ## History
+
+**v1.5.0** -- Major scraper and tooling expansion. `scrape_page` now returns per-product trust signals (star rating, review count, sale badges, best seller, stock warnings, sustainability labels), sort order detection, `b2bMode` + `b2bConflictScore` as top-level fields, and a `changes` diff on repeat visits (new/removed products, price movements, facet/sort changes). New `compare_storefronts` tool diffs two URLs side-by-side with no AI call. `interact_with_page` now accepts an `actions` array for multi-step flows (search → filter → click). Optional `mobile_screenshot` parameter on `scrape_page` captures a 390×844 iPhone viewport. Roundtable streams each persona result via `notifications/message` as it completes instead of waiting for all four. OpenAI-compatible provider support extended with `OPENAI_VISION` flag.
 
 **v1.4.0** -- Added 10-minute in-memory page data cache. `ask_page`, `audit_storefront`, and `merch_roundtable` now reuse a recent `scrape_page` result instead of re-scraping, cutting latency in half for local models. Unified session store: cookies and cached pages share a single domain-keyed structure, so `clear_session` wipes both automatically. Added configurable server-side timeout (`TOOL_TIMEOUT_MS`, default 120s) that returns an actionable error message instead of hanging.
 
