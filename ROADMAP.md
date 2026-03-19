@@ -168,4 +168,4 @@ Issues are grouped by theme. Each has a short description, why it matters, and r
 
 ---
 
-*Last updated: 2026-03-19. Reflects v1.4.0 shipped state.*
+*Last updated: 2026-03-19. Reflects v1.5.0 shipped state.*
