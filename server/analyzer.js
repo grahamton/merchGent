@@ -778,7 +778,7 @@ export async function analyzeAsAuditorB2B(pageData, screenshot = null, memory = 
  * @param {Buffer} [screenshot] - Optional JPEG screenshot buffer
  * @returns {object} Full roundtable output with perspectives and debate
  */
-export async function runRoundtable(pageData, screenshot = null, memory = {}, onProgress = null, cached = {}) {
+export async function runRoundtable(pageData, screenshot = null, memory = {}, onProgress = null, cached = {}, onPersonaCached = null) {
   if (!pageData.products || pageData.products.length === 0) {
     return {
       url: pageData.url,
@@ -797,13 +797,13 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
   const [floorWalker, auditor, scout] = await Promise.all([
     cached.floor_walker
       ? Promise.resolve(cached.floor_walker)
-      : analyzeAsFloorWalker(pageData, screenshot, memory),
+      : analyzeAsFloorWalker(pageData, screenshot, memory).then(r => { onPersonaCached?.('floor_walker', r); return r; }),
     cached.auditor
       ? Promise.resolve(cached.auditor)
-      : analyzeAsAuditor(pageData, screenshot, memory),
+      : analyzeAsAuditor(pageData, screenshot, memory).then(r => { onPersonaCached?.('auditor', r); return r; }),
     cached.scout
       ? Promise.resolve(cached.scout)
-      : analyzeAsScout(pageData, screenshot, memory),
+      : analyzeAsScout(pageData, screenshot, memory).then(r => { onPersonaCached?.('scout', r); return r; }),
   ]);
 
   // Emit progress notifications for each persona once all three resolve

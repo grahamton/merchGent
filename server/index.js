@@ -656,12 +656,12 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
     sendLog('debug', `Reusing ${cachedCount}/3 cached persona result(s) for ${url}`, { tool: 'merch_roundtable' });
   }
 
-  const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress, cached);
+  // Write each persona to cache immediately as it resolves — before the tool returns —
+  // so a retry or follow-up audit_storefront call gets the cached result even if the
+  // MCP client timeout fires before handleRoundtable fully completes.
+  const onPersonaCached = (personaName, data) => setCachedPersona(url, personaName, data);
 
-  // Cache any newly computed personas for future calls
-  if (!cached.floor_walker && result.perspectives?.floorWalker) setCachedPersona(url, 'floor_walker', result.perspectives.floorWalker);
-  if (!cached.auditor && result.perspectives?.auditor)           setCachedPersona(url, 'auditor', result.perspectives.auditor);
-  if (!cached.scout && result.perspectives?.scout)               setCachedPersona(url, 'scout', result.perspectives.scout);
+  const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress, cached, onPersonaCached);
 
   return result;
 }
