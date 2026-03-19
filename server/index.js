@@ -17,7 +17,7 @@
  */
 import { config as loadEnv } from 'dotenv';
 loadEnv({ path: new URL('../.env', import.meta.url), quiet: true });
-import { readFileSync } from 'fs';
+import { readFileSync, appendFileSync } from 'fs';
 const { version: PKG_VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -30,7 +30,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts } from './analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
 
@@ -43,6 +43,15 @@ import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-s
 
 const sessions = new Map();
 const PAGE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// ─── In-memory log buffer ─────────────────────────────────────────────────────
+const LOG_BUFFER_SIZE = 500;
+const logBuffer = [];  // entries: { ts, level, message, ...data }
+
+function pushToBuffer(level, message, data = {}) {
+  logBuffer.push({ ts: new Date().toISOString(), level, message, ...data });
+  if (logBuffer.length > LOG_BUFFER_SIZE) logBuffer.shift();
+}
 
 function getDomain(url) {
   try { return new URL(url).hostname; } catch { return null; }
@@ -433,6 +442,32 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'get_logs',
+    description:
+      'Retrieve recent server log entries from the in-memory buffer (last 500 entries). ' +
+      'Returns entries newest-first. Filter by level or tool name. ' +
+      'Useful for reviewing roundtable notification streams, debugging tool calls, ' +
+      'and capturing logs that are hard to copy from the MCP Inspector UI.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        level: {
+          type: 'string',
+          enum: ['debug', 'info', 'error'],
+          description: 'Filter by log level. Omit to return all levels.',
+        },
+        tool: {
+          type: 'string',
+          description: 'Filter by tool name (e.g. "merch_roundtable", "audit_storefront"). Omit for all tools.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max entries to return (default: 50, max: 500).',
+        },
+      },
+    },
+  },
 ];
 
 // ─── Shared output builder ───────────────────────────────────────────────────
@@ -484,6 +519,8 @@ function buildPageOutput(result) {
       : undefined,
     priceBucketAnalysis: validatePriceBuckets(rest) || undefined,
     changes: changes || undefined,
+    contamination: rest.contamination || null,
+    fingerprint: (() => { try { return computePageFingerprint(rest); } catch { return null; } })(),
   };
 }
 
@@ -718,7 +755,8 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
 
   const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress, cached, onPersonaCached);
 
-  return result;
+  const fingerprint = (() => { try { return computePageFingerprint(pageData); } catch { return null; } })();
+  return { ...result, fingerprint };
 }
 
 function handleClearSession({ url }) {
@@ -775,7 +813,7 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   const saved = saveEvalRun(domain, {
     url,
     personas,
-    debate: null,       // moderator arrives async; not guaranteed to be in cache
+    debate: null,       // moderator now runs synchronously; debate is populated in the roundtable result
     toolName,
     note: note ?? null,
     saveFullRun: save_full_run,
@@ -853,6 +891,17 @@ function handleListEvals({ url, run_id, limit = 10 } = {}) {
   return [{ type: 'text', text: JSON.stringify({ evalDomains: domains }, null, 2) }];
 }
 
+function handleGetLogs({ level, tool, limit = 50 } = {}) {
+  let entries = [...logBuffer].reverse(); // newest first
+  if (level) entries = entries.filter(e => e.level === level);
+  if (tool)  entries = entries.filter(e => e.tool === tool || e.message?.includes(tool));
+  entries = entries.slice(0, Math.min(Math.max(1, limit), 500));
+  return [{
+    type: 'text',
+    text: JSON.stringify({ count: entries.length, entries }, null, 2),
+  }];
+}
+
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
@@ -863,6 +912,18 @@ const server = new Server(
 // ─── Logging helper ───────────────────────────────────────────────────────────
 
 function sendLog(level, message, data = {}) {
+  // Buffer for get_logs retrieval
+  pushToBuffer(level, message, data);
+  // Optional file logging
+  if (process.env.MERCH_LOG_FILE) {
+    try {
+      appendFileSync(
+        process.env.MERCH_LOG_FILE,
+        JSON.stringify({ ts: new Date().toISOString(), level, message, ...data }) + '\n'
+      );
+    } catch { /* non-fatal */ }
+  }
+  // Existing MCP notification
   server.notification({
     method: 'notifications/message',
     params: { level, logger: 'merch-connector', data: { message, ...data } },
@@ -995,6 +1056,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         return { content: handleSaveEval(args) };
       case 'list_evals':
         return { content: handleListEvals(args) };
+      case 'get_logs':
+        return { content: handleGetLogs(args) };
       default:
         return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
     }

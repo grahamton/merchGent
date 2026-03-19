@@ -259,6 +259,89 @@ export function computeB2BSignals(products) {
   return { b2bConflictScore, b2bMode };
 }
 
+/**
+ * Detect products that don't belong in the page's category context.
+ * Uses URL path segments + page title/h1 to infer expected category,
+ * then flags products whose titles match known anti-keyword lists.
+ *
+ * @param {object[]} products - extracted products array
+ * @param {string} url - page URL
+ * @param {string} pageTitle - page <title> or <h1> text
+ * @returns {{ detected: boolean, suspectCount: number, suspects: object[] }}
+ */
+export function detectCategoryContamination(products, url, pageTitle) {
+  if (!products?.length) return { detected: false, suspectCount: 0, suspects: [] };
+
+  // Extract category signal words from URL + title
+  const IGNORE_WORDS = new Set([
+    'shop', 'product', 'products', 'category', 'en_us', 'en_gb', 'www',
+    'http', 'https', 'com', 'net', 'org', 'html', 'aspx', 'php',
+    'the', 'and', 'for', 'with', 'new', 'sale', 'buy', 'best',
+    'page', 'view', 'all', 'items', 'results', 'search',
+  ]);
+
+  const urlTokens = (url || '')
+    .toLowerCase()
+    .split(/[/?=&#+_\-./]/)
+    .filter(t => t.length > 2 && !IGNORE_WORDS.has(t) && !/^\d+$/.test(t));
+
+  const titleTokens = (pageTitle || '')
+    .toLowerCase()
+    .split(/\s+|[-/|]/)
+    .filter(t => t.length > 2 && !IGNORE_WORDS.has(t));
+
+  const categorySignals = new Set([...urlTokens, ...titleTokens]);
+
+  // Category family → anti-keywords (products that don't belong)
+  // Keyed by signal word → array of title keywords that indicate contamination
+  const ANTI_KEYWORDS = {
+    laptop:   ['ddr4', 'ddr5', 'dimm', 'sodimm', 'ram ', 'memory module', 'hard drive', 'hdd', 'ssd', 'graphics card', 'gpu', 'video card', 'power supply', 'psu', 'cpu cooler', 'case fan'],
+    laptops:  ['ddr4', 'ddr5', 'dimm', 'sodimm', 'ram ', 'memory module', 'hard drive', 'hdd', 'ssd', 'graphics card', 'gpu', 'video card', 'power supply', 'psu', 'cpu cooler', 'case fan'],
+    monitor:  ['keyboard', 'mouse', 'headset', 'webcam', 'speaker'],
+    monitors: ['keyboard', 'mouse', 'headset', 'webcam', 'speaker'],
+    keyboard: ['monitor', 'headset', 'webcam', 'graphics card'],
+    printer:  ['laptop', 'desktop', 'monitor', 'keyboard'],
+    printers: ['laptop', 'desktop', 'monitor', 'keyboard'],
+    shoe:     ['jacket', 'pants', 'shirt', 'hat', 'bag'],
+    shoes:    ['jacket', 'pants', 'shirt', 'hat', 'bag'],
+    shirt:    ['shoe', 'boots', 'sneaker', 'sandal'],
+    shirts:   ['shoe', 'boots', 'sneaker', 'sandal'],
+  };
+
+  // Find which anti-keyword lists apply based on detected category signals
+  const activeAntiKeywords = [];
+  for (const signal of categorySignals) {
+    if (ANTI_KEYWORDS[signal]) {
+      activeAntiKeywords.push(...ANTI_KEYWORDS[signal]);
+    }
+  }
+
+  if (activeAntiKeywords.length === 0) {
+    return { detected: false, suspectCount: 0, suspects: [] };
+  }
+
+  const suspects = [];
+  products.forEach((product, index) => {
+    const titleLower = (product.title || '').toLowerCase();
+    for (const antiKw of activeAntiKeywords) {
+      if (titleLower.includes(antiKw)) {
+        suspects.push({
+          index,
+          title: product.title,
+          reason: `Title contains "${antiKw}" which is unexpected in a "${[...categorySignals].slice(0, 3).join('/')}" category`,
+        });
+        break; // one match per product is enough
+      }
+    }
+  });
+
+  return {
+    detected: suspects.length > 0,
+    suspectCount: suspects.length,
+    suspects,
+  };
+}
+
 // ─── Sort order extraction ────────────────────────────────────────────────────
 
 const extractSortOptions = async (page) => {
@@ -555,7 +638,13 @@ const extractPageData = async (page, maxProducts = 10) => {
   });
 
   const { b2bConflictScore, b2bMode } = computeB2BSignals(products);
-  return { title, metaDescription, products, structure, facets, sortOptions, b2bConflictScore, b2bMode, ...intelligence };
+
+  // Category contamination detection
+  const pageTitle = await page.$eval('h1', el => el.innerText).catch(() => '') ||
+                    await page.title().catch(() => '');
+  const contamination = detectCategoryContamination(products, page.url(), pageTitle);
+
+  return { title, metaDescription, products, structure, facets, sortOptions, b2bConflictScore, b2bMode, contamination, ...intelligence };
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────

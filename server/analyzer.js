@@ -875,37 +875,40 @@ Now synthesize these three perspectives. Identify where they agree, where they d
     _raw: { floorWalker, auditor, scout },
   };
 
-  // Run the moderator async — result arrives via onProgress notification so the
-  // MCP tool call can return immediately with the three persona results.
-  console.error('[Roundtable] Starting Moderator synthesis (async)...');
+  // Run the moderator synchronously so the full debate is included in the tool response.
+  console.error('[Roundtable] Starting Moderator synthesis...');
   await onProgress?.(6, 8, 'Moderator synthesizing...');
 
-  callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result')
-    .then(async (debate) => {
-      await onProgress?.(7, 8, 'Moderator ✓ — consensus reached', {
-        persona: 'moderator',
-        consensus: debate.consensus,
-        disagreements: (debate.disagreements || []).map((d) => ({
-          topic: d.topic,
-          positions: {
-            floorWalker: d.floorWalkerPosition,
-            auditor:     d.auditorPosition,
-            scout:       d.scoutPosition,
-          },
-        })),
-        finalRecommendations: debate.finalRecommendations || [],
-        result: debate,
-      });
-    })
-    .catch((err) => {
-      console.error('[Roundtable] Moderator synthesis failed:', err.message);
-      onProgress?.(7, 8, `Moderator failed: ${err.message}`, {
-        persona: 'moderator',
-        error: err.message,
-      });
+  let debate = null;
+  try {
+    debate = await callWithPersona(moderatorPrompt, debateBrief, null, ROUNDTABLE_SCHEMA, 'roundtable_moderator_result');
+    await onProgress?.(7, 8, 'Moderator ✓ — consensus reached', {
+      persona: 'moderator',
+      consensus: debate.consensus,
+      disagreements: (debate.disagreements || []).map((d) => ({
+        topic: d.topic,
+        positions: {
+          floorWalker: d.floorWalkerPosition,
+          auditor:     d.auditorPosition,
+          scout:       d.scoutPosition,
+        },
+      })),
+      finalRecommendations: debate.finalRecommendations || [],
+      result: debate,
     });
+  } catch (err) {
+    sendLog?.('error', `[Roundtable] Moderator synthesis failed: ${err.message}`);
+    await onProgress?.(7, 8, `Moderator failed: ${err.message}`, {
+      persona: 'moderator',
+      error: err.message,
+    });
+  }
 
-  return partialResult;
+  return {
+    ...partialResult,
+    debate,
+    moderatorPending: false,
+  };
 }
 
 // ─── Competitor comparison ────────────────────────────────────────────────────
@@ -977,6 +980,157 @@ export function compareStorefronts(pageDataA, pageDataB) {
       b: { mode: pageDataB.b2bMode || null, conflictScore: pageDataB.b2bConflictScore ?? null },
     },
     performance,
+  };
+}
+
+// ─── Page fingerprint (zero-AI pre-scan) ──────────────────────────────────────
+
+/**
+ * Compute a PageFingerprint from existing scrape data. No AI call.
+ * Provides shared structural context for downstream persona analyses.
+ *
+ * @param {object} pageData - output from scrapePage()
+ * @returns {object} PageFingerprint
+ */
+export function computePageFingerprint(pageData) {
+  const url = pageData.url || '';
+  const products = pageData.products || [];
+  const facets = pageData.facets || [];
+  const interactables = pageData.interactables || [];
+  const perf = pageData.performance || {};
+
+  // ── pageType ──────────────────────────────────────────────────────────────
+  let pageType = 'unknown';
+  if (/\/cart|\/basket/i.test(url)) {
+    pageType = 'cart';
+  } else if (/[?&](q|query|search)=/i.test(url) || /\/search/i.test(url)) {
+    pageType = 'search_results';
+  } else if (products.length === 1 && facets.length === 0) {
+    pageType = 'pdp';
+  } else if (products.length > 1 && facets.length > 0) {
+    pageType = 'plp';
+  } else if (products.length > 1) {
+    pageType = 'category';
+  } else if (products.length === 0 && /^https?:\/\/[^/]+\/?$/.test(url)) {
+    pageType = 'home';
+  }
+
+  // ── platform ──────────────────────────────────────────────────────────────
+  const platform = pageData.networkIntel?.platforms?.[0] || null;
+
+  // ── commerceMode ──────────────────────────────────────────────────────────
+  const commerceMode = {
+    mode: pageData.b2bMode || 'B2C',
+    conflictScore: pageData.b2bConflictScore ?? 0,
+  };
+
+  // ── priceTransparency ─────────────────────────────────────────────────────
+  let priceTransparency = 'public';
+  if (products.length > 0) {
+    const withVisiblePrice = products.filter(
+      (p) => p.price && !/your price|login|request/i.test(String(p.price))
+    ).length;
+    const withQuote = products.filter(
+      (p) => /quote|get pricing|request price/i.test(p.cta || '')
+    ).length;
+    const hasLoginInteractable = interactables.some((i) =>
+      /login|sign.?in/i.test(i.text || i.label || i.placeholder || '')
+    );
+    const ratio = withVisiblePrice / products.length;
+
+    if (withQuote / products.length > 0.5) priceTransparency = 'quote_only';
+    else if (ratio < 0.2 && hasLoginInteractable) priceTransparency = 'login_required';
+    else if (ratio < 0.8) priceTransparency = 'mixed';
+  }
+
+  // ── trustSignalInventory ──────────────────────────────────────────────────
+  const ts = {
+    ratingsPresent:       products.some((p) => p.trustSignals?.starRating),
+    reviewCountPresent:   products.some((p) => p.trustSignals?.reviewCount),
+    saleBadgesPresent:    products.some((p) => p.trustSignals?.onSale),
+    bestSellerPresent:    products.some((p) => p.trustSignals?.bestSeller),
+    stockWarningsPresent: products.some((p) => p.trustSignals?.stockWarning),
+    sustainabilityPresent:products.some((p) => p.trustSignals?.sustainabilityLabel),
+  };
+  ts.totalSignalTypes = Object.values(ts).filter(Boolean).length;
+
+  // ── discoveryQuality ──────────────────────────────────────────────────────
+  const hasSearch = interactables.some(
+    (i) => i.type === 'search' || /search/i.test(i.placeholder || '')
+  );
+  const discoveryQuality = {
+    facetCount:      facets.length,
+    sortOptionCount: pageData.sortOptions?.options?.length || 0,
+    hasSearch,
+    facetNames:      facets.map((f) => f.name).filter(Boolean),
+  };
+
+  // ── funnelReadiness ───────────────────────────────────────────────────────
+  const ctaRatio = products.length > 0
+    ? products.filter((p) => p.cta?.trim()).length / products.length
+    : 0;
+  const readinessScore =
+    (priceTransparency === 'public'   ? 1 : 0) +
+    (ts.totalSignalTypes >= 2         ? 1 : 0) +
+    (ctaRatio > 0.5                   ? 1 : 0);
+  const funnelReadiness =
+    readinessScore === 3 ? 'ready' : readinessScore >= 1 ? 'partial' : 'weak';
+
+  // ── topRisks ──────────────────────────────────────────────────────────────
+  const risks = [];
+  if (priceTransparency !== 'public') {
+    risks.push('Pricing not publicly visible');
+  }
+  if (!ts.ratingsPresent && !ts.reviewCountPresent) {
+    risks.push('Zero social proof — no ratings or reviews on any product');
+  }
+  if (commerceMode.conflictScore > 50) {
+    risks.push(`B2B/B2C signal conflict at ${commerceMode.conflictScore}/100`);
+  }
+  if ((perf.firstContentfulPaint || 0) > 3000) {
+    risks.push(`FCP ${perf.firstContentfulPaint}ms — exceeds 3s threshold`);
+  }
+  if (facets.length === 0 && products.length > 3) {
+    risks.push('No filters detected — discovery fully unguided');
+  }
+  const descFillRate = products.length > 0
+    ? products.filter((p) => (p.description || '').length > 20).length / products.length
+    : 1;
+  if (descFillRate < 0.3) {
+    risks.push(`Description fill rate ${Math.round(descFillRate * 100)}% — below 30% threshold`);
+  }
+
+  // ── recommendedPersonas ───────────────────────────────────────────────────
+  const recommended = new Set();
+  if (commerceMode.mode === 'B2B' || commerceMode.conflictScore > 60) {
+    recommended.add('b2b_auditor');
+  }
+  if (ts.totalSignalTypes < 2 || descFillRate < 0.3 || priceTransparency !== 'public') {
+    recommended.add('auditor');
+  }
+  if (funnelReadiness !== 'ready' || !ts.ratingsPresent) {
+    recommended.add('floor_walker');
+  }
+  if (discoveryQuality.facetCount < 3 || pageType === 'plp') {
+    recommended.add('scout');
+  }
+  const recommendedPersonas = [...recommended].slice(0, 3);
+  // Ensure at least 2 personas recommended
+  if (recommendedPersonas.length < 2) {
+    if (!recommended.has('floor_walker')) recommendedPersonas.push('floor_walker');
+    if (!recommended.has('auditor')) recommendedPersonas.push('auditor');
+  }
+
+  return {
+    pageType,
+    platform,
+    commerceMode,
+    priceTransparency,
+    trustSignalInventory: ts,
+    discoveryQuality,
+    funnelReadiness,
+    topRisks: risks.slice(0, 4),
+    recommendedPersonas: [...new Set(recommendedPersonas)].slice(0, 3),
   };
 }
 

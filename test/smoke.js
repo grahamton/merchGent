@@ -92,11 +92,15 @@ if (flag('roundtable')) {
   console.log(`   Top concern: ${rt.perspectives.auditor.topConcern}`);
   console.log(`\n── Scout ──`);
   console.log(`   Top concern: ${rt.perspectives.scout.topConcern}`);
-  console.log(`\n── Consensus ──`);
-  console.log(`   ${rt.debate.consensus}`);
-  console.log(`\n── Recommendations ──`);
-  for (const r of rt.debate.finalRecommendations) {
-    console.log(`   → [${r.impact}] ${r.title} (endorsed by: ${r.endorsedBy.join(', ')})`);
+  if (rt.debate) {
+    console.log(`\n── Consensus ──`);
+    console.log(`   ${rt.debate.consensus}`);
+    console.log(`\n── Recommendations ──`);
+    for (const r of rt.debate.finalRecommendations) {
+      console.log(`   → [${r.impact}] ${r.title} (endorsed by: ${r.endorsedBy.join(', ')})`);
+    }
+  } else {
+    console.log('\n── Moderator did not complete ──');
   }
 }
 

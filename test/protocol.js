@@ -84,7 +84,7 @@ async function runProtocolTests() {
   else {
     pass(`tools/list (${toolsResp.result.tools.length} tools)`);
     const names = toolsResp.result.tools.map((t) => t.name);
-    const expected = ['audit_storefront', 'scrape_page', 'interact_with_page', 'compare_storefronts', 'ask_page', 'site_memory', 'merch_roundtable', 'clear_session', 'save_eval', 'list_evals'];
+    const expected = ['audit_storefront', 'scrape_page', 'interact_with_page', 'compare_storefronts', 'ask_page', 'site_memory', 'merch_roundtable', 'clear_session', 'save_eval', 'list_evals', 'get_logs'];
     for (const t of expected) {
       names.includes(t) ? pass(`  tool: ${t}`) : fail(`  tool: ${t}`, 'missing');
     }

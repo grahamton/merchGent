@@ -129,6 +129,7 @@ Every `scrapePage` call returns:
 - `b2bMode` — `"B2B"` | `"B2C"` | `"Hybrid"`
 - `b2bConflictScore` — 0–100; percentage of products carrying both B2B and B2C signals
 - `changes` — diff vs. stored snapshot (new/removed products, price changes, facet/sort changes); `undefined` on first scrape of a domain
+- `fingerprint` — pre-computed `PageFingerprint` object: `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]`, `recommendedPersonas[]`
 - `performance`, `structure`, `findings`, `interactables`, `dataLayers`
 
 ### Personas

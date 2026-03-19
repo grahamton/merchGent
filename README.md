@@ -61,6 +61,7 @@ Or install globally: `npm install -g merch-connector`
 | `OPENAI_VISION` | No | Set `"true"` to pass screenshots to OpenAI-compatible vision models |
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files. Default: `~/.merch-connector/data/` |
 | `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms. Default: `120000` (2 min) |
+| `MERCH_LOG_FILE` | No | Path to NDJSON log file. If set, every server log entry is appended. |
 
 You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `merch_roundtable`). Scraping tools work without one.
 
@@ -76,6 +77,7 @@ You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `
 | `merch_roundtable` | Three expert personas independently analyze, then debate to consensus (results stream as each persona completes) | Yes |
 | `site_memory` | Read/write persistent notes and learned data about any domain | No |
 | `clear_session` | Reset stored cookies and page cache for a domain | No |
+| `get_logs` | Retrieve recent server log entries from the in-memory buffer, filterable by level or tool name | No |
 
 ### Example: ask_page
 
@@ -267,6 +269,8 @@ Reset cookies for a domain.
 | `url` | Yes | Any URL on the domain to clear |
 
 ## History
+
+**v1.7.0** -- Four parallel improvements shipped as Batch 1 of the persona architecture v2 roadmap. **Synchronous moderator** (PA-3): `merch_roundtable` now `await`s the moderator synthesis before returning — `debate.consensus`, `debate.finalRecommendations[]`, and `moderatorPending: false` are guaranteed in the tool response, eliminating the fire-and-forget notification that most MCP clients never captured. **PageFingerprint pre-scan** (PA-1): every scrape and roundtable result now includes a `fingerprint` field computed from existing page data with no extra AI call — `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]`, and `recommendedPersonas[]`. **Category contamination detector** (#1): `scrape_page` returns `contamination: { detected, suspectCount, suspects[] }` when products from an unrelated category appear in results (e.g. RAM sticks on a laptop PLP). **`get_logs` tool + file logging** (EV-2+3): new 11th tool retrieves recent server log entries from an in-memory circular buffer (500 entries), filterable by level and tool name. Set `MERCH_LOG_FILE` to path for NDJSON file logging.
 
 **v1.6.4** -- `save_eval` now works with all tool types, not just `merch_roundtable`. Checks all five persona cache slots (`floor_walker`, `auditor`, `scout`, `b2b_auditor`, `default`) and auto-detects `toolName` based on what was found. Convergence score returns `null` (not `0`) for single-persona runs — distinguishing "not measured" from "no agreement". Default analyst runs (no persona param) are saved using `diagnosisTitle` as the top concern proxy. Fixed hardcoded `toolName: 'merch_roundtable'` bug.
 
