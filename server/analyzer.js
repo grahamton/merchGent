@@ -19,6 +19,15 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Only apply MODEL_NAME when the active provider matches MODEL_PROVIDER explicitly.
+// Prevents e.g. MODEL_NAME=qwen/qwen3.5-9b leaking into Anthropic API calls.
+function getModelName(provider, defaultModel) {
+  const explicit = process.env.MODEL_PROVIDER?.toLowerCase();
+  if (explicit === provider && process.env.MODEL_NAME) return process.env.MODEL_NAME;
+  if (!explicit && process.env.MODEL_NAME) return process.env.MODEL_NAME; // single-provider setups
+  return defaultModel;
+}
+
 // ─── Shared: prompt loaders ─────────────────────────────────────────────────
 
 const loadPrompt = (filename) =>
@@ -153,7 +162,7 @@ const normalize = (raw) => ({
 async function callAnthropic(contextText, screenshot) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = process.env.MODEL_NAME || 'claude-opus-4-6';
+  const model = getModelName('anthropic', 'claude-opus-4-6');
 
   const userContent = [{ type: 'text', text: contextText }];
   if (screenshot) {
@@ -186,7 +195,7 @@ async function callAnthropic(contextText, screenshot) {
 async function callGemini(contextText, screenshot) {
   const { GoogleGenAI, Type } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY });
-  const model = process.env.MODEL_NAME || 'gemini-2.5-pro';
+  const model = getModelName('gemini', 'gemini-2.5-pro');
 
   // Convert JSON Schema to Gemini Type schema
   const geminiAuditDimension = {
@@ -431,7 +440,7 @@ const ROUNDTABLE_SCHEMA = {
 async function callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = process.env.MODEL_NAME || 'claude-opus-4-6';
+  const model = getModelName('anthropic', 'claude-opus-4-6');
 
   const userContent = [{ type: 'text', text: contextText }];
   if (screenshot) {
@@ -466,7 +475,7 @@ async function callAnthropicGeneric(systemPrompt, contextText, screenshot, outpu
 async function callGeminiGeneric(systemPrompt, contextText, screenshot, geminiSchema) {
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY });
-  const model = process.env.MODEL_NAME || 'gemini-2.5-pro';
+  const model = getModelName('gemini', 'gemini-2.5-pro');
 
   const promptParts = [{ text: contextText }];
   if (screenshot) {
@@ -508,7 +517,7 @@ async function callOpenAIGeneric(systemPrompt, contextText, screenshot, outputSc
     apiKey: process.env.OPENAI_API_KEY || 'lm-studio',
     baseURL: process.env.OPENAI_BASE_URL || 'http://localhost:1234/v1',
   });
-  const model = process.env.MODEL_NAME;
+  const model = getModelName('openai', null);
   if (!model) throw new Error('MODEL_NAME is required for the openai provider (e.g., MODEL_NAME=llama-3.1-8b-instruct).');
 
   const useVision = process.env.OPENAI_VISION === 'true' && !!screenshot;
@@ -563,7 +572,7 @@ async function askOpenAI(context, question, screenshot) {
     apiKey: process.env.OPENAI_API_KEY || 'lm-studio',
     baseURL: process.env.OPENAI_BASE_URL || 'http://localhost:1234/v1',
   });
-  const model = process.env.MODEL_NAME;
+  const model = getModelName('openai', null);
   if (!model) throw new Error('MODEL_NAME is required for the openai provider.');
 
   const useVision = process.env.OPENAI_VISION === 'true' && !!screenshot;
@@ -1061,7 +1070,7 @@ Be concise. If the data doesn't contain what's needed to answer, say so.`;
 async function askAnthropic(context, question, screenshot) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = process.env.MODEL_NAME || 'claude-opus-4-6';
+  const model = getModelName('anthropic', 'claude-opus-4-6');
 
   const userContent = [{ type: 'text', text: `${context}\n\n## Question\n${question}` }];
   if (screenshot) {
@@ -1085,7 +1094,7 @@ async function askAnthropic(context, question, screenshot) {
 async function askGemini(context, question, screenshot) {
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY });
-  const model = process.env.MODEL_NAME || 'gemini-2.5-pro';
+  const model = getModelName('gemini', 'gemini-2.5-pro');
 
   const parts = [{ text: `${context}\n\n## Question\n${question}` }];
   if (screenshot) {
