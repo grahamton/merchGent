@@ -243,6 +243,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.3.0** -- Added OpenAI-compatible provider support (LM Studio, Ollama, Groq, Together AI, and any OpenAI-compatible endpoint). Configure with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `MODEL_NAME`. Vision input supported via `OPENAI_VISION=true` for multimodal models. Falls back to JSON prompt mode for models without function calling.
+
 **v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added four expert personas (Floor Walker, Auditor, Scout, B2B Auditor), roundtable mode with progress notifications, persistent site memory injected into all persona analyses, price bucket validation, dual AI provider support (Anthropic + Gemini), and facet/pagination extraction.
 
 **v1.0.0** -- Original React + Express application with Gemini-powered analysis.

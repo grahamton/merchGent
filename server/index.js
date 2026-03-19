@@ -448,7 +448,7 @@ function handleClearSession({ url }) {
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'merch-connector', version: '1.2.0' },
+  { name: 'merch-connector', version: '1.3.0' },
   { capabilities: { tools: {} } }
 );
 
