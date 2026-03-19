@@ -268,6 +268,8 @@ Reset cookies for a domain.
 
 ## History
 
+**v1.5.5** -- Server version is now read dynamically from `package.json` so the MCP Inspector and protocol handshake always report the correct version. All three AI SDKs are regular dependencies (no manual installation). Fixes from v1.5.4 included.
+
 **v1.5.4** -- Fixed `MODEL_NAME` cross-provider bleed: the env var is now only applied when `MODEL_PROVIDER` is explicitly set and matches the active provider, preventing local model names (e.g. `qwen/qwen3.5-9b`) from leaking into Anthropic or Gemini API calls on auto-detected setups.
 
 **v1.5.3** -- Fixed cross-provider model bleed: `MODEL_NAME` is now scoped to the active `MODEL_PROVIDER`, so e.g. `MODEL_NAME=qwen/qwen3.5-9b` no longer leaks into Anthropic API calls when switching providers. All three AI SDKs are regular dependencies — no manual installation needed. B2B/Hybrid classification improvements from v1.5.2 included.
