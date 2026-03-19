@@ -16,9 +16,17 @@
  */
 import { config as loadEnv } from 'dotenv';
 loadEnv({ path: new URL('../.env', import.meta.url), quiet: true });
+import { readFileSync } from 'fs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory } from './site-memory.js';
@@ -356,7 +364,7 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
     saveSessionCookies(url, pageData.cookies);
     setCachedPage(pageData.url, pageData);
   } else {
-    console.error(`[audit_storefront] Using cached page data for ${url}`);
+    sendLog('debug', `Using cached page data for ${url}`, { tool: 'audit_storefront' });
   }
 
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
@@ -429,7 +437,7 @@ async function handleAskPage({ url, question, depth = 1, max_products = 10 }) {
     saveSessionCookies(url, result.cookies);
     setCachedPage(result.url, result);
   } else {
-    console.error(`[ask_page] Using cached page data for ${url}`);
+    sendLog('debug', `Using cached page data for ${url}`, { tool: 'ask_page' });
   }
 
   const answer = await askPage(result, question, result.screenshotBuffer);
@@ -490,7 +498,7 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
     saveSessionCookies(url, pageData.cookies);
     setCachedPage(pageData.url, pageData);
   } else {
-    console.error(`[merch_roundtable] Using cached page data for ${url}`);
+    sendLog('debug', `Using cached page data for ${url}`, { tool: 'merch_roundtable' });
   }
 
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
@@ -521,8 +529,111 @@ function handleClearSession({ url }) {
 
 const server = new Server(
   { name: 'merch-connector', version: '1.4.0' },
-  { capabilities: { tools: {} } }
+  { capabilities: { tools: {}, resources: {}, prompts: {}, logging: {} } }
 );
+
+// ─── Logging helper ───────────────────────────────────────────────────────────
+
+function sendLog(level, message, data = {}) {
+  server.notification({
+    method: 'notifications/message',
+    params: { level, logger: 'merch-connector', data: { message, ...data } },
+  }).catch(() => { /* ignore if client doesn't support logging */ });
+}
+
+// ─── MCP Prompts ──────────────────────────────────────────────────────────────
+
+const PROMPT_DEFS = [
+  {
+    name: 'floor-walker',
+    description: 'Evaluate a storefront page from a real shopper\'s perspective — frustrations, confusion, and missed moments.',
+    promptFile: 'floor-walker.md',
+    arguments: [],
+  },
+  {
+    name: 'auditor',
+    description: 'Run a structured B2C merchandising audit using the Trust / Guidance / Persuasion / Friction framework.',
+    promptFile: 'auditor.md',
+    arguments: [],
+  },
+  {
+    name: 'auditor-b2b',
+    description: 'Evaluate a page for B2B procurement buyers: steps-to-PO, spec completeness, pricing transparency.',
+    promptFile: 'auditor-b2b.md',
+    arguments: [],
+  },
+  {
+    name: 'scout',
+    description: 'Analyze the page from a VP of Merchandising lens — competitive positioning and strategic gaps.',
+    promptFile: 'scout.md',
+    arguments: [],
+  },
+  {
+    name: 'merch-roundtable',
+    description: 'Run a full multi-persona roundtable (Floor Walker + Auditor + Scout + Moderator) for a storefront URL.',
+    promptFile: 'roundtable-moderator.md',
+    arguments: [
+      { name: 'url', description: 'Full https URL of the storefront page to analyze.', required: true },
+    ],
+  },
+];
+
+function readPromptFile(filename) {
+  return readFileSync(new URL(`./prompts/${filename}`, import.meta.url), 'utf8');
+}
+
+server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+  prompts: PROMPT_DEFS.map(({ name, description, arguments: args }) => ({ name, description, arguments: args })),
+}));
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  const def = PROMPT_DEFS.find((p) => p.name === name);
+  if (!def) throw new Error(`Unknown prompt: "${name}"`);
+
+  let text = readPromptFile(def.promptFile);
+
+  if (name === 'merch-roundtable' && args?.url) {
+    text = `Analyze the following storefront URL using all three personas (Floor Walker, Auditor, Scout) and synthesize their findings:\n\nURL: ${args.url}\n\n---\n\n${text}`;
+  }
+
+  return {
+    description: def.description,
+    messages: [{ role: 'user', content: { type: 'text', text } }],
+  };
+});
+
+// ─── MCP Resources ────────────────────────────────────────────────────────────
+
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  const memories = listMemories();
+  return {
+    resources: memories.map(({ domain, lastUpdated }) => ({
+      uri: `merch-memory://${domain}`,
+      name: `${domain} site memory`,
+      description: `Persistent merchandising knowledge for ${domain}. Last updated: ${lastUpdated || 'unknown'}.`,
+      mimeType: 'application/json',
+    })),
+  };
+});
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  const { uri } = request.params;
+  const match = uri.match(/^merch-memory:\/\/(.+)$/);
+  if (!match) throw new Error(`Unsupported resource URI: "${uri}"`);
+
+  const domain = match[1];
+  const memory = loadMemory(domain);
+  if (Object.keys(memory).length === 0) throw new Error(`No memory stored for domain: "${domain}"`);
+
+  return {
+    contents: [{
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(memory, null, 2),
+    }],
+  };
+});
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
 
@@ -530,6 +641,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
 
   try {
+    sendLog('info', `Tool called: ${name}`);
     switch (name) {
       case 'audit_storefront': {
         const result = await withTimeout(handleAuditStorefront(args), 'audit_storefront');
@@ -553,6 +665,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
     }
   } catch (err) {
+    sendLog('error', `Tool error in ${name}: ${err.message}`);
     return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };
   }
 });
