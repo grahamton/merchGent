@@ -325,6 +325,13 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v1.9.0 — PDP sampling, smarter facets, B2B fingerprint depth
+
+- **`scrape_pdp` tool**: dedicated PDP scraper returning description fill rate, image count, review schema, spec table, cross-sell modules, CTA text, and primary/sale prices — purpose-built for single product pages
+- **`get_category_sample` tool**: scrapes a category page and runs `scrape_pdp` in parallel on a spread/random/top selection of products — one call for a multi-PDP spot check
+- **Facet detection hardened**: Strategy 1 now skips parent containers that wrap multiple filter groups (fixes the "all filters collapsed into one facet" bug on obfuscated-class sites like Zappos); Strategy 2 replaced with heading-to-heading tree walker so filter groups segment correctly regardless of CSS class names
+- **B2B fingerprint depth**: three new fingerprint fields — `contractPricingVisible`, `loginRequired`, `accountPersonalization`; `audit_storefront` now uses a dedicated `AUDIT_TIMEOUT_MS` (default 240s); PageSpeed Insights Core Web Vitals available via `include_pagespeed: true` on `scrape_page`
+
 ### v1.8.0 — Persona architecture v2
 
 - **PA-2 Fingerprint context injection**: every persona now receives a `## Page Intelligence (pre-scan)` block prepended to its prompt — pageType, platform, commerceMode, trust signal inventory, top risks, and recommended personas — so the AI orients before reading raw product data
