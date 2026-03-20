@@ -636,6 +636,7 @@ const extractPageData = async (page, maxProducts = 10) => {
 
       return {
         title, price, stockStatus,
+        url: link?.href || null,
         imageAlt: img?.alt || null,
         imageSrc: img?.src || null,
         ctaText, description, b2bIndicators, b2cIndicators, trustSignals,
@@ -942,18 +943,17 @@ export async function scrapePdp(url, cookies = []) {
       const crossSellModules = /you may also like|customers also bought|related products|frequently bought/i
         .test(document.body.innerText);
 
-      // ctaText
-      const ctaSelectors = [
-        '[class*="add-to-cart"]',
-        '[class*="addtocart"]',
-        '[class*="add-to-bag"]',
-        'button',
-      ];
+      // ctaText — class-based selectors are trusted as-is; generic `button` requires text pattern
+      const classCtaSels = ['[class*="add-to-cart"]', '[class*="addtocart"]', '[class*="add-to-bag"]'];
       let ctaText = '';
-      for (const sel of ctaSelectors) {
-        const btns = Array.from(document.querySelectorAll(sel));
+      for (const sel of classCtaSels) {
+        const el = document.querySelector(sel);
+        if (el) { ctaText = el.innerText?.trim() || ''; break; }
+      }
+      if (!ctaText) {
+        const btns = Array.from(document.querySelectorAll('button'));
         const match = btns.find((b) => /add to (cart|bag)|buy now/i.test(b.innerText || ''));
-        if (match) { ctaText = match.innerText?.trim() || ''; break; }
+        if (match) ctaText = match.innerText?.trim() || '';
       }
 
       // price fields

@@ -577,6 +577,7 @@ function buildPageOutput(result) {
     changes: changes || undefined,
     contamination: rest.contamination || null,
     fingerprint: (() => { try { return computePageFingerprint(rest); } catch { return null; } })(),
+    pagespeed: rest.pagespeed || null,
   };
 }
 
@@ -702,7 +703,7 @@ async function handleGetCategorySample({ url, count = 2, strategy = 'spread' }) 
   let pageData = getCachedPage(url);
   if (!pageData) {
     const cookies = getSessionCookies(url);
-    const result = await scrapePage(url, cookies, 1, 20);
+    const result = await withTimeout(scrapePage(url, cookies, 1, 20), 'get_category_sample');
     saveSessionCookies(url, result.cookies);
     setCachedPage(result.url, result);
     pageData = result;
