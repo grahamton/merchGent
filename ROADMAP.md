@@ -86,25 +86,17 @@ Reference the design doc at `docs/persona-architecture-v2.md` for full specs on 
 
 ---
 
-### PA-5 — Smart persona selection
-**What:** Optional `smart_select: true` parameter on `merch_roundtable`. When set, uses `fingerprint.recommendedPersonas` to run only the 2-3 most valuable personas for that specific page rather than always running all three.
+### PA-5 — Smart persona selection ✅ v1.8.0
+**What:** `audit_storefront` accepts `persona: "auto"` — `selectPersonas(fingerprint)` picks the best-fit persona based on `pageType`, `commerceMode`, and `fingerprint.recommendedPersonas`. B2B pages get `b2b_auditor`; category/search pages always include `scout`; PDP pages trim `scout` in favor of `floor_walker` + `auditor`.
 
-**Why:** A pure B2B procurement page (Insight.com) doesn't need Floor Walker's shopper emotional take — it needs B2B Auditor and Scout. Running the wrong personas wastes time and dilutes the synthesis. Smart selection picks the highest-signal set for the page type.
-
-**How:** Add `smart_select: boolean` (default false) to `merch_roundtable` inputSchema. When true, read `fingerprint.recommendedPersonas` and skip excluded personas. Default behavior (all three) unchanged.
-
-**Effort:** Small — ~30 lines in `index.js` + `analyzer.js`
+**Note:** Smart selection is implemented for `audit_storefront` (single-persona mode). `merch_roundtable` always runs all three core personas — roundtable smart selection is a future enhancement.
 
 ---
 
-### PA-6 — Conversion Architect persona
-**What:** New fifth persona that reasons about the buyer's funnel — awareness → consideration → decision — and grades the page on conversion fitness (A–F). Fields: `funnelGrade`, `awarenessSignals`, `considerationGaps`, `decisionBarriers`, `topConcern`, `severity`, `score`, `summary`.
+### PA-6 — Conversion Architect persona ✅ v1.8.0
+**What:** Fifth persona — CRO/funnel specialist. Fields: `funnelMap`, `frictionInventory`, `topDropOffRisk`, `quickWins` (A/B hypotheses with lift ranges), `topConcern`, `summary`, `score`, `severity`, `findings`, `uniqueInsight`.
 
-**Why:** None of the four existing personas answers "does this page convert?" The Floor Walker has emotional reactions. The Auditor measures data quality. Neither traces the funnel path from browsing to buying. Conversion Architect is the only persona that catches price anchoring problems, consideration-stage content gaps, and structural patterns that leak shoppers at the decision moment.
-
-**How:** New `server/prompts/conversion-architect.md`. New `CONVERSION_ARCHITECT_SCHEMA` + `analyzeAsConversionArchitect()` in `analyzer.js`. Register `'conversion_architect'` as valid `persona` enum in `audit_storefront`. Add to `handleSaveEval` persona cache reads. Available as optional fourth persona in roundtable when `smart_select: true` and `fingerprint.funnelReadiness !== 'ready'`.
-
-**Effort:** Medium — new prompt file + schema + function + wiring
+**Available via:** `audit_storefront` with `persona: "conversion_architect"`. Not included in `merch_roundtable` (roundtable runs floor_walker, auditor, scout only).
 
 ---
 

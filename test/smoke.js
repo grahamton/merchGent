@@ -13,7 +13,7 @@
 import { config as loadEnv } from 'dotenv';
 loadEnv({ path: new URL('../.env', import.meta.url), override: true });
 import { scrapePage } from '../server/scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable } from '../server/analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, analyzeAsConversionArchitect, runRoundtable } from '../server/analyzer.js';
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
@@ -72,7 +72,7 @@ if (flag('audit')) {
 
 const persona = flagVal('persona') || (b2bMode ? 'b2b_auditor' : null);
 if (persona) {
-  const fn = { floor_walker: analyzeAsFloorWalker, auditor: analyzeAsAuditor, scout: analyzeAsScout, b2b_auditor: analyzeAsAuditorB2B }[persona];
+  const fn = { floor_walker: analyzeAsFloorWalker, auditor: analyzeAsAuditor, scout: analyzeAsScout, b2b_auditor: analyzeAsAuditorB2B, conversion_architect: analyzeAsConversionArchitect }[persona];
   if (!fn) { console.error(`Unknown persona: ${persona}`); process.exit(1); }
   console.log(`\n🎭 Running ${persona} analysis...`);
   const t1 = Date.now();

@@ -674,7 +674,6 @@ function toGeminiSchema(jsonSchema, Type) {
  */
 async function callWithPersona(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const provider = detectProvider();
-  console.error(`[Persona:${toolName}] Using provider: ${provider}`);
 
   if (provider === 'anthropic') {
     return callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName);
@@ -904,7 +903,6 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
   // Uncached personas run in parallel via Promise.all — cuts wall-clock time from ~3× to ~1×
   // before the moderator call, reducing timeout risk significantly.
   await onProgress?.(0, 8, 'Starting parallel persona analysis...');
-  console.error('[Roundtable] Starting parallel persona analysis...');
 
   const [floorWalker, auditor, scout] = await Promise.all([
     cached.floor_walker
@@ -931,7 +929,6 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
     persona: 'scout', topConcern: scout.topConcern,
     summary: scout.summary, cached: !!cached.scout,
   });
-  console.error('[Roundtable] All three personas complete.');
 
   // Build the debate brief for the moderator
   const moderatorPrompt = loadPrompt('roundtable-moderator.md');
@@ -981,14 +978,10 @@ Now synthesize these three perspectives. Identify where they agree, where they d
         competitiveGap: scout.competitiveGaps,
       },
     },
-    debate: null,  // populated async via roundtable_moderator_result notification
-    moderatorPending: true,
-    // Include full persona outputs for detailed inspection
-    _raw: { floorWalker, auditor, scout },
+    debate: null,
   };
 
   // Run the moderator synchronously so the full debate is included in the tool response.
-  console.error('[Roundtable] Starting Moderator synthesis...');
   await onProgress?.(6, 8, 'Moderator synthesizing...');
 
   let debate = null;
@@ -1002,18 +995,13 @@ Now synthesize these three perspectives. Identify where they agree, where they d
       disagreements: (debate.disagreements || []).map((d) => d.topic),
     });
   } catch (err) {
-    sendLog?.('error', `[Roundtable] Moderator synthesis failed: ${err.message}`);
     await onProgress?.(7, 8, `Moderator failed: ${err.message}`, {
       persona: 'moderator',
       error: err.message,
     });
   }
 
-  return {
-    ...partialResult,
-    debate,
-    moderatorPending: false,
-  };
+  return { ...partialResult, debate };
 }
 
 // ─── Competitor comparison ────────────────────────────────────────────────────
@@ -1373,7 +1361,6 @@ export async function analyzePage(pageData, screenshot = null) {
   const provider = detectProvider();
   const contextText = buildContextBlock(pageData);
 
-  console.error(`[Analyzer] Using provider: ${provider}`);
 
   let raw;
   try {
@@ -1482,7 +1469,6 @@ ${(pageData.findings || []).map((f) => `[${f.severity}] ${f.title}: ${f.descript
 ## Interactable Elements (first 10)
 ${(pageData.interactables || []).slice(0, 10).map((i) => `[${i.type}] "${i.text}" → ${i.selector}`).join('\n') || 'None'}`;
 
-  console.error(`[AskPage] Using provider: ${provider}`);
 
   try {
     if (provider === 'anthropic') return await askAnthropic(context, question, screenshot);
