@@ -409,6 +409,24 @@ const B2B_AUDITOR_SCHEMA = {
   },
 };
 
+const CONVERSION_ARCHITECT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['funnelMap', 'frictionInventory', 'topDropOffRisk', 'quickWins', 'topConcern', 'summary', 'score', 'severity', 'findings', 'uniqueInsight'],
+  properties: {
+    funnelMap:        { type: 'string' },
+    frictionInventory:{ type: 'string' },
+    topDropOffRisk:   { type: 'string' },
+    quickWins:        { type: 'string' },
+    topConcern:       { type: 'string' },
+    summary:          { type: 'string' },
+    score:            { type: 'integer', minimum: 0, maximum: 100, description: 'Conversion health score 0–100: how well is this funnel set up to convert?' },
+    severity:         { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency of the top friction point: 5=P0 revenue bleeding now, 1=polish-level only' },
+    findings:         { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5, description: 'Concrete CRO observations tied to funnel stages — not recommendations' },
+    uniqueInsight:    { type: 'string', description: 'The one insight only a conversion specialist would catch that the other personas would miss' },
+  },
+};
+
 const ROUNDTABLE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -848,6 +866,18 @@ export async function analyzeAsAuditorB2B(pageData, screenshot = null, memory = 
   const pageDataContext = buildPageDataBlock(pageData, memory);
   const contextText = fingerprintContext ? `${fingerprintContext}\n\n${pageDataContext}` : pageDataContext;
   return callWithPersona(systemPrompt, contextText, screenshot, B2B_AUDITOR_SCHEMA, 'b2b_auditor_result');
+}
+
+/**
+ * Analyze a page as the Conversion Architect persona.
+ * Returns a CRO/funnel-optimization focused assessment.
+ */
+export async function analyzeAsConversionArchitect(pageData, screenshot = null, memory = {}) {
+  const systemPrompt = loadPrompt('conversion-architect.md');
+  const fingerprintContext = buildPersonaContext(pageData.fingerprint, memory);
+  const pageDataContext = buildPageDataBlock(pageData, memory);
+  const contextText = fingerprintContext ? `${fingerprintContext}\n\n${pageDataContext}` : pageDataContext;
+  return callWithPersona(systemPrompt, contextText, screenshot, CONVERSION_ARCHITECT_SCHEMA, 'conversion_architect_result');
 }
 
 /**

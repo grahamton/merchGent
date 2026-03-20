@@ -30,7 +30,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas } from './analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, analyzeAsConversionArchitect, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
 
@@ -168,8 +168,8 @@ const TOOLS = [
         },
         persona: {
           type: 'string',
-          enum: ['auto', 'floor_walker', 'auditor', 'scout', 'b2b_auditor'],
-          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "auto" (or omit) uses PageFingerprint to automatically select the best persona for the page type and commerce mode. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis, "b2b_auditor" evaluates the page for B2B procurement buyers (steps-to-PO, spec completeness, pricing transparency, self-serve viability).',
+          enum: ['auto', 'floor_walker', 'auditor', 'scout', 'b2b_auditor', 'conversion_architect'],
+          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "auto" (or omit) uses PageFingerprint to automatically select the best persona for the page type and commerce mode. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis, "b2b_auditor" evaluates the page for B2B procurement buyers (steps-to-PO, spec completeness, pricing transparency, self-serve viability), "conversion_architect" analyzes the funnel for CRO opportunities, friction points, and A/B test hypotheses.',
         },
       },
       required: ['url'],
@@ -570,6 +570,8 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
       analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer, memory);
     } else if (resolvedPersona === 'b2b_auditor') {
       analysis = await analyzeAsAuditorB2B(pageData, pageData.screenshotBuffer, memory);
+    } else if (resolvedPersona === 'conversion_architect') {
+      analysis = await analyzeAsConversionArchitect(pageData, pageData.screenshotBuffer, memory);
     } else {
       analysis = await analyzePage(pageData, pageData.screenshotBuffer);
     }
@@ -788,13 +790,14 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   if (!domain) throw new Error(`Cannot extract domain from: "${url}"`);
 
   // Pull ALL persona types from session cache
-  const floor_walker  = getCachedPersona(url, 'floor_walker');
-  const auditor       = getCachedPersona(url, 'auditor');
-  const scout         = getCachedPersona(url, 'scout');
-  const b2b_auditor   = getCachedPersona(url, 'b2b_auditor');
-  const defaultAudit  = getCachedPersona(url, 'default');
+  const floor_walker          = getCachedPersona(url, 'floor_walker');
+  const auditor               = getCachedPersona(url, 'auditor');
+  const scout                 = getCachedPersona(url, 'scout');
+  const b2b_auditor           = getCachedPersona(url, 'b2b_auditor');
+  const conversion_architect  = getCachedPersona(url, 'conversion_architect');
+  const defaultAudit          = getCachedPersona(url, 'default');
 
-  if (!floor_walker && !auditor && !scout && !b2b_auditor && !defaultAudit) {
+  if (!floor_walker && !auditor && !scout && !b2b_auditor && !conversion_architect && !defaultAudit) {
     throw new Error(
       `No cached persona results found for ${url}. ` +
       'Run merch_roundtable or audit_storefront on this URL first, then call save_eval.'
@@ -802,11 +805,12 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   }
 
   const personas = {
-    ...(floor_walker  && { floor_walker }),
-    ...(auditor       && { auditor }),
-    ...(scout         && { scout }),
-    ...(b2b_auditor   && { b2b_auditor }),
-    ...(defaultAudit  && { default: defaultAudit }),
+    ...(floor_walker         && { floor_walker }),
+    ...(auditor              && { auditor }),
+    ...(scout                && { scout }),
+    ...(b2b_auditor          && { b2b_auditor }),
+    ...(conversion_architect && { conversion_architect }),
+    ...(defaultAudit         && { default: defaultAudit }),
   };
 
   // Auto-detect which tool produced these results:
@@ -840,6 +844,7 @@ function handleSaveEval({ url, note, save_full_run = true }) {
     auditor?.topConcern,
     scout?.topConcern,
     b2b_auditor?.topConcern,
+    conversion_architect?.topConcern,
     defaultAudit?.diagnosisTitle,
   ].filter(Boolean);
 
