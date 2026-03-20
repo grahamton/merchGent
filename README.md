@@ -7,18 +7,23 @@
 
 **An MCP server that gives AI agents eyes on any e-commerce storefront.**
 
-Scrape product listings, extract facets, badges, sort options, and B2B signals; run AI-powered merchandising audits; compare two storefronts side-by-side; detect what changed between visits; and build persistent memory about sites -- all through the [Model Context Protocol](https://modelcontextprotocol.io).
+Scrape product listings, extract facets, badges, sort options, and B2B signals; run AI-powered merchandising audits; compare two storefronts side-by-side; detect what changed between visits; and build persistent memory about sites — all through the [Model Context Protocol](https://modelcontextprotocol.io).
+
+---
 
 ## Why merch-connector?
 
-E-commerce merchandising analysis is manual, repetitive, and fragmented. A merchandiser might spend hours clicking through competitor sites, checking if filters work, comparing product grids, and noting what's changed. AI agents can do this work -- but they can't see storefronts the way shoppers do.
+E-commerce merchandising analysis is manual, repetitive, and fragmented. A merchandiser might spend hours clicking through competitor sites, checking if filters work, comparing product grids, and noting what's changed. AI agents can do this work — but they can't see storefronts the way shoppers do.
 
 merch-connector bridges that gap. It gives any MCP-compatible AI agent (Claude, custom agents, etc.) the ability to:
 
 - **Browse** any storefront with a stealth headless browser that handles bot protection
 - **Extract** structured product data, facets, performance metrics, and page structure
-- **Analyze** merchandising quality through three expert personas or a full roundtable debate
+- **Analyze** merchandising quality through five expert personas or a full roundtable debate
 - **Remember** site quirks across sessions so the agent gets smarter over time
+- **Track** changes across visits — new products, price moves, facet/sort changes
+
+---
 
 ## Quick start
 
@@ -65,6 +70,8 @@ Or install globally: `npm install -g merch-connector`
 
 You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `merch_roundtable`). Scraping tools work without one.
 
+---
+
 ## Tools
 
 | Tool | Description | Needs AI key? |
@@ -74,12 +81,18 @@ You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `
 | `compare_storefronts` | Structured side-by-side diff of two URLs: facet gaps, trust signals, sort options, B2B mode, performance | No |
 | `ask_page` | Scrape a page and ask any question about it in plain language | Yes |
 | `audit_storefront` | Full merchandising audit with structured diagnosis and recommendations | Yes |
-| `merch_roundtable` | Three expert personas independently analyze, then debate to consensus (results stream as each persona completes) | Yes |
+| `merch_roundtable` | Five expert personas independently analyze, then debate to consensus (results stream as each persona completes) | Yes |
 | `site_memory` | Read/write persistent notes and learned data about any domain | No |
 | `clear_session` | Reset stored cookies and page cache for a domain | No |
 | `get_logs` | Retrieve recent server log entries from the in-memory buffer, filterable by level or tool name | No |
+| `save_eval` | Persist a roundtable or audit run as a structured eval record with convergence score | No |
+| `list_evals` | Retrieve eval history for a domain or all domains | No |
 
-### Example: ask_page
+---
+
+## Examples
+
+### ask_page
 
 > "Recommend facet changes for this laptop category page"
 
@@ -90,31 +103,39 @@ You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `
 }
 ```
 
-Response:
-
-> **Brand/Manufacturer** -- Most glaring omission. 50 products span 6+ brands (HP, Lenovo, Apple, Microsoft, Dell, Crucial). B2B buyers with vendor agreements need this as facet #1.
+> **Brand/Manufacturer** — Most glaring omission. 50 products span 6+ brands (HP, Lenovo, Apple, Microsoft, Dell, Crucial). B2B buyers with vendor agreements need this as facet #1.
 >
-> **Price range buckets are misaligned.** "Below $50" (2 items) signals category contamination -- confirmed by a Crucial RAM stick appearing in laptop results. Clean up category mapping and re-bucket starting at $500.
+> **Price range buckets are misaligned.** "Below $50" (2 items) signals category contamination — confirmed by a Crucial RAM stick appearing in laptop results. Clean up category mapping and re-bucket starting at $500.
 
-### Example: merch_roundtable
+### merch_roundtable
 
-The roundtable scrapes once, then runs three sequential AI analyses followed by a moderator synthesis:
+The roundtable scrapes once, then runs five sequential AI analyses followed by a moderator synthesis:
 
-1. **Floor Walker** -- reacts as a real shopper ("I can't find Dell laptops without scrolling through 50 products")
-2. **Auditor** -- evaluates Trust/Guidance/Persuasion/Friction ("0% facet detection rate, title normalization at 70%")
-3. **Scout** -- identifies competitive gaps ("every competitor in B2B tech has brand filtering as facet #1")
-4. **Moderator** -- synthesizes consensus, surfaces disagreements, produces prioritized recommendations endorsed by persona
+1. **Floor Walker** — reacts as a real shopper ("I can't find Dell laptops without scrolling through 50 products")
+2. **Auditor** — evaluates Trust/Guidance/Persuasion/Friction ("0% facet detection rate, title normalization at 70%")
+3. **Scout** — identifies competitive gaps ("every competitor in B2B tech has brand filtering as facet #1")
+4. **B2B Auditor** — scores procurement readiness (steps-to-PO, spec completeness, pricing transparency)
+5. **Moderator** — synthesizes consensus, surfaces disagreements, produces prioritized recommendations
+
+---
 
 ## Personas
 
-Three expert lenses for merchandising analysis. Use individually via the `persona` parameter on `audit_storefront`, or together via `merch_roundtable`.
+Five expert lenses for merchandising analysis. Use individually via the `persona` parameter on `audit_storefront`, or together via `merch_roundtable`.
 
 | Persona | Role | Voice |
 |---------|------|-------|
-| **Floor Walker** | A shopper visiting for the first time | First-person, casual, instinctive -- "I don't know what button to click" |
-| **Auditor** | Compliance analyst with a framework | Metric-driven, precise -- "Fill rate is 82%, 3/10 titles lack brand prefix" |
-| **Scout** | VP of Merchandising at a competitor | Strategic, comparative -- "This is table-stakes for the category" |
-| **B2B Auditor** | Procurement buyer evaluating a vendor | Process-driven -- scores steps-to-PO, spec completeness, pricing transparency, self-serve viability |
+| **Floor Walker** | A shopper visiting for the first time | First-person, casual, instinctive — "I don't know what button to click" |
+| **Auditor** | Compliance analyst with a framework | Metric-driven, precise — "Fill rate is 82%, 3/10 titles lack brand prefix" |
+| **Scout** | VP of Merchandising at a competitor | Strategic, comparative — "This is table-stakes for the category" |
+| **B2B Auditor** | Procurement buyer evaluating a vendor | Process-driven — scores steps-to-PO, spec completeness, pricing transparency, self-serve viability |
+| **Conversion Architect** | CRO specialist mapping the purchase funnel | Analytical, hypothesis-driven — "checkout button is below the fold on mobile, estimated −8% conversion" |
+
+Each persona returns `score` (0–100), `severity` (1–5), `findings[]` (3–5 concrete observations), and `uniqueInsight` — the one thing only that lens would catch.
+
+Pass `persona: "auto"` to `audit_storefront` and the server picks the best fit automatically based on the page fingerprint.
+
+---
 
 ## Architecture
 
@@ -125,16 +146,22 @@ MCP Client (Claude, etc.)
     |
 merch-connector (Node.js MCP server)
     |
-    +-- scraper.js      Puppeteer + stealth plugin, structure detection, facet extraction
-    +-- analyzer.js     Model-agnostic AI (Anthropic Claude / Google Gemini)
-    +-- site-memory.js  Persistent per-domain JSON store
-    +-- prompts/        Persona prompt files (floor-walker, auditor, scout, moderator)
+    +-- scraper.js       Puppeteer + stealth plugin, structure detection, PageFingerprint
+    +-- analyzer.js      Multi-provider AI (Anthropic / Gemini / OpenAI), 5 personas, smart selection
+    +-- network-intel.js XHR interception, 35-platform fingerprint, dataLayer/GA4 parsing
+    +-- site-memory.js   Persistent per-domain JSON store + change detection snapshots
+    +-- eval-store.js    JSONL eval index + full run storage, convergence scoring
+    +-- prompts/         Persona prompt files (floor-walker, auditor, scout, b2b-auditor, conversion-architect)
 ```
 
-- **Scraping**: Puppeteer with stealth plugin bypasses bot detection. Heuristic structure detection finds product grids on unknown sites. Extracts products, facets, performance timing, and takes screenshots.
-- **Analysis**: Dual-provider AI. Anthropic uses tool_choice forcing for structured JSON; Gemini uses responseSchema. Dynamic imports load only the needed SDK.
-- **Memory**: Auto-learns site fingerprints (selectors, timing, facet names) on every scrape. Manual notes persist across sessions. Stored as JSON files per domain.
-- **Sessions**: Per-domain cookie jar maintained in memory, auto-merged on subsequent calls.
+- **Scraping**: Puppeteer with stealth plugin bypasses bot detection. Heuristic structure detection finds product grids on unknown sites. Extracts products, facets, trust signals (ratings, badges, stock warnings), performance timing, and screenshots.
+- **Network intelligence**: Intercepts XHR/fetch during page load to fingerprint the commerce stack (Algolia, Bloomreach, SFCC, Shopify, Elasticsearch, and 30+ more). When a high-confidence match is found, extracts product and facet data directly from the API response — bypassing DOM parsing failures on enterprise storefronts.
+- **Analysis**: Three-provider AI — Anthropic uses `tool_choice` forcing for structured JSON; Gemini uses `responseSchema`; OpenAI-compatible uses function calling with a JSON-prompt fallback. Dynamic imports load only the needed SDK.
+- **Personas**: Five expert lenses. `audit_storefront` supports `persona: "auto"` for fingerprint-driven selection. `merch_roundtable` runs all five in parallel then passes results to a moderator that synthesizes consensus and disagreements.
+- **Memory**: Auto-learns site patterns on every scrape. Normalized snapshots enable change detection across visits — price moves, new/removed products, facet/sort changes. Manual notes persist across sessions.
+- **Evals**: Two-tier storage — compact JSONL index (100 runs/domain) + full run JSON (10/domain). Convergence score (0–100) measures inter-persona agreement. Dedup hashing prevents double-saves.
+
+---
 
 ## Development
 
@@ -142,12 +169,7 @@ merch-connector (Node.js MCP server)
 git clone https://github.com/grahamton/merchGent.git
 cd merchGent
 npm install
-
-# Also install at least one AI SDK for analysis features
-npm install @anthropic-ai/sdk    # or @google/genai
-
-# Copy and fill in your API key
-cp .env.example .env
+cp .env.example .env   # fill in at least one AI API key
 ```
 
 ### Running tests
@@ -163,7 +185,7 @@ node test/smoke.js --url https://...  # override default URL
 node test/protocol.js                 # MCP protocol compliance (no browser/API key needed)
 ```
 
-### Testing with MCP Inspector
+### MCP Inspector
 
 ```bash
 npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
@@ -171,7 +193,9 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 
 Opens a browser UI where you can call any tool interactively.
 
-## Detailed tool reference
+---
+
+## Tool reference
 
 ### audit_storefront
 
@@ -180,18 +204,18 @@ Scrape + AI analysis in one call. Returns diagnosis, 4-dimension audit matrix (T
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
 | `url` | Yes | Full URL to audit |
-| `depth` | No | Pagination pages to follow (1-5, default 1) |
+| `depth` | No | Pagination pages to follow (1–5, default 1) |
 | `max_products` | No | Max products per page (default 10) |
-| `persona` | No | `"floor_walker"`, `"auditor"`, `"scout"`, or `"b2b_auditor"` |
+| `persona` | No | `"floor_walker"`, `"auditor"`, `"scout"`, `"b2b_auditor"`, `"conversion_architect"`, or `"auto"` |
 
 ### scrape_page
 
-Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals, trust signals), facets/filters, sort options, B2B mode + conflict score, page metadata, performance timing, data layers, and interactable elements. On repeat visits, also returns a `changes` diff (new/removed products, price movements, facet/sort changes).
+Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals, trust signals), facets/filters, sort options, B2B mode + conflict score, page metadata, performance timing, data layers, interactable elements, and PageFingerprint. On repeat visits, also returns a `changes` diff.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
 | `url` | Yes | Full URL to scrape |
-| `depth` | No | Pagination pages to follow (1-5, default 1) |
+| `depth` | No | Pagination pages to follow (1–5, default 1) |
 | `max_products` | No | Max products per page (default 10) |
 | `include_screenshot` | No | Include base64 JPEG desktop screenshot (default false) |
 | `mobile_screenshot` | No | Also capture a 390×844 (iPhone 14) mobile screenshot (default false) |
@@ -208,11 +232,11 @@ Scrape two URLs concurrently and return a structured diff. No AI call — pure s
 | `url_b` | Yes | Second URL (competitor or variant) |
 | `max_products` | No | Max products per page (default 10) |
 
-**Returns:** product count delta, facet gap analysis (onlyInA / onlyInB / shared count), trust signal coverage per site, sort option gaps, B2B mode + conflict score for each, performance delta (FCP + full load, which is faster).
+**Returns:** product count delta, facet gap analysis (onlyInA / onlyInB / shared count), trust signal coverage per site, sort option gaps, B2B mode + conflict score for each, performance delta (FCP + full load).
 
 ### interact_with_page
 
-Execute one or more search/click actions in sequence, then extract the resulting page. Accepts a single action or an `actions` array for multi-step flows.
+Execute one or more search/click actions in sequence, then extract the resulting page.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
@@ -238,7 +262,7 @@ Scrape + AI Q&A. The model sees full product data, facets, performance, and a sc
 
 ### merch_roundtable
 
-Multi-persona analysis with moderator synthesis.
+Multi-persona analysis with moderator synthesis. Each persona result is streamed as a `notifications/message` as it completes — clients don't have to wait for all five.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
@@ -246,7 +270,7 @@ Multi-persona analysis with moderator synthesis.
 | `depth` | No | Pagination pages (default 1) |
 | `max_products` | No | Max products per page (default 10) |
 
-**Returns:** `perspectives` (each persona's take), `debate.consensus`, `debate.disagreements`, `debate.finalRecommendations` (with impact + endorsements).
+**Returns:** `perspectives` (each persona's typed result), `debate.consensus`, `debate.disagreements`, `debate.finalRecommendations` (with impact + endorsing personas).
 
 ### site_memory
 
@@ -262,45 +286,97 @@ Persistent per-domain memory. Auto-accumulates on every scrape.
 
 ### clear_session
 
-Reset cookies for a domain.
+Reset cookies and cached page data for a domain.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
 | `url` | Yes | Any URL on the domain to clear |
 
+### save_eval
+
+Persist the most recent roundtable or audit run as a structured eval record. Reads from the session persona cache — no data round-trip through the model. Must call `merch_roundtable` or `audit_storefront` on the same URL first.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | Yes | URL of the run to save (must match a cached session) |
+| `note` | No | Optional free-text annotation |
+
+**Returns:** eval ID, convergence score (0–100 inter-persona agreement), top concerns per persona, moderator summary excerpt, dedup hash.
+
+### list_evals
+
+Retrieve eval history for a domain or all domains.
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `url` | No | Filter to a specific domain. Omit to return all domains with eval history. |
+
+### get_logs
+
+Retrieve recent server log entries from the in-memory circular buffer (500 entries).
+
+| Parameter | Required | Description |
+|-----------|:---:|-------------|
+| `level` | No | Filter by level: `"error"`, `"warn"`, `"info"`, `"debug"` |
+| `tool` | No | Filter by tool name (e.g. `"merch_roundtable"`) |
+| `limit` | No | Max entries to return (default 50) |
+
+---
+
 ## History
 
-**v1.8.0** -- Persona architecture v2 Batch 2+3: four parallel workstreams completing the intelligent persona layer. **Fingerprint context injection** (PA-2): every persona (Floor Walker, Auditor, Scout, B2B Auditor) now receives a `## Page Intelligence (pre-scan)` block prepended to its prompt — pageType, platform, commerceMode, trust signal inventory, top risks, and recommended personas — so the AI orients before reading raw product data. **Unified base schema** (PA-4): all personas now return `score` (0–100), `severity` (1–5), `findings[]` (3–5 concrete observations), and `uniqueInsight` (the one thing only this persona catches) — enabling structured cross-persona comparison. **Smart persona auto-selection** (PA-5): `audit_storefront` now accepts `persona: "auto"` — `selectPersonas(fingerprint)` picks the best-fit persona(s) based on pageType, commerceMode, and fingerprint recommendations, logging the choice. **Conversion Architect persona** (PA-6): new CRO/funnel specialist that maps funnel stages, catalogs friction inventory, identifies top drop-off risk, and generates A/B test hypotheses with expected lift ranges. Also includes a perf fix: roundtable log entries no longer embed full persona result objects — reduces `get_logs` payload by ~95% for cached re-runs.
+### v1.8.0 — Persona architecture v2
 
-**v1.7.0** -- Four parallel improvements shipped as Batch 1 of the persona architecture v2 roadmap. **Synchronous moderator** (PA-3): `merch_roundtable` now `await`s the moderator synthesis before returning — `debate.consensus`, `debate.finalRecommendations[]`, and `moderatorPending: false` are guaranteed in the tool response, eliminating the fire-and-forget notification that most MCP clients never captured. **PageFingerprint pre-scan** (PA-1): every scrape and roundtable result now includes a `fingerprint` field computed from existing page data with no extra AI call — `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]`, and `recommendedPersonas[]`. **Category contamination detector** (#1): `scrape_page` returns `contamination: { detected, suspectCount, suspects[] }` when products from an unrelated category appear in results (e.g. RAM sticks on a laptop PLP). **`get_logs` tool + file logging** (EV-2+3): new 11th tool retrieves recent server log entries from an in-memory circular buffer (500 entries), filterable by level and tool name. Set `MERCH_LOG_FILE` to path for NDJSON file logging.
+- **PA-2 Fingerprint context injection**: every persona now receives a `## Page Intelligence (pre-scan)` block prepended to its prompt — pageType, platform, commerceMode, trust signal inventory, top risks, and recommended personas — so the AI orients before reading raw product data
+- **PA-4 Unified base schema**: all personas return `score` (0–100), `severity` (1–5), `findings[]` (3–5 observations), `uniqueInsight` — enabling structured cross-persona comparison
+- **PA-5 Smart auto-selection**: `audit_storefront` accepts `persona: "auto"` — `selectPersonas(fingerprint)` picks the best-fit lens based on pageType and commerceMode
+- **PA-6 Conversion Architect**: new CRO persona maps funnel stages, catalogs friction inventory, identifies top drop-off risk, generates A/B hypotheses with estimated lift ranges
+- **Perf**: roundtable log entries no longer embed full result objects — `get_logs` payload reduced ~95% for cached re-runs
 
-**v1.6.4** -- `save_eval` now works with all tool types, not just `merch_roundtable`. Checks all five persona cache slots (`floor_walker`, `auditor`, `scout`, `b2b_auditor`, `default`) and auto-detects `toolName` based on what was found. Convergence score returns `null` (not `0`) for single-persona runs — distinguishing "not measured" from "no agreement". Default analyst runs (no persona param) are saved using `diagnosisTitle` as the top concern proxy. Fixed hardcoded `toolName: 'merch_roundtable'` bug.
+### v1.7.0 — PageFingerprint + synchronous moderator
 
-**v1.6.3** -- Eval store: two new tools (`save_eval`, `list_evals`) add persistent run tracking to roundtable and audit workflows. After any `merch_roundtable` or `audit_storefront` call, `save_eval` reads persona results from the session cache, computes a convergence score (0–100 measuring inter-persona agreement on top concerns), and writes a compact JSONL record to `~/.merch-connector/evals/<domain>.jsonl`. Full persona outputs are saved separately (up to 10 per domain). `list_evals` returns history for a domain or all domains. Dedup hashing prevents double-saving identical runs. Protocol test suite expanded to 29 checks.
+- **PA-3 Synchronous moderator**: `merch_roundtable` now awaits the moderator synthesis before returning — `debate.consensus` and `debate.finalRecommendations[]` are guaranteed in the tool response
+- **PA-1 PageFingerprint**: every scrape result now includes a `fingerprint` field with no extra AI call — `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]`, `recommendedPersonas[]`
+- **Category contamination detector**: `scrape_page` returns `contamination: { detected, suspectCount, suspects[] }` when off-category products appear in results
+- **`get_logs` tool + file logging**: retrieves recent server log entries from an in-memory buffer (500 entries), filterable by level and tool name; set `MERCH_LOG_FILE` for NDJSON file logging
 
-**v1.6.2** -- Roundtable timeout fixes. The three personas (Floor Walker, Auditor, Scout) now run in parallel via `Promise.all`, cutting wall-clock time from ~90s sequential to ~30s. The moderator synthesis fires async after the tool returns, so the MCP client timeout can no longer kill the whole run. Persona results are written to cache the moment each resolves — a retry after a timeout picks up where it left off with no re-work.
+### v1.6.4
 
-**v1.6.1** -- Automated CI/CD publishing via GitHub Actions. Pushing a version tag now publishes to both npmjs.org (`merch-connector`) and GitHub Packages (`@grahamton/merch-connector`) automatically — no manual `npm publish` or 2FA required.
+`save_eval` now works with all tool types, not just `merch_roundtable`. Convergence score returns `null` (not `0`) for single-persona runs. Auto-detects `toolName` from whichever persona cache slots are populated.
 
-**v1.6.0** -- Major new Network Intelligence Layer. Every `scrape_page` call now intercepts XHR/fetch responses during page load and fingerprints the commerce stack from 35 platform signatures: Elasticsearch, Algolia, Coveo, Lucidworks Fusion, Solr, Bloomreach, Searchspring, Google Cloud Retail, SFCC, SAP Hybris, Commercetools, Shopify, Bazaarvoice, PowerReviews, and more. When a high-confidence API match is found (≥70%), products and facets are extracted directly from the API response — eliminating DOM parsing failures like "Unknown Facet" on enterprise storefronts. Deep dataLayer/digitalData parsing extracts GA4 ecommerce events, GTM container IDs, GA4 measurement IDs, W3C digitalData objects, user segment signals, and A/B experiment assignments. Discovered API endpoints are persisted to site memory (tokens stripped) so the discovery pass only runs once per domain. Roundtable now reuses persona results cached by prior `audit_storefront` calls — best case reduces from 4 AI calls to 1 (moderator only), cutting timeout risk by 75%.
+### v1.6.3 — Eval store
 
-**v1.5.5** -- Server version is now read dynamically from `package.json` so the MCP Inspector and protocol handshake always report the correct version. All three AI SDKs are regular dependencies (no manual installation). Fixes from v1.5.4 included.
+Two new tools (`save_eval`, `list_evals`) add persistent run tracking. Convergence score (0–100) measures inter-persona agreement on top concerns. Two-tier storage: compact JSONL index (100/domain) + full run JSON (10/domain). Dedup hashing prevents double-saving identical runs.
 
-**v1.5.4** -- Fixed `MODEL_NAME` cross-provider bleed: the env var is now only applied when `MODEL_PROVIDER` is explicitly set and matches the active provider, preventing local model names (e.g. `qwen/qwen3.5-9b`) from leaking into Anthropic or Gemini API calls on auto-detected setups.
+### v1.6.2
 
-**v1.5.3** -- Fixed cross-provider model bleed: `MODEL_NAME` is now scoped to the active `MODEL_PROVIDER`, so e.g. `MODEL_NAME=qwen/qwen3.5-9b` no longer leaks into Anthropic API calls when switching providers. All three AI SDKs are regular dependencies — no manual installation needed. B2B/Hybrid classification improvements from v1.5.2 included.
+Roundtable personas now run in parallel via `Promise.all`, cutting wall-clock time from ~90s to ~30s. Persona results are written to cache the moment each resolves, so a retry after a timeout picks up where it left off.
 
-**v1.5.2** -- Improved B2B/B2C/Hybrid classification. Added contract pricing signals (`Your price`, `Account price`, `Get Quote`, `Purchase Order`, `RFQ`, `Punch-out`) to B2B keyword list. Restored `Add to Cart` as a B2C signal so dual-signal sites (e.g. Insight.com) correctly score as `Hybrid` instead of `B2C`. Added BEM-style facet selectors (`c-facet`, `c-filter`, `c-refinement`) for enterprise storefronts. Fixed `trim()` crash on undefined innerText in badge/price/stock extraction. All three AI SDKs (Anthropic, Gemini, OpenAI) are now regular dependencies — no manual peer dep installation required.
+### v1.6.0 — Network Intelligence Layer
 
-**v1.5.0** -- Major scraper and tooling expansion. `scrape_page` now returns per-product trust signals (star rating, review count, sale badges, best seller, stock warnings, sustainability labels), sort order detection, `b2bMode` + `b2bConflictScore` as top-level fields, and a `changes` diff on repeat visits (new/removed products, price movements, facet/sort changes). New `compare_storefronts` tool diffs two URLs side-by-side with no AI call. `interact_with_page` now accepts an `actions` array for multi-step flows (search → filter → click). Optional `mobile_screenshot` parameter on `scrape_page` captures a 390×844 iPhone viewport. Roundtable streams each persona result via `notifications/message` as it completes instead of waiting for all four. OpenAI-compatible provider support extended with `OPENAI_VISION` flag.
+Every `scrape_page` call now intercepts XHR/fetch responses and fingerprints the commerce stack from 35 platform signatures: Elasticsearch, Algolia, Coveo, Lucidworks Fusion, Bloomreach, Searchspring, SFCC, SAP Hybris, Shopify, Bazaarvoice, and more. When a high-confidence API match is found (≥70%), products and facets are extracted directly from the API response. Deep `dataLayer`/`digitalData` parsing surfaces GA4 events, GTM container IDs, A/B experiment assignments, and user segments. Discovered API endpoints are persisted to site memory so the discovery pass only runs once per domain.
 
-**v1.4.0** -- Added 10-minute in-memory page data cache. `ask_page`, `audit_storefront`, and `merch_roundtable` now reuse a recent `scrape_page` result instead of re-scraping, cutting latency in half for local models. Unified session store: cookies and cached pages share a single domain-keyed structure, so `clear_session` wipes both automatically. Added configurable server-side timeout (`TOOL_TIMEOUT_MS`, default 120s) that returns an actionable error message instead of hanging.
+### v1.5.0 — Scraper expansion
 
-**v1.3.0** -- Added OpenAI-compatible provider support (OpenAI, Groq, Together AI, and any OpenAI-compatible endpoint). Configure with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `MODEL_NAME`. Vision input supported via `OPENAI_VISION=true` for multimodal models. Falls back to JSON prompt mode for models without function calling.
+Per-product trust signals (ratings, badges, stock warnings), sort order detection, `b2bMode` + `b2bConflictScore`, change detection on repeat visits. New `compare_storefronts` tool. Multi-step `interact_with_page` actions array. Optional mobile screenshot. Roundtable streams each persona result as it completes.
 
-**v1.2.0** -- Complete rewrite. Replaced the original React + Express UI with a lean MCP server. Added four expert personas (Floor Walker, Auditor, Scout, B2B Auditor), roundtable mode with progress notifications, persistent site memory injected into all persona analyses, price bucket validation, dual AI provider support (Anthropic + Gemini), and facet/pagination extraction.
+### v1.4.0
 
-**v1.0.0** -- Original React + Express application with Gemini-powered analysis.
+10-minute in-memory page cache. `ask_page`, `audit_storefront`, and `merch_roundtable` reuse recent scrape results, cutting latency in half. Configurable `TOOL_TIMEOUT_MS`.
+
+### v1.3.0
+
+OpenAI-compatible provider support (OpenAI, Groq, Together AI, any OpenAI-compatible endpoint). `OPENAI_VISION=true` for multimodal models.
+
+### v1.2.0
+
+Complete rewrite — lean MCP server replacing the original React + Express UI. Four expert personas, roundtable mode, persistent site memory, dual AI provider support (Anthropic + Gemini).
+
+### v1.0.0
+
+Original React + Express application with Gemini-powered analysis.
+
+---
 
 ## License
 
