@@ -4,7 +4,7 @@
 
 An MCP server that gives AI agents visual access to e-commerce storefronts for automated merchandising analysis. It bridges AI and real product pages through a stealth headless browser, a multi-provider AI abstraction layer, and a persona-based expert analysis system.
 
-**11 MCP tools**: `scrape_page`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`, `get_logs`, `save_eval`, `list_evals`
+**13 MCP tools**: `scrape_page`, `scrape_pdp`, `get_category_sample`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`, `get_logs`, `save_eval`, `list_evals`
 
 **5 MCP prompts** (persona instructions): `floor-walker`, `auditor`, `auditor-b2b`, `scout`, `merch-roundtable`
 
@@ -68,6 +68,7 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 | `MODEL_NAME` | No | Override default model |
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files |
 | `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms (default: 120000) |
+| `AUDIT_TIMEOUT_MS` | No | Timeout for `audit_storefront` specifically (default: 240000) |
 | `OPENAI_VISION` | No | Set `"true"` to enable screenshots for OpenAI-compatible models |
 | `MERCH_LOG_FILE` | No | Path to NDJSON log file. Every `sendLog` call appends a structured line. |
 

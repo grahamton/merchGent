@@ -29,7 +29,7 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
+import { scrapePage, interactWithPage, scrapePdp, fetchPageSpeed, isValidHttpUrl } from './scraper.js';
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, analyzeAsConversionArchitect, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
@@ -123,16 +123,21 @@ function setCachedPage(url, data) {
 const TOOL_TIMEOUT_MS = parseInt(process.env.TOOL_TIMEOUT_MS || '120000', 10);
 // Roundtable runs 4 sequential AI calls — give it 4× the base timeout.
 const ROUNDTABLE_TIMEOUT_MS = parseInt(process.env.ROUNDTABLE_TIMEOUT_MS || String(TOOL_TIMEOUT_MS * 4), 10);
+// audit_storefront does scrape + AI in one call — give it 240s by default.
+const AUDIT_TIMEOUT_MS = parseInt(process.env.AUDIT_TIMEOUT_MS || '240000', 10);
 
 function withTimeout(promise, label, timeoutMs = TOOL_TIMEOUT_MS) {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
       setTimeout(
-        () => reject(new Error(
-          `${label} timed out after ${timeoutMs / 1000}s. ` +
-          'For slower models, try calling scrape_page first and then ask_page with a specific question.'
-        )),
+        () => {
+          const base = `${label} timed out after ${timeoutMs / 1000}s. `;
+          const hint = label === 'audit_storefront'
+            ? 'audit_storefront timed out. For faster results, call scrape_page first (result will be cached), then call audit_storefront — the scrape step will be skipped.'
+            : base + 'For slower models, try calling scrape_page first and then ask_page with a specific question.';
+          reject(new Error(hint));
+        },
         timeoutMs
       )
     ),
@@ -208,6 +213,10 @@ const TOOLS = [
         mobile_screenshot: {
           type: 'boolean',
           description: 'Also capture a 390×844 (iPhone 14) mobile viewport screenshot. Returned as a second image. Default: false.',
+        },
+        include_pagespeed: {
+          type: 'boolean',
+          description: 'Fetch real Core Web Vitals from PageSpeed Insights API (adds ~5s). Default: false.',
         },
       },
       required: ['url'],
@@ -469,6 +478,52 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'scrape_pdp',
+    description:
+      'Scrape a product detail page (PDP) and return PDP-specific signals: ' +
+      'title, description fill rate, image count, review presence and count, ' +
+      'review schema (ld+json), spec table, cross-sell modules, CTA text, ' +
+      'primary and original prices, badge texts, and performance timing. ' +
+      'Use this instead of scrape_page when the target is a single product page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Full http/https URL of the PDP to scrape.',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'get_category_sample',
+    description:
+      'Sample a set of PDPs from a category page. Scrapes the category page (or uses cached data), ' +
+      'picks product URLs based on a sampling strategy, then calls scrape_pdp on each in parallel. ' +
+      'Useful for PDP spot-checks without manual URL selection. ' +
+      'Strategies: "spread" (low/mid/high price tiers), "random" (random selection), "top" (first N products).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Category page URL to sample PDPs from.',
+        },
+        count: {
+          type: 'number',
+          description: 'Number of PDPs to sample. Default: 2.',
+        },
+        strategy: {
+          type: 'string',
+          enum: ['spread', 'random', 'top'],
+          description: 'Sampling strategy. Default: "spread".',
+        },
+      },
+      required: ['url'],
+    },
+  },
 ];
 
 // ─── Shared output builder ───────────────────────────────────────────────────
@@ -582,13 +637,19 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
   return { ...output, audit: analysis, ...(resolvedPersona ? { persona: resolvedPersona } : {}) };
 }
 
-async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false, mobile_screenshot = false }) {
+async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false, mobile_screenshot = false, include_pagespeed = false }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
   const cookies = getSessionCookies(url);
   const result = await scrapePage(url, cookies, depth, max_products, mobile_screenshot);
   saveSessionCookies(url, result.cookies);
   setCachedPage(result.url, result);
+
+  let pagespeed = null;
+  if (include_pagespeed) {
+    pagespeed = await fetchPageSpeed(url).catch(() => null);
+  }
+  result.pagespeed = pagespeed;
 
   const content = [{ type: 'text', text: JSON.stringify(buildPageOutput(result), null, 2) }];
 
@@ -625,6 +686,69 @@ async function handleInteractWithPage({ url, actions, action, selector, value, i
   }
 
   return content;
+}
+
+async function handleScrapePdp({ url }) {
+  if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
+  const cookies = getSessionCookies(url);
+  const result = await withTimeout(scrapePdp(url, cookies), 'scrape_pdp');
+  return [{ type: 'text', text: JSON.stringify(result, null, 2) }];
+}
+
+async function handleGetCategorySample({ url, count = 2, strategy = 'spread' }) {
+  if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
+
+  // Use cached page data if available, otherwise scrape fresh
+  let pageData = getCachedPage(url);
+  if (!pageData) {
+    const cookies = getSessionCookies(url);
+    const result = await scrapePage(url, cookies, 1, 20);
+    saveSessionCookies(url, result.cookies);
+    setCachedPage(result.url, result);
+    pageData = result;
+  }
+
+  const products = (pageData.products || []).filter((p) => p.url || p.href);
+  if (products.length === 0) {
+    return [{ type: 'text', text: JSON.stringify({ sampledFrom: url, strategy, count, error: 'No products with URLs found on category page', pdps: [] }, null, 2) }];
+  }
+
+  // Select products based on strategy
+  let selected;
+  if (strategy === 'top') {
+    selected = products.slice(0, count);
+  } else if (strategy === 'random') {
+    const shuffled = [...products].sort(() => Math.random() - 0.5);
+    selected = shuffled.slice(0, count);
+  } else {
+    // spread: pick from low/mid/high price tiers
+    const withPrice = products.filter((p) => p.price);
+    if (withPrice.length >= 3) {
+      const sorted = [...withPrice].sort((a, b) => {
+        const pa = parseFloat(String(a.price).replace(/[^0-9.]/g, '')) || 0;
+        const pb = parseFloat(String(b.price).replace(/[^0-9.]/g, '')) || 0;
+        return pa - pb;
+      });
+      const lo = sorted[0];
+      const hi = sorted[sorted.length - 1];
+      const mid = sorted[Math.floor(sorted.length / 2)];
+      const tiers = [lo, mid, hi];
+      selected = tiers.slice(0, count);
+    } else {
+      selected = products.slice(0, count);
+    }
+  }
+
+  // Scrape PDPs in parallel
+  const cookies = getSessionCookies(url);
+  const pdps = await Promise.all(
+    selected.map((p) => {
+      const pdpUrl = p.url || p.href;
+      return scrapePdp(pdpUrl, cookies).catch((err) => ({ url: pdpUrl, error: err.message }));
+    })
+  );
+
+  return [{ type: 'text', text: JSON.stringify({ sampledFrom: url, strategy, count: pdps.length, pdps }, null, 2) }];
 }
 
 async function handleCompareStorefronts({ url_a, url_b, max_products = 10 }) {
@@ -1052,7 +1176,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     sendLog('info', `Tool called: ${name}`);
     switch (name) {
       case 'audit_storefront': {
-        const result = await withTimeout(handleAuditStorefront(args), 'audit_storefront');
+        const result = await withTimeout(handleAuditStorefront(args), 'audit_storefront', AUDIT_TIMEOUT_MS);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       case 'scrape_page':
@@ -1077,6 +1201,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         return { content: handleListEvals(args) };
       case 'get_logs':
         return { content: handleGetLogs(args) };
+      case 'scrape_pdp':
+        return { content: await handleScrapePdp(args) };
+      case 'get_category_sample':
+        return { content: await handleGetCategorySample(args) };
       default:
         return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
     }

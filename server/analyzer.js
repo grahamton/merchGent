@@ -1224,6 +1224,9 @@ export function computePageFingerprint(pageData) {
     funnelReadiness,
     topRisks: risks.slice(0, 4),
     recommendedPersonas: [...new Set(recommendedPersonas)].slice(0, 3),
+    contractPricingVisible: products.some((p) => p.b2bIndicators?.some((i) => /contract.pric|account.pric|your price/i.test(i))),
+    loginRequired: priceTransparency === 'login_required' || (products.filter((p) => !p.price).length / (products.length || 1) > 0.5 && interactables.some((i) => /sign.?in|log.?in|login for pric/i.test(i.text || i.label || i.placeholder || ''))),
+    accountPersonalization: !!(pageData.networkIntel?.dataLayer?.userSegment || pageData.findings?.some((f) => /welcome back|your account/i.test(f))),
   };
 }
 

@@ -168,7 +168,18 @@ const extractFacets = async (page) => {
       if (groups.length > 0) {
         groups.forEach((group) => {
           const heading = group.querySelector('h2, h3, h4, legend, [class*="title"], [class*="heading"], [class*="label"]');
-          const name = heading?.innerText?.trim() || 'Unknown Facet';
+          let name = heading?.innerText?.trim() || '';
+          if (!name) name = group.getAttribute('aria-label') || '';
+          if (!name) name = group.getAttribute('data-facet') || group.getAttribute('data-filter-name') || group.getAttribute('data-testid') || group.getAttribute('data-label') || '';
+          if (!name) {
+            const parent = group.parentElement;
+            if (parent) {
+              const sibling = parent.querySelector('h2, h3, h4, legend');
+              if (sibling && sibling !== group) name = sibling.innerText?.trim() || '';
+            }
+          }
+          if (!name) name = group.getAttribute('title') || '';
+          if (!name) name = 'Unknown Facet';
 
           const checkboxes = group.querySelectorAll('input[type="checkbox"], input[type="radio"]');
           const links = checkboxes.length === 0 ? group.querySelectorAll('a, button') : [];
@@ -767,10 +778,13 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
 
     let mobileScreenshotBuffer = null;
     if (mobileScreenshot) {
+      const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1';
+      await page.setUserAgent(mobileUA);
       await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 1500));
       mobileScreenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
       await page.setViewport({ width: 1920, height: 1080 }); // restore
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'); // restore
     }
     const performance = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];
@@ -841,5 +855,159 @@ export async function interactWithPage(url, actions, cookies = []) {
     return { url: page.url(), ...data, cookies: currentCookies, screenshotBuffer, actionsExecuted: actions.length };
   } finally {
     if (page) await page.close();
+  }
+}
+
+/**
+ * Scrape a product detail page (PDP).
+ * Returns PDP-specific signals: description fill rate, image count, reviews, spec table, cross-sell, etc.
+ *
+ * @param {string} url
+ * @param {Array}  cookies
+ */
+export async function scrapePdp(url, cookies = []) {
+  if (!isValidHttpUrl(url)) throw new Error('Invalid URL — must be http or https.');
+
+  let page;
+  try {
+    const browser = await BrowserManager.getBrowser();
+    page = await browser.newPage();
+    await page.setViewport({ width: 1920, height: 1080 });
+
+    if (cookies.length > 0) {
+      try { await page.setCookie(...cookies); } catch { /* non-fatal */ }
+    }
+
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await new Promise((r) => setTimeout(r, Math.random() * 500 + 1000));
+
+    const pdpData = await page.evaluate(() => {
+      const productArea = document.querySelector('[class*="product"], [class*="pdp"], main, #product') || document.body;
+
+      // title
+      const title = document.querySelector('h1')?.innerText?.trim() || '';
+
+      // description
+      const descEl = document.querySelector('[itemprop="description"]');
+      let description = descEl?.innerText?.trim() || '';
+      if (!description) {
+        const paragraphs = Array.from(productArea.querySelectorAll('p'))
+          .map((p) => p.innerText?.trim() || '')
+          .filter((t) => t.length > 50);
+        description = paragraphs.sort((a, b) => b.length - a.length)[0] || '';
+      }
+
+      const descriptionFillRate = (!description || description === title || description.length < 30) ? 0 : 1;
+
+      // imageCount
+      const imageCount = productArea.querySelectorAll('img').length;
+
+      // reviews
+      const hasReviews = !!(
+        document.querySelector('[itemprop="reviewRating"], [class*="star-rating"], #reviews, [class*="review"]')
+      );
+      let reviewCount = 0;
+      const reviewCountEl = document.querySelector('[itemprop="reviewCount"]');
+      if (reviewCountEl) {
+        reviewCount = parseInt(reviewCountEl.innerText?.replace(/[^0-9]/g, ''), 10) || 0;
+      } else {
+        const reviewText = document.body.innerText;
+        const m = reviewText.match(/\((\d[\d,]*)\s*reviews?\)/i);
+        if (m) reviewCount = parseInt(m[1].replace(/,/g, ''), 10) || 0;
+      }
+
+      // hasReviewSchema
+      let hasReviewSchema = false;
+      document.querySelectorAll('script[type="application/ld+json"]').forEach((s) => {
+        try {
+          const data = JSON.parse(s.textContent);
+          const check = (obj) => {
+            if (!obj) return;
+            if (obj.aggregateRating) { hasReviewSchema = true; return; }
+            if (Array.isArray(obj['@graph'])) obj['@graph'].forEach(check);
+          };
+          check(data);
+        } catch { /* ignore */ }
+      });
+
+      // specTable
+      const specEl = document.querySelector('table, dl, [class*="spec"], [class*="specification"]');
+      let specRowCount = 0;
+      if (specEl) {
+        specRowCount = specEl.querySelectorAll('tr, dt, li').length;
+      }
+      const specTable = { present: !!specEl, rowCount: specRowCount };
+
+      // crossSellModules
+      const crossSellModules = /you may also like|customers also bought|related products|frequently bought/i
+        .test(document.body.innerText);
+
+      // ctaText
+      const ctaSelectors = [
+        '[class*="add-to-cart"]',
+        '[class*="addtocart"]',
+        '[class*="add-to-bag"]',
+        'button',
+      ];
+      let ctaText = '';
+      for (const sel of ctaSelectors) {
+        const btns = Array.from(document.querySelectorAll(sel));
+        const match = btns.find((b) => /add to (cart|bag)|buy now/i.test(b.innerText || ''));
+        if (match) { ctaText = match.innerText?.trim() || ''; break; }
+      }
+
+      // price fields
+      let pricePrimary = '';
+      let priceOriginal = '';
+      const priceEl = document.querySelector('[itemprop="price"], [class*="price-current"], [class*="price__current"], [class*="sale-price"], [class*="our-price"]');
+      if (priceEl) pricePrimary = priceEl.innerText?.trim() || '';
+      const origEl = document.querySelector('[class*="price-was"], [class*="original-price"], [class*="price__original"], s[class*="price"], del[class*="price"]');
+      if (origEl) priceOriginal = origEl.innerText?.trim() || '';
+
+      // badges
+      const badgeEls = document.querySelectorAll('[class*="badge"], [class*="tag"], [class*="label"], [class*="flag"]');
+      const badges = Array.from(badgeEls)
+        .map((el) => el.innerText?.trim())
+        .filter((t) => t && t.length > 0 && t.length < 40)
+        .slice(0, 10);
+
+      return { title, description, descriptionFillRate, imageCount, hasReviews, reviewCount, hasReviewSchema, specTable, crossSellModules, ctaText, pricePrimary, priceOriginal, badges };
+    });
+
+    const performance = await page.evaluate(() => {
+      const nav = performance.getEntriesByType('navigation')[0];
+      const paint = performance.getEntriesByType('paint');
+      return {
+        domContentLoaded: Math.round(nav?.domContentLoadedEventEnd || 0),
+        loadComplete: Math.round(nav?.loadEventEnd || 0),
+        firstContentfulPaint: Math.round(paint.find((p) => p.name === 'first-contentful-paint')?.startTime || 0),
+        resourceCount: performance.getEntriesByType('resource').length,
+      };
+    });
+
+    return { url: page.url(), scrapedAt: new Date().toISOString(), ...pdpData, performance };
+  } finally {
+    if (page) await page.close();
+  }
+}
+
+export async function fetchPageSpeed(url) {
+  try {
+    const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance`;
+    const res = await fetch(apiUrl, { signal: AbortSignal.timeout(30000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const metrics = data?.lighthouseResult?.audits;
+    if (!metrics) return null;
+    return {
+      performanceScore: Math.round((data.lighthouseResult.categories?.performance?.score ?? 0) * 100),
+      lcp: metrics['largest-contentful-paint']?.numericValue ?? null,
+      cls: metrics['cumulative-layout-shift']?.numericValue ?? null,
+      fid: metrics['max-potential-fid']?.numericValue ?? null,
+      fcp: metrics['first-contentful-paint']?.numericValue ?? null,
+      ttfb: metrics['server-response-time']?.numericValue ?? null,
+    };
+  } catch {
+    return null;
   }
 }
