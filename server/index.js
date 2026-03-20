@@ -513,7 +513,7 @@ const TOOLS = [
         },
         count: {
           type: 'number',
-          description: 'Number of PDPs to sample. Default: 2.',
+          description: 'Number of PDPs to sample. Default: 2, max: 5.',
         },
         strategy: {
           type: 'string',
@@ -693,34 +693,36 @@ async function handleScrapePdp({ url }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
   const cookies = getSessionCookies(url);
   const result = await withTimeout(scrapePdp(url, cookies), 'scrape_pdp');
+  if (result.cookies) saveSessionCookies(result.url, result.cookies);
   return [{ type: 'text', text: JSON.stringify(result, null, 2) }];
 }
 
 async function handleGetCategorySample({ url, count = 2, strategy = 'spread' }) {
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
+  const safeCount = Math.min(Math.max(1, count || 2), 5); // clamp 1–5
 
   // Use cached page data if available, otherwise scrape fresh
   let pageData = getCachedPage(url);
   if (!pageData) {
     const cookies = getSessionCookies(url);
     const result = await withTimeout(scrapePage(url, cookies, 1, 20), 'get_category_sample');
-    saveSessionCookies(url, result.cookies);
+    saveSessionCookies(result.url, result.cookies);
     setCachedPage(result.url, result);
     pageData = result;
   }
 
   const products = (pageData.products || []).filter((p) => p.url || p.href);
   if (products.length === 0) {
-    return [{ type: 'text', text: JSON.stringify({ sampledFrom: url, strategy, count, error: 'No products with URLs found on category page', pdps: [] }, null, 2) }];
+    return [{ type: 'text', text: JSON.stringify({ sampledFrom: url, strategy, count: safeCount, error: 'No products with URLs found on category page', pdps: [] }, null, 2) }];
   }
 
   // Select products based on strategy
   let selected;
   if (strategy === 'top') {
-    selected = products.slice(0, count);
+    selected = products.slice(0, safeCount);
   } else if (strategy === 'random') {
     const shuffled = [...products].sort(() => Math.random() - 0.5);
-    selected = shuffled.slice(0, count);
+    selected = shuffled.slice(0, safeCount);
   } else {
     // spread: pick from low/mid/high price tiers
     const withPrice = products.filter((p) => p.price);
@@ -734,18 +736,20 @@ async function handleGetCategorySample({ url, count = 2, strategy = 'spread' }) 
       const hi = sorted[sorted.length - 1];
       const mid = sorted[Math.floor(sorted.length / 2)];
       const tiers = [lo, mid, hi];
-      selected = tiers.slice(0, count);
+      selected = tiers.slice(0, safeCount);
     } else {
-      selected = products.slice(0, count);
+      selected = products.slice(0, safeCount);
     }
   }
 
-  // Scrape PDPs in parallel
+  // Scrape PDPs in parallel (capped at safeCount — max 5)
   const cookies = getSessionCookies(url);
   const pdps = await Promise.all(
     selected.map((p) => {
       const pdpUrl = p.url || p.href;
-      return scrapePdp(pdpUrl, cookies).catch((err) => ({ url: pdpUrl, error: err.message }));
+      return scrapePdp(pdpUrl, cookies)
+        .then((r) => { if (r.cookies) saveSessionCookies(pdpUrl, r.cookies); return r; })
+        .catch((err) => ({ url: pdpUrl, error: err.message }));
     })
   );
 
