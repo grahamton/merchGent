@@ -30,7 +30,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint } from './analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
 
@@ -149,7 +149,8 @@ const TOOLS = [
       'Returns a diagnosis, 4-dimension audit matrix (Trust / Guidance / Persuasion / Friction), ' +
       'standards checks, and prioritized recommendations. Attaches a screenshot for visual analysis. ' +
       'Reuses cached page data if scrape_page was called on the same URL within the last 10 minutes — no re-scrape needed. ' +
-      'Session cookies are stored automatically — subsequent calls to the same domain reuse the session.',
+      'Session cookies are stored automatically — subsequent calls to the same domain reuse the session. ' +
+      'Set persona to "auto" (or omit it) to let PageFingerprint pick the best-fit persona automatically.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -167,8 +168,8 @@ const TOOLS = [
         },
         persona: {
           type: 'string',
-          enum: ['floor_walker', 'auditor', 'scout', 'b2b_auditor'],
-          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis, "b2b_auditor" evaluates the page for B2B procurement buyers (steps-to-PO, spec completeness, pricing transparency, self-serve viability).',
+          enum: ['auto', 'floor_walker', 'auditor', 'scout', 'b2b_auditor'],
+          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "auto" (or omit) uses PageFingerprint to automatically select the best persona for the page type and commerce mode. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis, "b2b_auditor" evaluates the page for B2B procurement buyers (steps-to-PO, spec completeness, pricing transparency, self-serve viability).',
         },
       },
       required: ['url'],
@@ -541,20 +542,33 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
 
   const memory = getDomain(url) ? loadMemory(getDomain(url)) : {};
 
+  // Resolve which persona to run:
+  //   - 'auto' or unspecified → use selectPersonas() with the page fingerprint
+  //   - explicit name         → use it directly
+  let resolvedPersona = persona;
+  if (!persona || persona === 'auto') {
+    const fingerprint = (() => { try { return computePageFingerprint(pageData); } catch { return null; } })();
+    const suggested = selectPersonas(fingerprint);
+    resolvedPersona = suggested[0] || null;
+    if (resolvedPersona) {
+      sendLog('info', `[audit] Auto-selected persona: ${resolvedPersona}`, { tool: 'audit_storefront' });
+    }
+  }
+
   // Resolve the canonical persona name used for cache keys (matches runRoundtable keys)
-  const personaKey = persona || 'default';
+  const personaKey = resolvedPersona || 'default';
 
   let analysis = getCachedPersona(url, personaKey);
   if (analysis) {
     sendLog('debug', `Using cached ${personaKey} persona result for ${url}`, { tool: 'audit_storefront' });
   } else {
-    if (persona === 'floor_walker') {
+    if (resolvedPersona === 'floor_walker') {
       analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer, memory);
-    } else if (persona === 'auditor') {
+    } else if (resolvedPersona === 'auditor') {
       analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer, memory);
-    } else if (persona === 'scout') {
+    } else if (resolvedPersona === 'scout') {
       analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer, memory);
-    } else if (persona === 'b2b_auditor') {
+    } else if (resolvedPersona === 'b2b_auditor') {
       analysis = await analyzeAsAuditorB2B(pageData, pageData.screenshotBuffer, memory);
     } else {
       analysis = await analyzePage(pageData, pageData.screenshotBuffer);
@@ -563,7 +577,7 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
   }
 
   const output = buildPageOutput(pageData);
-  return { ...output, audit: analysis, ...(persona ? { persona } : {}) };
+  return { ...output, audit: analysis, ...(resolvedPersona ? { persona: resolvedPersona } : {}) };
 }
 
 async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false, mobile_screenshot = false }) {

@@ -1209,6 +1209,61 @@ export function computePageFingerprint(pageData) {
   };
 }
 
+// ─── Smart persona selector ───────────────────────────────────────────────────
+
+/**
+ * Select which personas to run based on a pre-computed PageFingerprint.
+ *
+ * Rules (applied in order):
+ *   1. Start from fingerprint.recommendedPersonas (if non-empty), else full default set.
+ *   2. If commerceMode is B2B or contains 'b2b', always include 'b2b_auditor'.
+ *   3. If pageType is 'pdp', prefer 'floor_walker' and 'auditor' — drop 'scout' if needed to cap at 3.
+ *   4. If pageType is 'category' or 'search_results', always include 'scout'.
+ *   5. Cap at 3 personas.
+ *
+ * @param {object|null} fingerprint - PageFingerprint from computePageFingerprint(), or null
+ * @returns {string[]} Array of persona name strings (lowercase_underscore cache keys)
+ */
+export function selectPersonas(fingerprint) {
+  const DEFAULT_PERSONAS = ['floor_walker', 'auditor', 'scout'];
+
+  if (!fingerprint) return DEFAULT_PERSONAS;
+
+  // Start from recommended list, falling back to defaults
+  const base =
+    Array.isArray(fingerprint.recommendedPersonas) && fingerprint.recommendedPersonas.length > 0
+      ? [...fingerprint.recommendedPersonas]
+      : [...DEFAULT_PERSONAS];
+
+  const selected = new Set(base);
+
+  // Rule: B2B mode → always include b2b_auditor
+  const commerceMode = fingerprint.commerceMode;
+  const modeStr = typeof commerceMode === 'string' ? commerceMode : (commerceMode?.mode || '');
+  if (modeStr === 'B2B' || modeStr.toLowerCase().includes('b2b')) {
+    selected.add('b2b_auditor');
+  }
+
+  // Rule: category/search_results → always include scout
+  const pageType = fingerprint.pageType || '';
+  if (pageType === 'category' || pageType === 'search_results') {
+    selected.add('scout');
+  }
+
+  // Cap at 3: trim least-relevant entries
+  // For pdp, prefer floor_walker and auditor over scout
+  let result = [...selected];
+  if (result.length > 3) {
+    if (pageType === 'pdp') {
+      // Deprioritize scout on product detail pages
+      result = result.filter((p) => p !== 'scout');
+    }
+    result = result.slice(0, 3);
+  }
+
+  return result;
+}
+
 // ─── Price bucket validator ────────────────────────────────────────────────────
 
 /**
