@@ -1,7 +1,7 @@
 # Persona Architecture v2 — Design Document
 
-> Status: Research complete. Implementation not started.
-> Branch: main (docs only — no code changes)
+> Status: Fully implemented. All six phases shipped as of v1.8.0.
+> Branch: main
 
 ---
 

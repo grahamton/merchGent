@@ -4,7 +4,7 @@
 
 An MCP server that gives AI agents visual access to e-commerce storefronts for automated merchandising analysis. It bridges AI and real product pages through a stealth headless browser, a multi-provider AI abstraction layer, and a persona-based expert analysis system.
 
-**10 MCP tools**: `scrape_page`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`, `save_eval`, `list_evals`
+**11 MCP tools**: `scrape_page`, `interact_with_page`, `compare_storefronts`, `audit_storefront`, `ask_page`, `merch_roundtable`, `site_memory`, `clear_session`, `get_logs`, `save_eval`, `list_evals`
 
 **5 MCP prompts** (persona instructions): `floor-walker`, `auditor`, `auditor-b2b`, `scout`, `merch-roundtable`
 
@@ -69,6 +69,7 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files |
 | `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms (default: 120000) |
 | `OPENAI_VISION` | No | Set `"true"` to enable screenshots for OpenAI-compatible models |
+| `MERCH_LOG_FILE` | No | Path to NDJSON log file. Every `sendLog` call appends a structured line. |
 
 Provider is auto-detected from available API keys: Anthropic → Gemini → OpenAI. Scraping tools (`scrape_page`, `interact_with_page`) work without any API key.
 
@@ -133,7 +134,7 @@ Every `scrapePage` call returns:
 - `performance`, `structure`, `findings`, `interactables`, `dataLayers`
 
 ### Personas
-Each persona returns a typed JSON schema validated against a strict schema before use. Personas are independent — `merch_roundtable` runs all three in sequence then passes all results to a moderator that synthesizes consensus and disagreements. Each persona result is streamed as a `notifications/message` as it completes (type: `roundtable_persona_result`) so clients don't have to wait for all four AI calls.
+Each persona returns a typed JSON schema validated against a strict schema before use. All five personas share a common base schema: `score` (0–100), `severity` (critical/major/minor), `findings[]`, `uniqueInsight`. `merch_roundtable` runs Floor Walker, Auditor, and Scout in **parallel** via `Promise.all`, then awaits the moderator synchronously — the complete `debate` field (consensus, disagreements, finalRecommendations) is guaranteed in the tool response. Each persona result is streamed as a `notifications/message` as it completes (type: `roundtable_persona_result`). `audit_storefront` supports `persona: "auto"` for fingerprint-driven selection.
 
 ### Site memory
 Auto-populated on every `scrapePage` call (`learnFromScrape()`). Loaded and injected into all persona analyses for cross-session learning. Manual notes supported via the `site_memory` tool. A normalized snapshot is also stored on every scrape and diffed against the previous one — the `changes` field in scrape output is driven by this.
