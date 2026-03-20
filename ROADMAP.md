@@ -1,7 +1,33 @@
 # merch-connector Roadmap
 
 Items are grouped by theme. Each has a short description, why it matters, and rough effort.
-Reference the design doc at `docs/persona-architecture-v2.md` for full specs on Persona Architecture v2 items.
+
+---
+
+## Strategic Direction
+
+merch-connector's real moat is the **analysis engine** — 5 expert personas, PageFingerprint, site memory, convergence scoring, eval tracking — not the Puppeteer scraper. Firecrawl and similar tools are better at reliable data acquisition.
+
+The v2.x direction:
+1. **Decouple analysis from scraping** — add `analyze_products` tool that accepts raw JSON from any source (Firecrawl, APIs, CSV exports, internal catalogs), no browser required
+2. **Specialized agent teams** — new personas for inventory/vendor management and pricing intelligence, composable by domain-focused agents
+3. **Claude skill packaging** — zero-infra `/merch-audit <url>` skill wrapping Firecrawl + analysis for one-off audits
+4. **A2A integration** — document the pattern for orchestrators that want to delegate merchandising analysis to merch-connector as a specialist subagent
+
+```
+Firecrawl (or any data source)
+    ↓ structured product JSON
+merch-connector (analysis layer)
+    ├── PersonaEngine (5+ personas, typed schemas)
+    ├── PageFingerprint (zero-AI classification)
+    ├── SiteMemory (cross-session learning)
+    └── EvalStore (convergence tracking)
+         ↓ typed insights
+Specialized agents:
+    ├── Vendor Management Agent
+    ├── Pricing Intelligence Agent
+    └── Conversion/CRO Agent
+```
 
 ---
 
@@ -9,201 +35,115 @@ Reference the design doc at `docs/persona-architecture-v2.md` for full specs on 
 
 | # | Item | Shipped |
 |---|------|---------|
-| #2 | Badge & Trust Signal Inventory (per-product: star rating, review count, sale badge, best seller, stock warning, sustainability) | v1.5.0 |
-| #3 | Sort Order Extractor (`sortOptions`: type, current, all options) | v1.5.0 |
-| #4 | Mobile Viewport Snapshot (`mobile_screenshot: true` on `scrape_page`) | v1.5.0 |
-| #5 | Price Bucket Validator | v1.2.0 |
-| #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) + `b2bMode` (B2B/B2C/Hybrid) as top-level scrape fields | v1.5.0 |
-| #7 | B2B Audit Mode (`b2b_auditor` persona) | v1.2.0 |
-| #8 | Persona Memory Integration (site notes injected into all persona contexts) | v1.2.0 |
-| #9 | Roundtable Streaming Output — each persona result emitted via `notifications/message` as it completes | v1.5.0 |
-| #12 | Remove `thinking` param from `askAnthropic` | v1.3.0 |
-| #13 | B2B auditor validation — `--b2b` smoke flag targets Insight.com with `b2b_auditor` persona | v1.5.0 |
-| #14 | Competitor Comparison Tool — `compare_storefronts`: product delta, facet gaps, trust signal coverage, sort/B2B/perf diff | v1.5.0 |
-| #15 | Change Detection — normalized snapshot on every scrape, `changes` field returned with new/removed products, price moves, facet/sort diffs | v1.5.0 |
-| #16 | Multi-Step `interact_with_page` Flows — `actions` array executes search/click steps sequentially | v1.5.0 |
-| #17 | Network Intelligence Layer — XHR/fetch interception, 35 platform fingerprints (Algolia, Elasticsearch, SFCC, Shopify, etc.), direct API extraction, deep dataLayer/digitalData parsing | v1.6.0 |
-| — | OpenAI-compatible provider (LM Studio, Ollama, Groq, etc.) | v1.3.0 |
+| PA-1 | PageFingerprint — `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]`, `recommendedPersonas[]` | v1.7.0 |
+| PA-2 | Fingerprint context injection — `## Page Intelligence (pre-scan)` block prepended to every persona prompt | v1.8.0 |
+| PA-3 | Synchronous moderator — `debate` field fully populated before tool returns; `moderatorPending` removed | v1.7.0 |
+| PA-4 | Unified base schema — all personas return `score`, `severity`, `findings[]`, `uniqueInsight` | v1.8.0 |
+| PA-5 | Smart persona auto-selection — `audit_storefront` accepts `persona: "auto"` | v1.8.0 |
+| PA-6 | Conversion Architect persona — CRO/funnel specialist with funnel map, friction inventory, A/B hypotheses | v1.8.0 |
+| #1 | Category Contamination Detector — `contamination: { detected, suspects[] }` in scrape output | v1.7.0 |
+| #2 | Badge & Trust Signal Inventory — per-product: star rating, review count, sale badge, best seller, stock warning, sustainability | v1.5.0 |
+| #3 | Sort Order Extractor — `sortOptions`: type, current, all options | v1.5.0 |
+| #4 | Mobile Viewport Snapshot — `mobile_screenshot: true` on `scrape_page` | v1.5.0 |
+| #6 | B2B/B2C Conflict Scorer — `b2bConflictScore` (0–100) + `b2bMode` (B2B/B2C/Hybrid) | v1.5.0 |
+| #7 | B2B Audit Mode — `b2b_auditor` persona | v1.2.0 |
+| #14 | Competitor Comparison Tool — `compare_storefronts` | v1.5.0 |
+| #15 | Change Detection — normalized snapshot, `changes` diff on repeat visits | v1.5.0 |
+| #16 | Multi-step `interact_with_page` flows — `actions` array | v1.5.0 |
+| #17 | Network Intelligence Layer — XHR/fetch interception, 35 platform fingerprints, dataLayer parsing | v1.6.0 |
+| EV-1 | Eval store — `save_eval` + `list_evals`; JSONL index; convergence score; dedup hashing | v1.6.3–v1.6.4 |
+| EV-2 | `get_logs` tool + circular buffer (500 entries, level + tool filters) | v1.7.0 |
+| EV-3 | File logging — `MERCH_LOG_FILE` env var for NDJSON file output | v1.7.0 |
+| — | Multi-provider AI — Anthropic, Gemini, OpenAI-compatible | v1.3.0–v1.5.5 |
 | — | Page data cache (10-min TTL, shared across ask/audit/roundtable) | v1.4.0 |
-| — | Persona result cache — roundtable reuses prior `audit_storefront` persona results | v1.6.0 |
-| — | Server-side timeout wrapper with actionable fallback message (`TOOL_TIMEOUT_MS`) | v1.4.0 |
-| — | Unified session store (cookies + page cache + persona cache in one domain Map) | v1.4.0 |
-| — | Roundtable personas run in parallel via `Promise.all` (~30s vs. ~90s sequential) | v1.6.2 |
-| — | Async moderator — tool returns after personas; moderator synthesis arrives via notification | v1.6.2 |
-| — | Persona results written to cache immediately as each resolves (retry-safe) | v1.6.2 |
+| — | Persona result cache — roundtable reuses prior `audit_storefront` results | v1.6.0 |
+| — | Parallel persona execution via `Promise.all` (~30s vs. ~90s sequential) | v1.6.2 |
 | — | GitHub Actions dual publish (npmjs.org + GitHub Packages) on tag push | v1.6.1 |
-| — | All three AI SDKs promoted to regular dependencies (no manual install) | v1.5.5 |
-| — | Eval store — `save_eval` + `list_evals` tools; two-tier JSONL storage; convergence score; dedup hashing; all 5 persona types supported | v1.6.3–v1.6.4 |
 
 ---
 
-## 🧠 Persona Architecture v2
+## 🧩 Analysis Layer Expansion
 
-> Full spec: `docs/persona-architecture-v2.md`
-> All six phases are non-breaking and can ship independently.
+### analyze_products — Data-source-agnostic analysis
+**What:** New `analyze_products` tool that accepts `{ products[], facets[], url?, domain? }` JSON and runs the full persona analysis engine without a browser. Accepts data from Firecrawl, direct API responses, CSV exports, or internal catalog systems.
 
-### PA-1 — PageFingerprint (pre-scan layer)
-**What:** A fast, zero-AI pre-scan step that produces a structured `PageFingerprint` from existing scrape data before any persona runs. Fields: `pageType`, `platform`, `commerceMode`, `priceTransparency`, `trustSignalInventory`, `discoveryQuality`, `funnelReadiness`, `topRisks[]` (up to 4 pre-identified structural issues), `recommendedPersonas[]`.
+**Why:** Decouples the analysis engine from the Puppeteer scraper. Opens up non-web use cases. Enables the Firecrawl → merch-connector pipeline where Firecrawl handles data acquisition and merch-connector handles intelligence. Makes merch-connector installable without browser dependencies for analysis-only workflows.
 
-**Why:** Right now each persona independently re-interprets the same raw scrape data — redundant reasoning, higher token counts, inconsistent baseline. The fingerprint computes these facts once and gives personas shared ground truth.
+**How:** New handler in `index.js` that skips `scrapePage()`, builds a `pageData` object from the provided JSON, runs it through `computePageFingerprint()` + persona analysis pipeline. Reuses existing `runAnalysis()` and all persona functions unchanged.
 
-**How:** Pure synchronous JS function `computePageFingerprint(pageData)` in `analyzer.js`. No AI call. Reads `b2bMode`, `facets[]`, `products[].trustSignals`, `networkIntel`, `performance`, `interactables` from the existing scrape output. Include `fingerprint` in `buildPageOutput` so `scrape_page` callers see it too.
-
-**Effort:** Medium — ~100 lines in `analyzer.js` + wiring in `index.js`
+**Effort:** Medium — ~80 lines in `index.js`, no changes to analyzer or scraper
 
 ---
 
-### PA-2 — Fingerprint context injection
-**What:** Prepend the `PageFingerprint` to every persona prompt as shared baseline context. Include the pre-identified `topRisks` and the instruction: *"These structural issues are already known. Focus your analysis on what ONLY your lens can reveal beyond this baseline."*
+### pricing_intel persona — Pricing intelligence specialist
+**What:** New persona focused on pricing strategy. Returns: `pricingStrategy` (positioning assessment), `priceDistribution` (bucket analysis), `competitiveSignals` (value vs. premium positioning), `promotionPatterns` (sale cadence, discount depth), `anchoringIssues`, `topConcern`, `score`, `severity`, `findings[]`, `uniqueInsight`.
 
-**Why:** Without this, Floor Walker, Auditor, and Scout all spend tokens re-detecting that there are no ratings, or that FCP is 4200ms. With it, each persona focuses on unique insight. Faster responses, better signal-to-noise.
+**Why:** The existing Auditor covers pricing as one dimension of four. A dedicated pricing persona gives pricing teams actionable intelligence — promo erosion, anchor price problems, competitive misalignment — at the depth they actually need.
 
-**How:** Update `buildPersonaContext(pageData, memory, fingerprint)` in `analyzer.js` to accept optional `fingerprint`. Pass it from `handleRoundtable` and `handleAuditStorefront`.
+**How:** New `server/prompts/pricing-intel.md`, `PRICING_INTEL_SCHEMA` constant, `analyzeAsPricingIntel()` function in `analyzer.js`. Register as `audit_storefront` persona option.
 
-**Effort:** Small — ~30 lines change to `analyzer.js` + both handlers
-
----
-
-### PA-3 — Synchronous moderator
-**What:** Move the moderator from a detached async call to a synchronous `await` at the end of `runRoundtable`. The `debate` field is populated before the tool returns. `moderatorPending` is removed.
-
-**Why:** Currently the moderator result arrives via `notifications/message` *after* the tool call completes. MCP clients that don't implement notification handling miss the synthesis entirely — the most valuable output is the most fragile. A complete, self-contained result in one response is strictly better.
-
-**How:** Replace the detached `.then()` chain in `runRoundtable` with `await callWithPersona(...)`. Total wall clock increases ~8-10s (now ~22s instead of ~18s) in exchange for complete results every time.
-
-**Effort:** Small — ~20 line change in `analyzer.js`
+**Effort:** Medium — follows the PA-6 Conversion Architect pattern exactly
 
 ---
 
-### PA-4 — Unified base schema
-**What:** Add a common base shape to all persona schemas: `severity` (`critical` | `major` | `minor`), `findings[]` (`dimension`, `status`, `observation`, `impact`), `uniqueInsight`, `score` (0–100 health from this persona's lens). Each persona retains its unique fields alongside the base.
+### vendor_mgmt persona — Vendor/inventory specialist
+**What:** New persona focused on inventory and assortment health. Returns: `stockHealthScore`, `outOfStockRate`, `vendorConcentration` (brand/vendor diversity), `assortmentGaps` (missing SKU types, size/color gaps), `reorderSignals` (stock warning prevalence), `topConcern`, `score`, `severity`, `findings[]`, `uniqueInsight`.
 
-**Why:** Currently each persona returns a completely different shape, making cross-persona reasoning require persona-specific parsing. A unified base lets the moderator, eval system, and any external consumer reason across personas without special-casing each one. Enables richer eval metrics (score trends, dimension-level comparison).
+**Why:** Vendor management teams care about OOS rates, vendor over-concentration, and assortment holes — none of which the current personas surface explicitly. A dedicated lens gives inventory managers actionable data without having to interpret a CRO persona.
 
-**How:** Update each schema constant in `analyzer.js`. Update each persona prompt file to instruct the model to populate the new fields. Update `ROUNDTABLE_SCHEMA.disagreements[]` from hardwired `floorWalkerPosition` / `auditorPosition` / `scoutPosition` to `positions: { [personaId]: string }`.
+**How:** New `server/prompts/vendor-mgmt.md`, `VENDOR_MGMT_SCHEMA` constant, `analyzeAsVendorMgmt()` in `analyzer.js`. Register as `audit_storefront` persona option. Update `selectPersonas()` to consider it for pages with high OOS indicators.
 
-**Effort:** Medium — schema changes + prompt file updates for 4 personas
-
----
-
-### PA-5 — Smart persona selection ✅ v1.8.0
-**What:** `audit_storefront` accepts `persona: "auto"` — `selectPersonas(fingerprint)` picks the best-fit persona based on `pageType`, `commerceMode`, and `fingerprint.recommendedPersonas`. B2B pages get `b2b_auditor`; category/search pages always include `scout`; PDP pages trim `scout` in favor of `floor_walker` + `auditor`.
-
-**Note:** Smart selection is implemented for `audit_storefront` (single-persona mode). `merch_roundtable` always runs all three core personas — roundtable smart selection is a future enhancement.
+**Effort:** Medium — same pattern as above
 
 ---
 
-### PA-6 — Conversion Architect persona ✅ v1.8.0
-**What:** Fifth persona — CRO/funnel specialist. Fields: `funnelMap`, `frictionInventory`, `topDropOffRisk`, `quickWins` (A/B hypotheses with lift ranges), `topConcern`, `summary`, `score`, `severity`, `findings`, `uniqueInsight`.
+## 🔌 Distribution & Integration
 
-**Available via:** `audit_storefront` with `persona: "conversion_architect"`. Not included in `merch_roundtable` (roundtable runs floor_walker, auditor, scout only).
+### Claude Skill — `/merch-audit`
+**What:** A Claude skill file that wraps Firecrawl (for data) + merch-connector (for analysis) into a zero-infrastructure audit flow. User runs `/merch-audit https://example.com/category` in any Claude session.
 
----
+**Why:** Very low barrier to discovery. No MCP server to install. Good for one-off audits, demos, and users who don't need persistent memory or eval tracking.
 
-## 🔬 Scraper Intelligence
+**Trade-offs:** Stateless — no site memory, no eval persistence. The MCP server remains the power path for ongoing monitoring.
 
-### #1 — Category Contamination Detector
-**What:** During scraping, compare each product's title/description against the page category. Flag products that clearly don't belong (e.g., a RAM stick on a laptop page). Return as `contamination: { detected: true, suspects: [...] }` in scrape output.
-
-**Why:** Contaminated categories directly hurt conversion — caught this live on Insight.com (Crucial RAM appearing in laptop results). None of the personas currently detects this explicitly.
-
-**How:** Heuristic keyword matching against URL category + page title in `extractPageData()`. Low false-positive threshold — only flag clear mismatches.
-
-**Effort:** Medium — `scraper.js` addition, ~50 lines
-
----
-
-## 📊 Eval & Observability
-
-### EV-1 — LLM-as-judge scoring
-**What:** Optional post-save step that runs a single AI call against a saved eval run and populates the `judgeScore` field in the compact JSONL record. Scores on a 5-dimension rubric: accuracy, completeness, actionability, evidence quality, consensus quality.
-
-**Why:** The convergence score measures inter-persona *agreement* but not output *quality*. An LLM judge provides an independent quality signal — useful for tracking whether prompt changes improved or degraded analysis quality over time.
-
-**How:** Add `run_judge: boolean` option to `save_eval`. If true, fire a single AI call with the full persona outputs + a scoring rubric. Write result back to both the compact record and the full run JSON. Use a lightweight model (haiku/flash) to keep cost low.
-
-**Effort:** Medium — `eval-store.js` + `analyzer.js` judge function, ~80 lines
-
----
-
-### EV-2 — `get_logs` tool + circular buffer
-**What:** New `get_logs` MCP tool that returns the last N server log entries from an in-memory circular buffer. Supports `level` filter (`debug` | `info` | `error`) and `tool` filter.
-
-**Why:** Server log notifications from `notifications/message` are sandwiched in the MCP Inspector UI with no way to copy them all. The `get_logs` tool lets any client retrieve recent logs programmatically — no separate terminal needed.
-
-**How:** Add a 500-entry circular buffer in `index.js`. Push every `sendLog()` call to the buffer. Register `get_logs` tool with `level`, `tool`, and `limit` params.
-
-**Effort:** Small — ~60 lines in `index.js`
-
----
-
-### EV-3 — File logging
-**What:** Optional file logging via `MERCH_LOG_FILE` env var. Appends structured NDJSON to the specified path. Useful for capturing full roundtable notification streams that can't be copied from the Inspector UI.
-
-**Why:** Notifications disappear. When a roundtable produces 7 notifications (3 personas + moderator + progress ticks), there's currently no way to capture them all reliably outside the Inspector.
-
-**How:** In `sendLog()`, if `MERCH_LOG_FILE` is set, append `JSON.stringify({ ts, level, ...data })\n` to the file.
-
-**Effort:** Small — ~20 lines in `index.js`
-
----
-
-## 🔌 Integrations
-
-### #10 — LogRocket Session Link
-**What:** Optional `logrocket_session_url` param on `audit_storefront` and `ask_page`. Fetch session replay data (clicks, rage clicks, network errors) and include it in analysis context.
-
-**Why:** Pairing real user behavior data with page structure analysis is the original vision. Gives personas evidence from actual users, not just inferred problems.
-
-**How:** New `server/logrocket.js`. Fetch + parse session events from LogRocket API. Append as "User Behavior" section in persona context.
-
-**Effort:** Hard — LogRocket API integration + event shape parsing
-
----
-
-### #11 — Coveo Boost/Bury Actions
-**What:** New `coveo_action` tool that translates audit recommendations into Coveo Query Pipeline rules: boost high-trust products, bury contaminated results, configure recommended facets.
-
-**Why:** Analysis without action is a report. This closes the loop — diagnosis leads directly to a configuration change in the commerce platform.
-
-**How:** New `server/coveo.js`. Map audit output fields to Coveo REST API calls. New MCP tool registration.
-
-**Effort:** Hard — requires Coveo org + API credentials + recommendation-to-rule mapping
+**Effort:** Small — skill file only, no server changes
 
 ---
 
 ### INT-3 — MCP Registry Submissions
-**What:** Submit `merch-connector` to public MCP server registries: `mcp.so`, Glama, and the official Anthropic MCP servers list.
+**What:** Submit to `mcp.so`, Glama, and the official Anthropic MCP servers list.
 
-**Why:** Discovery. The package is on npm and GitHub Packages but not findable from the places developers look for MCP servers.
+**Why:** Discovery. The package is on npm but not findable from where developers look for MCP servers.
 
-**When:** After more real-world testing and at least one of the PA-v2 phases shipped (fingerprint or synchronous moderator).
+**Effort:** Small — submission forms, no code
 
-**Effort:** Small — write submission forms, no code
+---
+
+## 📊 Eval Quality
+
+### EV-1 — LLM-as-judge scoring
+**What:** Optional `run_judge: true` flag on `save_eval`. Fires a single lightweight AI call (haiku/flash) against the saved run and populates `judgeScore` on a 5-dimension rubric: accuracy, completeness, actionability, evidence quality, consensus quality.
+
+**Why:** Convergence score measures inter-persona *agreement*; judge score measures output *quality*. Useful for tracking whether prompt changes improved analysis over time.
+
+**Effort:** Medium — `eval-store.js` + new judge function in `analyzer.js`
 
 ---
 
 ## 🧹 Tech Debt
 
-### TD-1 — Remove `moderatorPending` after PA-3
-Once the synchronous moderator (PA-3) ships, remove `moderatorPending: true` from `runRoundtable` return shape and from any client-side checks. Update CLAUDE.md architecture notes.
-
-**Effort:** Tiny — cleanup pass
-
----
-
 ### TD-2 — Protocol test coverage for base schema fields
-Once PA-4 (unified base schema) ships, add protocol test assertions that verify `severity`, `findings[]`, `score`, and `uniqueInsight` are present in roundtable persona outputs. Currently `protocol.js` only checks tool registration and handshake.
+Add `protocol.js` assertions for `score`, `severity`, `findings[]`, `uniqueInsight` in persona outputs.
 
-**Effort:** Small — `test/protocol.js` additions
+**Effort:** Small
 
 ---
 
 ### TD-3 — `prepublishOnly` check for new server files
-`package.json` `prepublishOnly` script only syntax-checks 4 files. Add `eval-store.js` and `network-intel.js`.
+Add `eval-store.js` and `network-intel.js` to the syntax check in `package.json`.
 
-**Effort:** Tiny — one line in `package.json`
+**Effort:** Tiny
 
 ---
 
-*Last updated: 2026-03-19. Reflects v1.6.4 shipped state.*
+*Last updated: 2026-03-19. Reflects v1.8.0 shipped state.*
