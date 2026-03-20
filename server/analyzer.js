@@ -289,7 +289,7 @@ function detectProvider() {
 const FLOOR_WALKER_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['firstImpression', 'scan', 'hunt', 'gutTrust', 'topConcern', 'summary'],
+  required: ['firstImpression', 'scan', 'hunt', 'gutTrust', 'topConcern', 'summary', 'score', 'severity', 'findings', 'uniqueInsight'],
   properties: {
     firstImpression: { type: 'string' },
     scan:            { type: 'string' },
@@ -297,13 +297,17 @@ const FLOOR_WALKER_SCHEMA = {
     gutTrust:        { type: 'string' },
     topConcern:      { type: 'string' },
     summary:         { type: 'string' },
+    score:           { type: 'integer', minimum: 0, maximum: 100, description: 'Overall page score 0–100 from this persona\'s perspective' },
+    severity:        { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency of the top concern: 5=emergency blocking conversion, 1=minor polish' },
+    findings:        { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5, description: 'Concrete specific observations (not recommendations) — things observed, measured, or felt' },
+    uniqueInsight:   { type: 'string', description: 'The one observation only this persona would make that the others likely missed' },
   },
 };
 
 const AUDITOR_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['siteMode', 'matrix', 'standardsChecks', 'topConcern', 'dataPoint', 'summary'],
+  required: ['siteMode', 'matrix', 'standardsChecks', 'topConcern', 'dataPoint', 'summary', 'score', 'severity', 'findings', 'uniqueInsight'],
   properties: {
     siteMode: { type: 'string', enum: ['B2B', 'B2C', 'Hybrid'] },
     matrix: {
@@ -330,16 +334,20 @@ const AUDITOR_SCHEMA = {
         },
       },
     },
-    topConcern: { type: 'string' },
-    dataPoint:  { type: 'string' },
-    summary:    { type: 'string' },
+    topConcern:    { type: 'string' },
+    dataPoint:     { type: 'string' },
+    summary:       { type: 'string' },
+    score:         { type: 'integer', minimum: 0, maximum: 100, description: 'Overall page score 0–100 from this persona\'s perspective' },
+    severity:      { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency of the top concern: 5=emergency blocking conversion, 1=minor polish' },
+    findings:      { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5, description: 'Concrete specific observations (not recommendations) — things observed, measured, or felt' },
+    uniqueInsight: { type: 'string', description: 'The one observation only this persona would make that the others likely missed' },
   },
 };
 
 const SCOUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['categoryFitness', 'assortmentStrategy', 'discoveryTools', 'competitiveGaps', 'strategicRead', 'topConcern', 'summary'],
+  required: ['categoryFitness', 'assortmentStrategy', 'discoveryTools', 'competitiveGaps', 'strategicRead', 'topConcern', 'summary', 'score', 'severity', 'findings', 'uniqueInsight'],
   properties: {
     categoryFitness:    { type: 'string' },
     assortmentStrategy: { type: 'string' },
@@ -348,6 +356,10 @@ const SCOUT_SCHEMA = {
     strategicRead:      { type: 'string' },
     topConcern:         { type: 'string' },
     summary:            { type: 'string' },
+    score:              { type: 'integer', minimum: 0, maximum: 100, description: 'Overall page score 0–100 from this persona\'s perspective' },
+    severity:           { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency of the top concern: 5=emergency blocking conversion, 1=minor polish' },
+    findings:           { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5, description: 'Concrete specific observations (not recommendations) — things observed, measured, or felt' },
+    uniqueInsight:      { type: 'string', description: 'The one observation only this persona would make that the others likely missed' },
   },
 };
 
@@ -365,7 +377,7 @@ const B2B_AUDITOR_DIMENSION = {
 const B2B_AUDITOR_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['matrix', 'procurementFrictionScore', 'topConcern', 'selfServeViability', 'summary'],
+  required: ['matrix', 'procurementFrictionScore', 'topConcern', 'selfServeViability', 'summary', 'score', 'severity', 'findings', 'uniqueInsight'],
   properties: {
     matrix: {
       type: 'object',
@@ -379,7 +391,7 @@ const B2B_AUDITOR_SCHEMA = {
       },
     },
     procurementFrictionScore: { type: 'number' },
-    topConcern: { type: 'string' },
+    topConcern:    { type: 'string' },
     selfServeViability: {
       type: 'object',
       additionalProperties: false,
@@ -389,7 +401,11 @@ const B2B_AUDITOR_SCHEMA = {
         evidence: { type: 'string' },
       },
     },
-    summary: { type: 'string' },
+    summary:       { type: 'string' },
+    score:         { type: 'integer', minimum: 0, maximum: 100, description: 'Overall page score 0–100 from this persona\'s perspective' },
+    severity:      { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency of the top concern: 5=emergency blocking conversion, 1=minor polish' },
+    findings:      { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5, description: 'Concrete specific observations (not recommendations) — things observed, measured, or felt' },
+    uniqueInsight: { type: 'string', description: 'The one observation only this persona would make that the others likely missed' },
   },
 };
 
@@ -671,7 +687,7 @@ function buildMemoryBlock(memory) {
 /**
  * Build a rich context block for persona analysis (includes more detail than the audit context).
  */
-function buildPersonaContext(pageData, memory = {}) {
+function buildPageDataBlock(pageData, memory = {}) {
   const withDesc = pageData.products.filter((p) => p.description && p.description.length > 20).length;
 
   const facetSummary = (pageData.facets || []).length > 0
@@ -729,12 +745,72 @@ ${buildMemoryBlock(memory)}`.trim();
 }
 
 /**
+ * Format a pre-computed PageFingerprint into a concise orientation block.
+ * Prepended to each persona's user-message prompt so the AI has structural
+ * context before reading the full product data.
+ *
+ * @param {object|null} fingerprint - PageFingerprint from computePageFingerprint()
+ * @param {object}      [memory]    - Site memory object (optional)
+ * @returns {string} Formatted context block, or empty string if fingerprint is absent
+ */
+export function buildPersonaContext(fingerprint, memory = {}) {
+  if (!fingerprint) return '';
+
+  const lines = ['## Page Intelligence (pre-scan)'];
+
+  if (fingerprint.pageType)          lines.push(`- Page type: ${fingerprint.pageType}`);
+  if (fingerprint.platform)          lines.push(`- Platform: ${fingerprint.platform}`);
+  if (fingerprint.commerceMode) {
+    const cm = fingerprint.commerceMode;
+    const modeStr = cm.mode || cm;
+    const conflictStr = typeof cm.conflictScore === 'number' ? ` (conflict score: ${cm.conflictScore}/100)` : '';
+    lines.push(`- Commerce mode: ${modeStr}${conflictStr}`);
+  }
+  if (fingerprint.priceTransparency)  lines.push(`- Price transparency: ${fingerprint.priceTransparency}`);
+  if (fingerprint.trustSignalInventory) {
+    const ts = fingerprint.trustSignalInventory;
+    const present = Object.entries(ts)
+      .filter(([k, v]) => k !== 'totalSignalTypes' && v === true)
+      .map(([k]) => k.replace(/Present$/, '').replace(/([A-Z])/g, ' $1').toLowerCase().trim());
+    const signalStr = present.length > 0 ? present.join(', ') : 'none';
+    lines.push(`- Trust signal inventory: ${ts.totalSignalTypes ?? 0} type(s) — ${signalStr}`);
+  }
+  if (fingerprint.discoveryQuality) {
+    const dq = fingerprint.discoveryQuality;
+    const parts = [];
+    if (typeof dq.facetCount === 'number')      parts.push(`${dq.facetCount} facets`);
+    if (typeof dq.sortOptionCount === 'number') parts.push(`${dq.sortOptionCount} sort options`);
+    if (dq.hasSearch)                           parts.push('search present');
+    lines.push(`- Discovery quality: ${parts.join(', ') || 'unknown'}`);
+  }
+  if (fingerprint.funnelReadiness)    lines.push(`- Funnel readiness: ${fingerprint.funnelReadiness}`);
+  if (fingerprint.topRisks?.length)   lines.push(`- Top risks: ${fingerprint.topRisks.join(', ')}`);
+  if (fingerprint.recommendedPersonas?.length) {
+    lines.push(`- Recommended personas: ${fingerprint.recommendedPersonas.join(', ')}`);
+  }
+
+  const block = lines.join('\n');
+
+  // Append brief site memory section if notes or summary are present
+  const memLines = [];
+  if (memory?.notes?.length)   memLines.push(`Notes: ${memory.notes.slice(0, 3).map((n) => `"${n}"`).join('; ')}`);
+  if (memory?.summary?.trim()) memLines.push(`Summary: ${memory.summary.trim()}`);
+  const memBlock = memLines.length > 0
+    ? `\n\n## Site Memory\n${memLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
+  return `${block}${memBlock}`;
+}
+
+/**
  * Analyze a page as the Floor Walker persona.
  * Returns a shopper-experience focused assessment.
  */
 export async function analyzeAsFloorWalker(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('floor-walker.md');
-  const contextText = buildPersonaContext(pageData, memory);
+  const fingerprintContext = buildPersonaContext(pageData.fingerprint, memory);
+  const pageDataContext = buildPageDataBlock(pageData, memory);
+  const contextText = fingerprintContext ? `${fingerprintContext}\n\n${pageDataContext}` : pageDataContext;
   return callWithPersona(systemPrompt, contextText, screenshot, FLOOR_WALKER_SCHEMA, 'floor_walker_result');
 }
 
@@ -744,7 +820,9 @@ export async function analyzeAsFloorWalker(pageData, screenshot = null, memory =
  */
 export async function analyzeAsAuditor(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('auditor.md');
-  const contextText = buildPersonaContext(pageData, memory);
+  const fingerprintContext = buildPersonaContext(pageData.fingerprint, memory);
+  const pageDataContext = buildPageDataBlock(pageData, memory);
+  const contextText = fingerprintContext ? `${fingerprintContext}\n\n${pageDataContext}` : pageDataContext;
   return callWithPersona(systemPrompt, contextText, screenshot, AUDITOR_SCHEMA, 'auditor_result');
 }
 
@@ -754,7 +832,9 @@ export async function analyzeAsAuditor(pageData, screenshot = null, memory = {})
  */
 export async function analyzeAsScout(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('scout.md');
-  const contextText = buildPersonaContext(pageData, memory);
+  const fingerprintContext = buildPersonaContext(pageData.fingerprint, memory);
+  const pageDataContext = buildPageDataBlock(pageData, memory);
+  const contextText = fingerprintContext ? `${fingerprintContext}\n\n${pageDataContext}` : pageDataContext;
   return callWithPersona(systemPrompt, contextText, screenshot, SCOUT_SCHEMA, 'scout_result');
 }
 
@@ -764,7 +844,9 @@ export async function analyzeAsScout(pageData, screenshot = null, memory = {}) {
  */
 export async function analyzeAsAuditorB2B(pageData, screenshot = null, memory = {}) {
   const systemPrompt = loadPrompt('auditor-b2b.md');
-  const contextText = buildPersonaContext(pageData, memory);
+  const fingerprintContext = buildPersonaContext(pageData.fingerprint, memory);
+  const pageDataContext = buildPageDataBlock(pageData, memory);
+  const contextText = fingerprintContext ? `${fingerprintContext}\n\n${pageDataContext}` : pageDataContext;
   return callWithPersona(systemPrompt, contextText, screenshot, B2B_AUDITOR_SCHEMA, 'b2b_auditor_result');
 }
 
