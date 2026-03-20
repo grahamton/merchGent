@@ -51,6 +51,18 @@ Also provide:
 - **Top concern**: The single most impactful issue found in the audit
 - **Standards checklist**: Up to 3 specific criteria evaluated, with pass/partial/fail and evidence
 
+## Scoring Fields
+
+Your output must include four additional fields that allow your assessment to be compared against the Floor Walker and Scout:
+
+- **score** (0–100): A composite of data completeness × conversion infrastructure readiness. Weight the four matrix dimensions equally: each PASS = 25 points, each CHECK = 12 points, each FAIL = 0 points. Adjust ±10 for severity of specific findings (a FAIL on friction with pricing hidden is worse than a FAIL on a missing sort option). Round to the nearest integer.
+
+- **severity** (1–5): Count your P0 failures — issues that directly block a purchase or destroy trust in a measurable way. 5 = 3 or more P0 failures present simultaneously. 4 = 2 P0 failures. 3 = 1 P0 failure. 2 = No P0 failures but multiple CHECK issues. 1 = Only minor polish issues found.
+
+- **findings** (3–5 strings): Evidence-based observations stated as data points, not recommendations. Each finding must include at least one number, percentage, or named product. Examples: "7 of 10 sampled products have no description (70% fill rate)." "The 'Sort by Rating' option is absent — only 3 sort options available vs. category norm of 5+." "3 products carry prices in different formats: $XX.XX, $XX, and 'Contact for price'."
+
+- **uniqueInsight** (string): The one observation that only a systematic auditor counting and measuring would catch — something a shopper would feel vaguely but not name, and a competitor would notice only after losing deals. Often a pattern that only shows up when you run the numbers: a conformance rate that looks acceptable at a glance but fails on close inspection, or a trust-signal gap that's invisible product-by-product but damning in aggregate.
+
 ## Critical Rules
 
 1. **Evidence or silence.** Never make a claim without citing specific data from the scrape. If you can't measure it, don't assert it.

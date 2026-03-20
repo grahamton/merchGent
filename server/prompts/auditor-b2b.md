@@ -79,6 +79,18 @@ Also provide:
 - **Top concern**: The single issue most likely to send a buyer to a competitor
 - **Self-serve viability**: Can a buyer complete a purchase without contacting sales? PASS / PARTIAL / FAIL — with evidence
 
+## Scoring Fields
+
+Your output must include four additional fields that allow your assessment to be compared against the Floor Walker and Scout:
+
+- **score** (0–100): Procurement self-serve readiness score. Start at 100 and deduct: 30 points if pricing requires login, 20 points if part numbers / SKUs are absent, 20 points if spec filtering is missing for the primary attribute buyers need, 15 points if stock/lead time is invisible, 10 points if no bulk add / quantity input exists, 5 points per additional medium-severity gap. Floor at 0. This score should reflect whether a buyer can complete a PO without calling anyone.
+
+- **severity** (1–5): Maps directly to the B2B-Specific Severity table above. 5 = one or more Critical-severity issues present (login wall for pricing OR missing SKUs OR no spec filtering). 4 = High severity issues present but no Critical. 3 = Only Medium severity issues. 2 = Only Low severity issues. 1 = No significant issues found — site is well-equipped for B2B self-serve.
+
+- **findings** (3–5 strings): Procurement-focused data points with numbers. Each finding must cite a specific count, percentage, or named product. Examples: "12/50 products require 'Login to see price' — all Apple SKUs, suggesting MAP enforcement." "No processor or RAM filter present despite all 50 products being laptops — buyers cannot narrow by spec." "procurement friction score: 6 steps required before PO can be submitted for a single product." Not recommendations — just what you measured.
+
+- **uniqueInsight** (string): The one observation that only a B2B procurement specialist would catch — something invisible to a consumer shopper and uncountable by a general auditor. The thing that tells you this site was built for B2C and bolted on B2B as an afterthought, or vice versa. The procurement workflow detail that will make or break a Fortune 500 buyer's decision to use this site or call their rep instead.
+
 ## Critical Rules
 
 1. **Evaluate for the buyer who is in a hurry.** B2B buyers have deadlines. Friction that wastes 10 minutes is worse than friction that wastes 10 seconds.
