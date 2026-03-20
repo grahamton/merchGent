@@ -75,7 +75,7 @@ const detectStructure = async (page) => {
         return {
           gridSelector: elements[0].parentElement
             ? elements[0].parentElement.className
-              ? `.${elements[0].parentElement.className.split(/\s+/)[0]}`
+              ? `.${CSS.escape(elements[0].parentElement.className.split(/\s+/)[0])}`
               : elements[0].parentElement.tagName
             : null,
           cardSelector: selector,
@@ -122,7 +122,7 @@ const detectStructure = async (page) => {
           maxScore = totalScore;
           bestGrid = el;
           const tag = sample.tagName.toLowerCase();
-          const classes = dominant.split(/\s+/).filter(Boolean).map((c) => `.${c}`).join('');
+          const classes = dominant.split(/\s+/).filter(Boolean).map((c) => `.${CSS.escape(c)}`).join('');
           bestChildSelector = classes ? `${tag}${classes}` : tag;
         }
       }
@@ -131,7 +131,7 @@ const detectStructure = async (page) => {
     return {
       gridSelector: bestGrid
         ? bestGrid.className
-          ? `.${bestGrid.className.split(/\s+/).join('.')}`
+          ? Array.from(bestGrid.classList).map((c) => `.${CSS.escape(c)}`).join('')
           : bestGrid.tagName
         : null,
       cardSelector: bestChildSelector,
@@ -167,6 +167,11 @@ const extractFacets = async (page) => {
       const groups = document.querySelectorAll(sel);
       if (groups.length > 0) {
         groups.forEach((group) => {
+          // Skip parent containers that wrap multiple filter groups — only process leaf groups.
+          // A container matching a selector but containing >1 heading is a sidebar wrapper, not a facet.
+          const innerHeadings = group.querySelectorAll('h2, h3, h4, legend');
+          if (innerHeadings.length > 1) return;
+
           const heading = group.querySelector('h2, h3, h4, legend, [class*="title"], [class*="heading"], [class*="label"]');
           let name = heading?.innerText?.trim() || '';
           if (!name) name = group.getAttribute('aria-label') || '';
@@ -209,23 +214,49 @@ const extractFacets = async (page) => {
       }
     }
 
-    // Strategy 2: heuristic — find sidebar/nav with repeated checkboxes or link groups
+    // Strategy 2: heuristic — find sidebar/nav with repeated checkboxes or link groups.
+    // Uses heading-to-heading tree walking so obfuscated-class sites (Zappos, etc.) are
+    // segmented correctly instead of collapsing all filter labels into one fake facet.
     const candidates = document.querySelectorAll('aside, nav, [role="navigation"], [class*="sidebar"], [class*="left-nav"]');
     for (const sidebar of candidates) {
-      const headings = sidebar.querySelectorAll('h2, h3, h4, legend, summary');
-      headings.forEach((heading) => {
+      const headings = Array.from(sidebar.querySelectorAll('h2, h3, h4, legend, summary'));
+      if (headings.length < 2) continue; // single heading → not a filter sidebar
+
+      headings.forEach((heading, idx) => {
         const name = heading.innerText?.trim();
         if (!name || name.length > 40) return;
 
-        // Look for the next sibling or parent container with options
-        const container = heading.closest('details, fieldset, [class*="facet"], [class*="filter"]')
-          || heading.parentElement;
-        if (!container) return;
+        const nextHeading = headings[idx + 1] || null;
 
-        const items = container.querySelectorAll('input[type="checkbox"], li a, label');
+        // Try a tight container first (details/fieldset wrapping just this group)
+        let tightContainer = heading.closest('details, fieldset');
+        if (tightContainer && nextHeading && tightContainer.contains(nextHeading)) {
+          tightContainer = null; // too broad
+        }
+
+        let items = [];
+        if (tightContainer) {
+          items = Array.from(tightContainer.querySelectorAll('input[type="checkbox"], li a, label'));
+        } else {
+          // Walk the DOM tree in order, collecting interactive elements between
+          // this heading and the next one — works regardless of CSS class names.
+          const root = heading.parentElement || sidebar;
+          const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+          let node = walker.nextNode();
+          let collecting = false;
+          while (node) {
+            if (node === heading) { collecting = true; node = walker.nextNode(); continue; }
+            if (nextHeading && node === nextHeading) break;
+            if (collecting && ['INPUT', 'A', 'LABEL', 'BUTTON'].includes(node.tagName)) {
+              items.push(node);
+            }
+            node = walker.nextNode();
+          }
+        }
+
         if (items.length < 2) return;
 
-        const options = Array.from(items).slice(0, 15).map((el) => ({
+        const options = items.slice(0, 15).map((el) => ({
           label: (el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 60),
           selected: !!el.checked || el.classList.contains('selected'),
         })).filter((o) => o.label.length > 0 && o.label !== name);
@@ -234,6 +265,7 @@ const extractFacets = async (page) => {
           facets.push({ name, type: 'list', optionCount: options.length, options, selectedCount: options.filter((o) => o.selected).length });
         }
       });
+      if (facets.length > 0) break; // first productive sidebar wins
     }
 
     return facets;
@@ -687,6 +719,18 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
     // Set up network interception BEFORE navigation so no responses are missed
     try { await interceptNetworkRequests(page); } catch { /* non-fatal */ }
 
+    // Inject paint timing observer before navigation — entries fire early and may be missed post-load
+    await page.evaluateOnNewDocument(() => {
+      window.__paintTimings = {};
+      try {
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            window.__paintTimings[entry.name] = entry.startTime;
+          }
+        }).observe({ type: 'paint', buffered: true });
+      } catch (e) { /* non-fatal */ }
+    });
+
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise((r) => setTimeout(r, Math.random() * 1000 + 1000));
 
@@ -718,11 +762,19 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
       if (apiExtraction.products.length > 0) {
         data.products = apiExtraction.products;
       }
-      // Merge API facets — mark with source flag and deduplicate by name
+      // Merge API facets — replace "Unknown Facet" DOM entries with real names from XHR (MCP-002)
       if (apiExtraction.facets.length > 0) {
-        const existingNames = new Set((data.facets || []).map((f) => f.name));
-        const newFacets = apiExtraction.facets.filter((f) => !existingNames.has(f.name));
-        data.facets = [...(data.facets || []), ...newFacets];
+        const knownDomFacets = (data.facets || []).filter((f) => f.name !== 'Unknown Facet');
+        const hasUnknown = knownDomFacets.length < (data.facets || []).length;
+        if (hasUnknown) {
+          // DOM facets had no resolvable labels — use API-sourced facets entirely
+          const apiNames = new Set(apiExtraction.facets.map((f) => f.name));
+          data.facets = [...knownDomFacets.filter((f) => !apiNames.has(f.name)), ...apiExtraction.facets];
+        } else {
+          const existingNames = new Set(knownDomFacets.map((f) => f.name));
+          const newFacets = apiExtraction.facets.filter((f) => !existingNames.has(f.name));
+          data.facets = [...(data.facets || []), ...newFacets];
+        }
       }
     } else {
       data.dataSource = 'dom';
@@ -779,22 +831,33 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
 
     let mobileScreenshotBuffer = null;
     if (mobileScreenshot) {
+      // Open a fresh page with mobile UA+viewport set BEFORE navigation so the server
+      // serves mobile-specific content (JS bundle, layout) from the start (MCP-005)
       const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1';
-      await page.setUserAgent(mobileUA);
-      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
-      await new Promise((r) => setTimeout(r, 1500));
-      mobileScreenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 70 });
-      await page.setViewport({ width: 1920, height: 1080 }); // restore
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'); // restore
+      let mobilePage;
+      try {
+        mobilePage = await browser.newPage();
+        await mobilePage.setUserAgent(mobileUA);
+        await mobilePage.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+        if (currentCookies.length > 0) {
+          try { await mobilePage.setCookie(...currentCookies); } catch { /* non-fatal */ }
+        }
+        await mobilePage.goto(url, { waitUntil: 'networkidle2', timeout: 20000 }).catch(() => {});
+        mobileScreenshotBuffer = await mobilePage.screenshot({ type: 'jpeg', quality: 70 });
+      } catch { /* non-fatal — mobile screenshot is best-effort */ }
+      finally {
+        if (mobilePage) await mobilePage.close().catch(() => {});
+      }
     }
     const performance = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];
-      const paint = performance.getEntriesByType('paint');
+      const pt = window.__paintTimings || {};
+      const paintFallback = performance.getEntriesByType('paint');
       return {
         domContentLoaded: Math.round(nav?.domContentLoadedEventEnd || 0),
         loadComplete: Math.round(nav?.loadEventEnd || 0),
-        firstPaint: Math.round(paint.find((p) => p.name === 'first-paint')?.startTime || 0),
-        firstContentfulPaint: Math.round(paint.find((p) => p.name === 'first-contentful-paint')?.startTime || 0),
+        firstPaint: Math.round(pt['first-paint'] || paintFallback.find((p) => p.name === 'first-paint')?.startTime || 0),
+        firstContentfulPaint: Math.round(pt['first-contentful-paint'] || paintFallback.find((p) => p.name === 'first-contentful-paint')?.startTime || 0),
         resourceCount: performance.getEntriesByType('resource').length,
       };
     });
@@ -879,6 +942,18 @@ export async function scrapePdp(url, cookies = []) {
       try { await page.setCookie(...cookies); } catch { /* non-fatal */ }
     }
 
+    // Inject paint timing observer before navigation — entries fire early and may be missed post-load
+    await page.evaluateOnNewDocument(() => {
+      window.__paintTimings = {};
+      try {
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            window.__paintTimings[entry.name] = entry.startTime;
+          }
+        }).observe({ type: 'paint', buffered: true });
+      } catch (e) { /* non-fatal */ }
+    });
+
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise((r) => setTimeout(r, Math.random() * 500 + 1000));
 
@@ -904,9 +979,7 @@ export async function scrapePdp(url, cookies = []) {
       const imageCount = productArea.querySelectorAll('img').length;
 
       // reviews
-      const hasReviews = !!(
-        document.querySelector('[itemprop="reviewRating"], [class*="star-rating"], #reviews, [class*="review"]')
-      );
+      const reviewContainerEl = document.querySelector('[itemprop="reviewRating"], [class*="star-rating"], #reviews, [class*="review"]');
       let reviewCount = 0;
       const reviewCountEl = document.querySelector('[itemprop="reviewCount"]');
       if (reviewCountEl) {
@@ -916,6 +989,8 @@ export async function scrapePdp(url, cookies = []) {
         const m = reviewText.match(/\((\d[\d,]*)\s*reviews?\)/i);
         if (m) reviewCount = parseInt(m[1].replace(/,/g, ''), 10) || 0;
       }
+      // Only report hasReviews: true when there is a confirmed count — avoids container-present/count-zero contradiction
+      const hasReviews = !!(reviewContainerEl && reviewCount > 0);
 
       // hasReviewSchema
       let hasReviewSchema = false;
@@ -937,7 +1012,7 @@ export async function scrapePdp(url, cookies = []) {
       if (specEl) {
         specRowCount = specEl.querySelectorAll('tr, dt, li').length;
       }
-      const specTable = { present: !!specEl, rowCount: specRowCount };
+      const specTable = { present: specRowCount > 0, rowCount: specRowCount };
 
       // crossSellModules
       const crossSellModules = /you may also like|customers also bought|related products|frequently bought/i
@@ -963,6 +1038,11 @@ export async function scrapePdp(url, cookies = []) {
       if (priceEl) pricePrimary = priceEl.innerText?.trim() || '';
       const origEl = document.querySelector('[class*="price-was"], [class*="original-price"], [class*="price__original"], s[class*="price"], del[class*="price"]');
       if (origEl) priceOriginal = origEl.innerText?.trim() || '';
+      // Fallback: extract price from CTA text (e.g. "Add to Cart - $100")
+      if (!pricePrimary && ctaText) {
+        const m = ctaText.match(/\$[\d,]+(?:\.\d{2})?/);
+        if (m) pricePrimary = m[0];
+      }
 
       // badges
       const badgeEls = document.querySelectorAll('[class*="badge"], [class*="tag"], [class*="label"], [class*="flag"]');
@@ -976,11 +1056,12 @@ export async function scrapePdp(url, cookies = []) {
 
     const performance = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];
-      const paint = performance.getEntriesByType('paint');
+      const pt = window.__paintTimings || {};
+      const paintFallback = performance.getEntriesByType('paint');
       return {
         domContentLoaded: Math.round(nav?.domContentLoadedEventEnd || 0),
         loadComplete: Math.round(nav?.loadEventEnd || 0),
-        firstContentfulPaint: Math.round(paint.find((p) => p.name === 'first-contentful-paint')?.startTime || 0),
+        firstContentfulPaint: Math.round(pt['first-contentful-paint'] || paintFallback.find((p) => p.name === 'first-contentful-paint')?.startTime || 0),
         resourceCount: performance.getEntriesByType('resource').length,
       };
     });

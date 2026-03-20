@@ -14,6 +14,23 @@ Transport: stdio JSON-RPC only (not HTTP). Designed to be launched by an MCP cli
 
 ---
 
+## Cowork Plugin Workspace
+
+A separate Cowork workspace acts as the PM hub and product operations layer for this project. It lives at the user's selected folder (Merch-connector) and is managed by a separate Claude agent whose job is:
+
+* Running live audits via the merch-connector MCP tools to verify your fixes work end-to-end
+* Owning the merch-auditor plugin (plugin-source/) — all plugin code, command files, skill files, and PLUGIN-* bug fixes
+* Managing the Notion project hub — bug tracker, roadmap, audit archive
+* Triaging bugs between this repo (MCP) and the plugin
+
+Bug triage rule: If a symptom is a tool returning wrong data or crashing → fix is here in `C:\dev\merchGent`. If the symptom is agent behavior, wrong output format, or file not saved → fix is in the Cowork plugin workspace.
+
+Notion project hub: https://www.notion.so/329dee0d562d818a95d7fd5759f0add4 — Bug Tracker, Roadmap, and Audit Archive all live here. After shipping a fix, the Cowork agent verifies it and updates the relevant Notion rows.
+
+After each release: Bump the version, update CHANGELOG.md, and the Cowork agent handles verification and Notion logging.
+
+---
+
 ## Project structure
 
 ```

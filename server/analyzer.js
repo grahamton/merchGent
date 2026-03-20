@@ -1098,6 +1098,8 @@ export function computePageFingerprint(pageData) {
     pageType = 'cart';
   } else if (/[?&](q|query|search)=/i.test(url) || /\/search/i.test(url)) {
     pageType = 'search_results';
+  } else if (/\/product[s]?\//i.test(url) || /\/p\//i.test(url) || /\/buy\/product/i.test(url) || /\/pdp\//i.test(url) || /\/[a-z0-9]{8,}$/.test(url.split('?')[0])) {
+    pageType = 'pdp';
   } else if (products.length === 1 && facets.length === 0) {
     pageType = 'pdp';
   } else if (products.length > 1 && facets.length > 0) {

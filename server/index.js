@@ -618,18 +618,22 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
   if (analysis) {
     sendLog('debug', `Using cached ${personaKey} persona result for ${url}`, { tool: 'audit_storefront' });
   } else {
+    // Cap products sent to AI to reduce prompt size and inference time (MCP-001)
+    const aiPageData = pageData.products?.length > 20
+      ? { ...pageData, products: pageData.products.slice(0, 20) }
+      : pageData;
     if (resolvedPersona === 'floor_walker') {
-      analysis = await analyzeAsFloorWalker(pageData, pageData.screenshotBuffer, memory);
+      analysis = await analyzeAsFloorWalker(aiPageData, aiPageData.screenshotBuffer, memory);
     } else if (resolvedPersona === 'auditor') {
-      analysis = await analyzeAsAuditor(pageData, pageData.screenshotBuffer, memory);
+      analysis = await analyzeAsAuditor(aiPageData, aiPageData.screenshotBuffer, memory);
     } else if (resolvedPersona === 'scout') {
-      analysis = await analyzeAsScout(pageData, pageData.screenshotBuffer, memory);
+      analysis = await analyzeAsScout(aiPageData, aiPageData.screenshotBuffer, memory);
     } else if (resolvedPersona === 'b2b_auditor') {
-      analysis = await analyzeAsAuditorB2B(pageData, pageData.screenshotBuffer, memory);
+      analysis = await analyzeAsAuditorB2B(aiPageData, aiPageData.screenshotBuffer, memory);
     } else if (resolvedPersona === 'conversion_architect') {
-      analysis = await analyzeAsConversionArchitect(pageData, pageData.screenshotBuffer, memory);
+      analysis = await analyzeAsConversionArchitect(aiPageData, aiPageData.screenshotBuffer, memory);
     } else {
-      analysis = await analyzePage(pageData, pageData.screenshotBuffer);
+      analysis = await analyzePage(aiPageData, aiPageData.screenshotBuffer);
     }
     setCachedPersona(url, personaKey, analysis);
   }
@@ -713,7 +717,15 @@ async function handleGetCategorySample({ url, count = 2, strategy = 'spread' }) 
 
   const products = (pageData.products || []).filter((p) => p.url || p.href);
   if (products.length === 0) {
-    return [{ type: 'text', text: JSON.stringify({ sampledFrom: url, strategy, count: safeCount, error: 'No products with URLs found on category page', pdps: [] }, null, 2) }];
+    return [{ type: 'text', text: JSON.stringify({
+      sampledFrom: url,
+      strategy,
+      count: safeCount,
+      error: 'No products with URLs found on category page',
+      reason: 'All scraped products have url: null — the site may use hash routing, JavaScript navigation, or product links were not captured by the scraper.',
+      suggestion: 'Try scraping a known PDP URL directly with scrape_pdp, or use ask_page to probe specific products on this page.',
+      pdps: [],
+    }, null, 2) }];
   }
 
   // Select products based on strategy
@@ -898,7 +910,12 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
   // MCP client timeout fires before handleRoundtable fully completes.
   const onPersonaCached = (personaName, data) => setCachedPersona(url, personaName, data);
 
-  const result = await runRoundtable(pageData, pageData.screenshotBuffer, memory, onProgress, cached, onPersonaCached);
+  // Cap products sent to AI to reduce prompt size and inference time (MCP-009)
+  const aiPageData = pageData.products?.length > 20
+    ? { ...pageData, products: pageData.products.slice(0, 20) }
+    : pageData;
+
+  const result = await runRoundtable(aiPageData, aiPageData.screenshotBuffer, memory, onProgress, cached, onPersonaCached);
 
   const fingerprint = (() => { try { return computePageFingerprint(pageData); } catch { return null; } })();
   return { ...result, fingerprint };

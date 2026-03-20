@@ -325,6 +325,17 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v1.9.1 — Bug fixes from Cowork plugin QA sweep
+
+- **CSS selector safety**: `compare_storefronts` no longer crashes on Tailwind JIT arbitrary-value class names — all class-to-selector conversions now use `CSS.escape()`
+- **Paint timing**: FCP and first-paint captured via pre-navigation `PerformanceObserver` — no longer returns 0 on SPA category pages
+- **Mobile screenshot**: renders in a fresh browser page with UA + viewport set before navigation, fixing blank white screen on UA-gated SPAs
+- **PDP `pageType`**: URL pattern signals (`/product/`, `/p/`, `/buy/product/`, `/pdp/`) now take priority over DOM product-count heuristics, fixing misclassification on PDPs with related-product carousels
+- **AI timeout resilience**: `audit_storefront` and `merch_roundtable` cap the product payload sent to AI at 20 items, reducing prompt size and inference time
+- **`scrape_pdp` price extraction**: falls back to CTA button text when no dedicated price element is found; `hasReviews` and `specTable.present` now require count > 0
+- **Facet resolution**: "Unknown Facet" placeholders replaced with real names from intercepted XHR when a search API is detected
+- **`get_category_sample`**: error response now includes `reason` and `suggestion` when no product URLs are found
+
 ### v1.9.0 — PDP sampling, smarter facets, B2B fingerprint depth
 
 - **`scrape_pdp` tool**: dedicated PDP scraper returning description fill rate, image count, review schema, spec table, cross-sell modules, CTA text, and primary/sale prices — purpose-built for single product pages
