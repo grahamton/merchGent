@@ -809,15 +809,15 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
   // Emit progress notifications for each persona once all three resolve
   await onProgress?.(1, 8, `Floor Walker ✓${cached.floor_walker ? ' (cached)' : ''} — ${floorWalker.topConcern}`, {
     persona: 'floorWalker', topConcern: floorWalker.topConcern,
-    summary: floorWalker.summary, result: floorWalker, cached: !!cached.floor_walker,
+    summary: floorWalker.summary, cached: !!cached.floor_walker,
   });
   await onProgress?.(3, 8, `Auditor ✓${cached.auditor ? ' (cached)' : ''} — ${auditor.topConcern}`, {
     persona: 'auditor', topConcern: auditor.topConcern, summary: auditor.summary,
-    siteMode: auditor.siteMode, result: auditor, cached: !!cached.auditor,
+    siteMode: auditor.siteMode, cached: !!cached.auditor,
   });
   await onProgress?.(5, 8, `Scout ✓${cached.scout ? ' (cached)' : ''} — ${scout.topConcern}`, {
     persona: 'scout', topConcern: scout.topConcern,
-    summary: scout.summary, result: scout, cached: !!cached.scout,
+    summary: scout.summary, cached: !!cached.scout,
   });
   console.error('[Roundtable] All three personas complete.');
 
@@ -885,16 +885,9 @@ Now synthesize these three perspectives. Identify where they agree, where they d
     await onProgress?.(7, 8, 'Moderator ✓ — consensus reached', {
       persona: 'moderator',
       consensus: debate.consensus,
-      disagreements: (debate.disagreements || []).map((d) => ({
-        topic: d.topic,
-        positions: {
-          floorWalker: d.floorWalkerPosition,
-          auditor:     d.auditorPosition,
-          scout:       d.scoutPosition,
-        },
-      })),
-      finalRecommendations: debate.finalRecommendations || [],
-      result: debate,
+      recommendationCount: (debate.finalRecommendations || []).length,
+      disagreementCount: (debate.disagreements || []).length,
+      disagreements: (debate.disagreements || []).map((d) => d.topic),
     });
   } catch (err) {
     sendLog?.('error', `[Roundtable] Moderator synthesis failed: ${err.message}`);
