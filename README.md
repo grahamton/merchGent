@@ -325,6 +325,13 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.0 — acquire tool: one-pass v2 architecture
+
+- **New `acquire` tool**: Single call replaces the 6–8 step `scrape_page` + `audit_storefront` workflow — returns products, facets, screenshots, performance, trust signals, PDP samples, analytics, dataQuality, and `warnings[]` in one payload
+- **Firecrawl integration**: LLM extraction via Firecrawl as primary scraper with automatic Puppeteer fallback; `scraperMeta` field reports which path was used and any fallback reason
+- **`audit_storefront` retired**: Returns a hard error directing callers to `acquire`; `scrape_page` marked deprecated with log warning
+- **Protocol tests updated**: 34/34 passing; `acquire` in tool list, `audit_storefront` absent, `scrape_page` deprecation asserted
+
 ### v1.9.2 — MCP-002 & MCP-005 fixes, roundtable refactor, B2B persona routing
 
 - **MCP-002**: Restored `extractFacetsGeneric` fallback + `hasFacetStructure` structural scoring bonus (+20); added nested wrapper key support (`response.*`, `data.*`) and wired generic extraction as a fallback in `extractFromBestApi` — "Unknown Facet" no longer appears when XHR data is available
