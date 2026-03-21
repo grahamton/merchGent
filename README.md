@@ -325,6 +325,12 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v1.9.2 — MCP-002 & MCP-005 fixes, roundtable refactor, B2B persona routing
+
+- **MCP-002**: Restored `extractFacetsGeneric` fallback + `hasFacetStructure` structural scoring bonus (+20); added nested wrapper key support (`response.*`, `data.*`) and wired generic extraction as a fallback in `extractFromBestApi` — "Unknown Facet" no longer appears when XHR data is available
+- **MCP-005**: Mobile screenshots now dismiss OneTrust, Cookiebot, and TrustArc consent overlays before capture; blank-image threshold raised to 20 KB to reliably reject consent-blocked frames
+- **Roundtable refactor**: Collapsed per-provider per-persona duplicates into generic dispatch functions (~1000 lines removed); `merch_roundtable` auto-substitutes the B2B auditor persona when B2B signals are detected
+
 ### v1.9.1 — Bug fixes from Cowork plugin QA sweep
 
 - **CSS selector safety**: `compare_storefronts` no longer crashes on Tailwind JIT arbitrary-value class names — all class-to-selector conversions now use `CSS.escape()`
