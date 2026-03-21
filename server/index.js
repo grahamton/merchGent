@@ -715,7 +715,7 @@ async function handleGetCategorySample({ url, count = 2, strategy = 'spread' }) 
     pageData = result;
   }
 
-  const products = (pageData.products || []).filter((p) => p.url || p.href);
+  const products = (pageData.products || []).filter((p) => (p.url || p.href) && (p.url || p.href).startsWith('http'));
   if (products.length === 0) {
     return [{ type: 'text', text: JSON.stringify({
       sampledFrom: url,
@@ -942,6 +942,7 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   const b2b_auditor           = getCachedPersona(url, 'b2b_auditor');
   const conversion_architect  = getCachedPersona(url, 'conversion_architect');
   const defaultAudit          = getCachedPersona(url, 'default');
+  const debate                = getCachedPersona(url, 'debate');
 
   if (!floor_walker && !auditor && !scout && !b2b_auditor && !conversion_architect && !defaultAudit) {
     throw new Error(
@@ -977,7 +978,7 @@ function handleSaveEval({ url, note, save_full_run = true }) {
   const saved = saveEvalRun(domain, {
     url,
     personas,
-    debate: null,       // moderator now runs synchronously; debate is populated in the roundtable result
+    debate: debate ?? null,
     toolName,
     note: note ?? null,
     saveFullRun: save_full_run,
@@ -1123,6 +1124,12 @@ const PROMPT_DEFS = [
     arguments: [],
   },
   {
+    name: 'conversion-architect',
+    description: 'Evaluate the page through a pure CRO lens — mapping the funnel and identifying revenue-bleeding friction.',
+    promptFile: 'conversion-architect.md',
+    arguments: [],
+  },
+  {
     name: 'merch-roundtable',
     description: 'Run a full multi-persona roundtable (Floor Walker + Auditor + Scout + Moderator) for a storefront URL.',
     promptFile: 'roundtable-moderator.md',
@@ -1199,7 +1206,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     switch (name) {
       case 'audit_storefront': {
         const result = await withTimeout(handleAuditStorefront(args), 'audit_storefront', AUDIT_TIMEOUT_MS);
-        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+        const content = [{ type: 'text', text: JSON.stringify(result, null, 2) }];
+        // Explicitly re-attach screenshot if available in the source session page
+        const pageData = getCachedPage(args.url);
+        if (pageData?.screenshotBuffer) {
+          content.push({ type: 'image', data: pageData.screenshotBuffer.toString('base64'), mimeType: 'image/jpeg' });
+        }
+        return { content };
       }
       case 'scrape_page':
         return { content: await handleScrapePage(args) };
