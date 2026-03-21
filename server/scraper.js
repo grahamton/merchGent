@@ -195,8 +195,13 @@ const extractFacets = async (page) => {
           else if (swatches.length > 0) type = 'swatch';
           else if (group.querySelector('input[type="range"]')) type = 'range';
 
-          const optionEls = checkboxes.length > 0 ? checkboxes : links.length > 0 ? links : swatches;
-          const options = Array.from(optionEls).slice(0, 15).map((el) => {
+          const optionEls = Array.from(checkboxes.length > 0 ? checkboxes : links.length > 0 ? links : swatches)
+            .filter((el) => {
+              const text = (el.innerText || el.value || '').trim().toLowerCase();
+              return text !== 'go' && el.type !== 'submit';
+            });
+
+          const options = optionEls.slice(0, 15).map((el) => {
             const label = el.getAttribute('aria-label')
               || el.closest('label')?.innerText?.trim()
               || el.innerText?.trim()
@@ -833,7 +838,7 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
     if (mobileScreenshot) {
       // Open a fresh page with mobile UA+viewport set BEFORE navigation so the server
       // serves mobile-specific content (JS bundle, layout) from the start (MCP-005)
-      const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1';
+      const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
       let mobilePage;
       try {
         mobilePage = await browser.newPage();
@@ -1040,7 +1045,7 @@ export async function scrapePdp(url, cookies = []) {
       if (origEl) priceOriginal = origEl.innerText?.trim() || '';
       // Fallback: extract price from CTA text (e.g. "Add to Cart - $100")
       if (!pricePrimary && ctaText) {
-        const m = ctaText.match(/\$[\d,]+(?:\.\d{2})?/);
+        const m = ctaText.match(/[\$£€]\s?\d+(?:[.,]\d{2})?/);
         if (m) pricePrimary = m[0];
       }
 

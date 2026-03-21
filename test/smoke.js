@@ -117,7 +117,7 @@ if (question) {
 if (!flag('audit') && !persona && !flag('roundtable') && !question && !b2bMode) {
   console.log(`\n💡 Scrape-only test passed. Add flags to test AI features:`);
   console.log(`   --audit              Full merchandising audit`);
-  console.log(`   --persona scout      Single persona (floor_walker | auditor | scout | b2b_auditor)`);
+  console.log(`   --persona scout      Single persona (floor_walker | auditor | scout | b2b_auditor | conversion_architect)`);
   console.log(`   --roundtable         All 3 personas + moderator debate`);
   console.log(`   --ask "question"     Ask anything about the page`);
   console.log(`   --url https://...    Override the default URL`);
