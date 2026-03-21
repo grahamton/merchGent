@@ -361,6 +361,11 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.2 — MCP-014 acquire field fixes
+
+- **`trustSignals.avgRating`**: Renamed from `avgRatingAcrossProducts` to match the field name the plugin audit command expects — was causing silent scoring failures on every acquire call
+- **Warning severity values**: Remapped from `"high"/"medium"/"low"` to `"error"/"warn"` across all `warnings[]` entries to match the plugin's expected enum
+
 ### v2.0.1 — Model alias fix + full multi-provider ask_page
 
 - **MCP-013**: Replaced retired `claude-3-5-sonnet-latest` alias with `claude-sonnet-4-6` across all Anthropic calls — fixes `ask_page`, `merch_roundtable`, and all persona analysis tools that were returning 404 errors

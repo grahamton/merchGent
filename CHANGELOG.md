@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.2] — 2026-03-21
+
+### Fixed
+- **MCP-014**: Renamed `trustSignals.avgRatingAcrossProducts` → `avgRating` in `aggregateTrustSignals()` to match the field name the plugin audit command expects
+- **MCP-014**: Remapped `warnings[].severity` values from `"high"/"medium"/"low"` to `"error"/"warn"` across all `generateWarnings()` entries and the `FIRECRAWL_FAILED` warning
+
 ## [2.0.1] — 2026-03-21
 
 ### Fixed
