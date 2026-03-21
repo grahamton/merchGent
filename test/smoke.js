@@ -21,6 +21,49 @@ const flagVal = (name) => { const i = args.indexOf(`--${name}`); return i !== -1
 
 const b2bMode = flag('b2b');
 const url = flagVal('url') || (b2bMode ? 'https://www.insight.com/en_US/shop/product/laptops/laptops.html' : 'https://www.zappos.com/running-shoes');
+
+// ─── --acquire mode: test the v2 acquire tool ──────────────────────────────
+if (flag('acquire')) {
+  const { handleAcquire } = await import('../server/acquire.js');
+
+  // Minimal in-memory session ops stub for smoke testing
+  const _cache = new Map();
+  const _cookies = new Map();
+  const getDomain = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+  const sessionOps = {
+    getSessionCookies: (u) => _cookies.get(getDomain(u)) || [],
+    saveSessionCookies: (u, cookies) => _cookies.set(getDomain(u), cookies),
+    getCachedPage: (u) => _cache.get(u) || null,
+    setCachedPage: (u, data) => _cache.set(u, data),
+  };
+
+  console.log(`\nAcquire test: ${url}\n`);
+  const t0 = Date.now();
+  const payload = await handleAcquire({ url, pdp_sample: 2 }, sessionOps);
+  const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+  console.log(`Acquired in ${elapsed}s`);
+  console.log(`  Scraper:     ${payload.scraper}`);
+  console.log(`  Products:    ${payload.products.length}`);
+  console.log(`  Facets:      ${payload.facets.length}`);
+  console.log(`  PDP samples: ${payload.pdpSamples.length}`);
+  console.log(`  Warnings:    ${payload.warnings.length > 0 ? payload.warnings.map(w => w.code).join(', ') : 'none'}`);
+  console.log(`  Screenshots: desktop=${!!payload.screenshots.desktop}, mobile=${!!payload.screenshots.mobile}`);
+  console.log(`  Commerce:    mode=${payload.commerce.mode}, platform=${payload.commerce.platform || 'unknown'}`);
+  console.log(`  DataQuality: descFillRate=${payload.dataQuality.descriptionFillRate}, ratingFillRate=${payload.dataQuality.ratingFillRate}`);
+  if (payload.pdpSamples.length > 0) {
+    console.log(`\n  PDP samples:`);
+    for (const pdp of payload.pdpSamples) {
+      console.log(`    • ${pdp.title} — $${pdp.price} | specs=${pdp.specsPresent} | crossSell=${pdp.crossSellPresent} | video=${pdp.hasVideo}`);
+    }
+  }
+  if (payload.analytics.gtmContainers?.length > 0) {
+    console.log(`  GTM:         ${payload.analytics.gtmContainers.join(', ')}`);
+  }
+  console.log('');
+  process.exit(0);
+}
+
 const depth = 1;
 const maxProducts = 5;
 

@@ -555,7 +555,14 @@ const extractPageData = async (page, maxProducts = 10) => {
       return findings;
     };
 
-    return { dataLayers: getDataLayer(), interactables: getInteractables(), findings: getFindings() };
+    const getBreadcrumb = () => {
+      const items = document.querySelectorAll('[aria-label="breadcrumb"] a, .breadcrumb a, [class*="breadcrumb"] a, nav ol li a, nav ol li span');
+      return Array.from(items).map(el => el.innerText.trim()).filter(Boolean).slice(0, 8);
+    };
+    const getReturnPolicyVisible = () =>
+      /free returns|return policy|easy returns|30.?day return/i.test(document.body.innerText);
+
+    return { dataLayers: getDataLayer(), interactables: getInteractables(), findings: getFindings(), breadcrumb: getBreadcrumb(), returnPolicyVisible: getReturnPolicyVisible() };
   });
 
   const products = await page.evaluate(({ cardSelector, maxProducts, b2bKeywords, b2cKeywords }) => {
@@ -676,6 +683,7 @@ const extractPageData = async (page, maxProducts = 10) => {
         url: link?.href || null,
         imageAlt: img?.alt || null,
         imageSrc: img?.src || null,
+        imageCount: el.querySelectorAll('img').length,
         ctaText, description, b2bIndicators, b2cIndicators, trustSignals,
       };
     });
@@ -689,11 +697,11 @@ const extractPageData = async (page, maxProducts = 10) => {
   const { b2bConflictScore, b2bMode } = computeB2BSignals(products);
 
   // Category contamination detection
-  const pageTitle = await page.$eval('h1', el => el.innerText).catch(() => '') ||
-                    await page.title().catch(() => '');
+  const h1 = await page.$eval('h1', el => el.innerText.trim()).catch(() => '');
+  const pageTitle = h1 || await page.title().catch(() => '');
   const contamination = detectCategoryContamination(products, page.url(), pageTitle);
 
-  return { title, metaDescription, products, structure, facets, sortOptions, b2bConflictScore, b2bMode, contamination, ...intelligence };
+  return { title, metaDescription, h1, products, structure, facets, sortOptions, b2bConflictScore, b2bMode, contamination, ...intelligence };
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -1040,10 +1048,30 @@ export async function scrapePdp(url, cookies = []) {
         specRowCount = specEl.querySelectorAll('tr, dt, li').length;
       }
       const specTable = { present: specRowCount > 0, rowCount: specRowCount };
+      const specFields = specEl ? Array.from(specEl.querySelectorAll('th, dt')).map(el => el.innerText.trim()).filter(Boolean).slice(0, 20) : [];
 
       // crossSellModules
-      const crossSellModules = /you may also like|customers also bought|related products|frequently bought/i
-        .test(document.body.innerText);
+      const crossSellSection = Array.from(document.querySelectorAll('section, div')).find(el => {
+        const heading = el.querySelector('h2, h3, h4');
+        return heading && /you may also like|customers also bought|related products|frequently bought/i.test(heading.innerText || '');
+      });
+      const crossSellModules = crossSellSection
+        ? true
+        : /you may also like|customers also bought|related products|frequently bought/i.test(document.body.innerText);
+      const crossSellLabel = crossSellSection ? (crossSellSection.querySelector('h2, h3, h4')?.innerText?.trim() || null) : null;
+      const crossSellProductCount = crossSellSection ? crossSellSection.querySelectorAll('a[href], li').length : null;
+
+      // hasVideo
+      const hasVideo = !!(productArea.querySelector('video, [class*="video"], iframe[src*="youtube"], iframe[src*="vimeo"]'));
+
+      // rating
+      const ratingEl = document.querySelector('[itemprop="ratingValue"], [class*="rating-value"], [class*="star-rating"]');
+      let pdpRating = null;
+      if (ratingEl) {
+        const ratingText = ratingEl.getAttribute('content') || ratingEl.innerText || '';
+        const m = ratingText.match(/(\d+(?:\.\d+)?)/);
+        if (m) pdpRating = parseFloat(m[1]);
+      }
 
       // ctaText — class-based selectors are trusted as-is; generic `button` requires text pattern
       const classCtaSels = ['[class*="add-to-cart"]', '[class*="addtocart"]', '[class*="add-to-bag"]'];
@@ -1078,7 +1106,7 @@ export async function scrapePdp(url, cookies = []) {
         .filter((t) => t && t.length > 0 && t.length < 40)
         .slice(0, 10);
 
-      return { title, description, descriptionFillRate, imageCount, hasReviews, reviewCount, hasReviewSchema, specTable, crossSellModules, ctaText, pricePrimary, priceOriginal, badges };
+      return { title, description, descriptionFillRate, imageCount, hasReviews, reviewCount, hasReviewSchema, specTable, specFields, crossSellModules, crossSellLabel, crossSellProductCount, hasVideo, rating: pdpRating, ctaText, pricePrimary, priceOriginal, badges };
     });
 
     const performance = await page.evaluate(() => {

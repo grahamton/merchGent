@@ -33,6 +33,7 @@ import { scrapePage, interactWithPage, scrapePdp, fetchPageSpeed, isValidHttpUrl
 import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, analyzeAsConversionArchitect, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
+import { handleAcquire } from './acquire.js';
 
 // ─── Session store (cookies + page cache, keyed by domain) ───────────────────
 //
@@ -148,33 +149,27 @@ function withTimeout(promise, label, timeoutMs = TOOL_TIMEOUT_MS) {
 
 const TOOLS = [
   {
-    name: 'audit_storefront',
+    name: 'acquire',
     description:
-      'Scrape a product listing or PDP URL and run a full merchandising audit. ' +
-      'Returns a diagnosis, 4-dimension audit matrix (Trust / Guidance / Persuasion / Friction), ' +
-      'standards checks, and prioritized recommendations. Attaches a screenshot for visual analysis. ' +
-      'Reuses cached page data if scrape_page was called on the same URL within the last 10 minutes — no re-scrape needed. ' +
-      'Session cookies are stored automatically — subsequent calls to the same domain reuse the session. ' +
-      'Set persona to "auto" (or omit it) to let PageFingerprint pick the best-fit persona automatically.',
+      'Acquire a complete structured payload from a storefront page in a single crawl. ' +
+      'Returns products, facets, sort options, desktop + mobile screenshots, performance metrics, ' +
+      'aggregated trust signals, analytics tracking summary, data quality fill rates, navigation structure, ' +
+      'and automatically sampled PDP details — all in one call. ' +
+      'Use this as the primary entry point for any storefront audit. ' +
+      'The payload is designed for offline analysis: call acquire once, then analyze against the returned data with no further live site calls. ' +
+      'Uses Firecrawl as the primary scraper when FIRECRAWL_API_KEY is set (better bot evasion); ' +
+      'falls back to Puppeteer otherwise (full network interception + analytics). ' +
+      'A warnings[] array flags data quality issues automatically (LOW_CARD_CONFIDENCE, MOBILE_RENDER_FAILED, FCP_ZERO, ECOMMERCE_TRACKING_GAP, etc.).',
     inputSchema: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
-          description: 'Full http/https URL of the page to audit.',
+          description: 'Full http/https URL of the category or listing page to acquire.',
         },
-        depth: {
+        pdp_sample: {
           type: 'number',
-          description: 'Pages of pagination to follow (1 = current page only, max 5). Default: 1.',
-        },
-        max_products: {
-          type: 'number',
-          description: 'Max products to extract per page. Default: 10.',
-        },
-        persona: {
-          type: 'string',
-          enum: ['auto', 'floor_walker', 'auditor', 'scout', 'b2b_auditor', 'conversion_architect'],
-          description: 'Optional: run the audit through a specific persona lens instead of the default analyst. "auto" (or omit) uses PageFingerprint to automatically select the best persona for the page type and commerce mode. "floor_walker" gives a shopper-experience take, "auditor" runs a structured framework evaluation, "scout" provides competitive/strategic analysis, "b2b_auditor" evaluates the page for B2B procurement buyers (steps-to-PO, spec completeness, pricing transparency, self-serve viability), "conversion_architect" analyzes the funnel for CRO opportunities, friction points, and A/B test hypotheses.',
+          description: 'Number of PDPs to automatically sample and include in pdpSamples[] (default 2, max 5, set 0 to skip). Picks one mid-range and one premium product by price.',
         },
       },
       required: ['url'],
@@ -183,6 +178,7 @@ const TOOLS = [
   {
     name: 'scrape_page',
     description:
+      '[DEPRECATED — use acquire instead] ' +
       'Extract raw structured data from any storefront URL without running AI analysis. ' +
       'Returns product catalog (title, price, stock, CTA, description, B2B/B2C signals), ' +
       'facets/filters, page metadata, performance timing, data layer contents, and interactable elements. ' +
@@ -373,6 +369,7 @@ const TOOLS = [
   {
     name: 'merch_roundtable',
     description:
+      '[EXPERIMENTAL] ' +
       'Run a multi-perspective merchandising analysis using three expert personas (Floor Walker, Auditor, Scout) ' +
       'that independently evaluate the page, then debate their findings to produce a consensus. ' +
       'The Floor Walker reacts as a real shopper, the Auditor evaluates against a structured framework, ' +
@@ -643,6 +640,7 @@ async function handleAuditStorefront({ url, depth = 1, max_products = 10, person
 }
 
 async function handleScrapePage({ url, depth = 1, max_products = 10, include_screenshot = false, mobile_screenshot = false, include_pagespeed = false }) {
+  sendLog('info', 'scrape_page is deprecated — use acquire instead', { tool: 'scrape_page', url });
   if (!isValidHttpUrl(url)) throw new Error(`Invalid URL: "${url}"`);
 
   const cookies = getSessionCookies(url);
@@ -1204,16 +1202,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   try {
     sendLog('info', `Tool called: ${name}`);
     switch (name) {
-      case 'audit_storefront': {
-        const result = await withTimeout(handleAuditStorefront(args), 'audit_storefront', AUDIT_TIMEOUT_MS);
+      case 'acquire': {
+        const result = await withTimeout(
+          handleAcquire(args, { getSessionCookies, saveSessionCookies, getCachedPage, setCachedPage }),
+          'acquire',
+          AUDIT_TIMEOUT_MS,
+        );
         const content = [{ type: 'text', text: JSON.stringify(result, null, 2) }];
-        // Explicitly re-attach screenshot if available in the source session page
-        const pageData = getCachedPage(args.url);
-        if (pageData?.screenshotBuffer) {
-          content.push({ type: 'image', data: pageData.screenshotBuffer.toString('base64'), mimeType: 'image/jpeg' });
+        if (result.screenshots?.desktop) {
+          content.push({ type: 'image', data: result.screenshots.desktop, mimeType: 'image/jpeg' });
         }
         return { content };
       }
+      case 'audit_storefront':
+        return {
+          content: [{ type: 'text', text: 'audit_storefront has been retired in v2. Use acquire to collect the page payload, then apply your rubrics against the returned data.' }],
+          isError: true,
+        };
       case 'scrape_page':
         return { content: await handleScrapePage(args) };
       case 'interact_with_page':
