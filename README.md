@@ -51,6 +51,15 @@ Add to your Claude Desktop `claude_desktop_config.json` or Claude Code `.mcp.jso
 }
 ```
 
+To enable Firecrawl (bypasses bot-protected sites like Ferguson/Akamai) or pass any other env vars, add them to the `env` block:
+
+```json
+"env": {
+  "ANTHROPIC_API_KEY": "your_key_here",
+  "FIRECRAWL_API_KEY": "fc-..."
+}
+```
+
 Or install globally: `npm install -g merch-connector`
 
 ### Environment variables
@@ -62,13 +71,14 @@ Or install globally: `npm install -g merch-connector`
 | `OPENAI_API_KEY` | One of these | OpenAI-compatible API key |
 | `OPENAI_BASE_URL` | No | Base URL for OpenAI-compatible endpoint. Defaults to `https://api.openai.com/v1` |
 | `MODEL_PROVIDER` | No | Force `"anthropic"`, `"gemini"`, or `"openai"`. Auto-detected if omitted. |
-| `MODEL_NAME` | No | Override default model. Defaults: `claude-opus-4-6` / `gemini-2.5-pro` |
+| `MODEL_NAME` | No | Override default model. Defaults: `claude-sonnet-4-6` / `gemini-2.0-flash-exp` |
 | `OPENAI_VISION` | No | Set `"true"` to pass screenshots to OpenAI-compatible vision models |
+| `FIRECRAWL_API_KEY` | No | Enables Firecrawl as primary scraper in `acquire` — bypasses Akamai/bot protection. Falls back to Puppeteer if absent. |
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files. Default: `~/.merch-connector/data/` |
 | `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms. Default: `120000` (2 min) |
 | `MERCH_LOG_FILE` | No | Path to NDJSON log file. If set, every server log entry is appended. |
 
-You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `merch_roundtable`). Scraping tools work without one.
+You only need an API key for AI-powered tools (`ask_page`, `merch_roundtable`). Scraping tools work without one.
 
 ---
 
@@ -76,21 +86,34 @@ You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `
 
 | Tool | Description | Needs AI key? |
 |------|-------------|:---:|
-| `scrape_page` | Extract products, facets, badges, sort order, B2B signals, and change detection from any URL | No |
+| `acquire` | **Primary tool.** One-pass audit payload — products, facets, screenshots, performance, trust signals, navigation, data quality, analytics, and PDP samples in a single call | No |
+| `scrape_page` | *(Deprecated — use `acquire`)* Raw structured extraction from any category page | No |
 | `interact_with_page` | Execute one or more search/click actions in sequence, then extract the result | No |
 | `compare_storefronts` | Structured side-by-side diff of two URLs: facet gaps, trust signals, sort options, B2B mode, performance | No |
 | `ask_page` | Scrape a page and ask any question about it in plain language | Yes |
-| `audit_storefront` | Full merchandising audit with structured diagnosis and recommendations | Yes |
-| `merch_roundtable` | Five expert personas independently analyze, then debate to consensus (results stream as each persona completes) | Yes |
+| `merch_roundtable` | Three expert personas analyze in parallel, then a moderator synthesizes consensus (results stream as each persona completes) | Yes |
 | `site_memory` | Read/write persistent notes and learned data about any domain | No |
 | `clear_session` | Reset stored cookies and page cache for a domain | No |
 | `get_logs` | Retrieve recent server log entries from the in-memory buffer, filterable by level or tool name | No |
-| `save_eval` | Persist a roundtable or audit run as a structured eval record with convergence score | No |
+| `save_eval` | Persist a roundtable run as a structured eval record with convergence score | No |
 | `list_evals` | Retrieve eval history for a domain or all domains | No |
 
 ---
 
 ## Examples
+
+### acquire
+
+> Pull everything needed for a full storefront audit in one call
+
+```json
+{
+  "url": "https://www.zappos.com/women/CK_XARC81wHAAQHiAgMBAhg.zso",
+  "pdp_sample": 2
+}
+```
+
+Returns the complete audit payload: products with trust signals, facets, sort, navigation structure, data quality scores, analytics platform detection, performance timings, desktop + mobile screenshots, and 2 sampled PDPs — ready for the plugin to score.
 
 ### ask_page
 
@@ -109,19 +132,20 @@ You only need an API key for AI-powered tools (`audit_storefront`, `ask_page`, `
 
 ### merch_roundtable
 
-The roundtable scrapes once, then runs five sequential AI analyses followed by a moderator synthesis:
+The roundtable scrapes once, then runs three AI analyses in parallel followed by a moderator synthesis:
 
 1. **Floor Walker** — reacts as a real shopper ("I can't find Dell laptops without scrolling through 50 products")
 2. **Auditor** — evaluates Trust/Guidance/Persuasion/Friction ("0% facet detection rate, title normalization at 70%")
 3. **Scout** — identifies competitive gaps ("every competitor in B2B tech has brand filtering as facet #1")
-4. **B2B Auditor** — scores procurement readiness (steps-to-PO, spec completeness, pricing transparency)
-5. **Moderator** — synthesizes consensus, surfaces disagreements, produces prioritized recommendations
+4. **Moderator** — synthesizes consensus, surfaces disagreements, produces prioritized recommendations
+
+B2B Auditor automatically substitutes for Auditor when B2B signals are detected.
 
 ---
 
 ## Personas
 
-Five expert lenses for merchandising analysis. Use individually via the `persona` parameter on `audit_storefront`, or together via `merch_roundtable`.
+Five expert lenses for merchandising analysis. Use individually via `ask_page` or `merch_roundtable`.
 
 | Persona | Role | Voice |
 |---------|------|-------|
@@ -132,8 +156,6 @@ Five expert lenses for merchandising analysis. Use individually via the `persona
 | **Conversion Architect** | CRO specialist mapping the purchase funnel | Analytical, hypothesis-driven — "checkout button is below the fold on mobile, estimated −8% conversion" |
 
 Each persona returns `score` (0–100), `severity` (1–5), `findings[]` (3–5 concrete observations), and `uniqueInsight` — the one thing only that lens would catch.
-
-Pass `persona: "auto"` to `audit_storefront` and the server picks the best fit automatically based on the page fingerprint.
 
 ---
 
@@ -146,18 +168,19 @@ MCP Client (Claude, etc.)
     |
 merch-connector (Node.js MCP server)
     |
+    +-- acquire.js       One-pass audit entry point; Firecrawl → Puppeteer fallback
     +-- scraper.js       Puppeteer + stealth plugin, structure detection, PageFingerprint
-    +-- analyzer.js      Multi-provider AI (Anthropic / Gemini / OpenAI), 5 personas, smart selection
+    +-- analyzer.js      Multi-provider AI (Anthropic / Gemini / OpenAI), 5 personas
     +-- network-intel.js XHR interception, 35-platform fingerprint, dataLayer/GA4 parsing
     +-- site-memory.js   Persistent per-domain JSON store + change detection snapshots
     +-- eval-store.js    JSONL eval index + full run storage, convergence scoring
     +-- prompts/         Persona prompt files (floor-walker, auditor, scout, b2b-auditor, conversion-architect)
 ```
 
-- **Scraping**: Puppeteer with stealth plugin bypasses bot detection. Heuristic structure detection finds product grids on unknown sites. Extracts products, facets, trust signals (ratings, badges, stock warnings), performance timing, and screenshots.
+- **Scraping**: Puppeteer with stealth plugin bypasses bot detection. Two-pass heuristic structure detection finds product grids on unknown sites. Extracts products, facets, trust signals (ratings, badges, stock warnings), performance timing, and screenshots. Firecrawl integration (`FIRECRAWL_API_KEY`) provides LLM-based extraction as a primary path for bot-protected sites.
 - **Network intelligence**: Intercepts XHR/fetch during page load to fingerprint the commerce stack (Algolia, Bloomreach, SFCC, Shopify, Elasticsearch, and 30+ more). When a high-confidence match is found, extracts product and facet data directly from the API response — bypassing DOM parsing failures on enterprise storefronts.
-- **Analysis**: Three-provider AI — Anthropic uses `tool_choice` forcing for structured JSON; Gemini uses `responseSchema`; OpenAI-compatible uses function calling with a JSON-prompt fallback. Dynamic imports load only the needed SDK.
-- **Personas**: Five expert lenses. `audit_storefront` supports `persona: "auto"` for fingerprint-driven selection. `merch_roundtable` runs all five in parallel then passes results to a moderator that synthesizes consensus and disagreements.
+- **Analysis**: Three-provider AI — Anthropic uses `tool_choice` forcing for structured JSON; Gemini uses `responseSchema`; OpenAI-compatible uses function calling with a JSON-prompt fallback. Dynamic imports load only the needed SDK. `ask_page` uses Haiku-class models for fast Q&A; persona analysis uses Sonnet-class.
+- **Personas**: Five expert lenses. `merch_roundtable` runs Floor Walker, Auditor, and Scout in parallel then passes results to a moderator that synthesizes consensus and disagreements. B2B Auditor auto-substitutes for Auditor when B2B mode is detected.
 - **Memory**: Auto-learns site patterns on every scrape. Normalized snapshots enable change detection across visits — price moves, new/removed products, facet/sort changes. Manual notes persist across sessions.
 - **Evals**: Two-tier storage — compact JSONL index (100 runs/domain) + full run JSON (10/domain). Convergence score (0–100) measures inter-persona agreement. Dedup hashing prevents double-saves.
 
@@ -197,20 +220,33 @@ Opens a browser UI where you can call any tool interactively.
 
 ## Tool reference
 
-### audit_storefront
+### acquire
 
-Scrape + AI analysis in one call. Returns diagnosis, 4-dimension audit matrix (Trust/Guidance/Persuasion/Friction), standards checks, and prioritized recommendations.
+One-pass audit payload. The primary tool in v2 — replaces the multi-step `scrape_page` + analysis workflow. Returns everything the audit pipeline needs in a single call.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
-| `url` | Yes | Full URL to audit |
-| `depth` | No | Pagination pages to follow (1–5, default 1) |
-| `max_products` | No | Max products per page (default 10) |
-| `persona` | No | `"floor_walker"`, `"auditor"`, `"scout"`, `"b2b_auditor"`, `"conversion_architect"`, or `"auto"` |
+| `url` | Yes | Full URL to acquire |
+| `pdp_sample` | No | Number of PDP samples to include (0–5, default 2). Auto-selects median-priced + premium (80th percentile) products. |
+
+**Returns:**
+- `page` — title, metaDescription, pageType, breadcrumb, h1
+- `commerce` — mode (B2B/B2C/Hybrid), platform, priceTransparency, loginRequired
+- `products[]` — normalized with trust signals, B2B/B2C indicators, description quality
+- `facets[]`, `sort` — filter panel and sort state
+- `navigation` — hasFilterPanel, filterPanelPosition, hasStickyNav, breadcrumbPresent
+- `trustSignals` — ratingsOnCards, freeShippingPromised, returnPolicyVisible, urgencyMessaging
+- `dataQuality` — descriptionFillRate, ratingFillRate, priceFillRate
+- `analytics` — platform detection, GTM containers, ecommerce tracking status, productImpressionsFiring
+- `performance` — fcp, lcp, cls, domContentLoaded, loadComplete
+- `pdpSamples[]` — sampled PDP detail pages
+- `screenshots` — desktop + mobile base64 JPEG
+- `warnings[]` — structured quality flags with severity
+- `scraper` — `"firecrawl"` or `"puppeteer"` (which path was used)
 
 ### scrape_page
 
-Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals, trust signals), facets/filters, sort options, B2B mode + conflict score, page metadata, performance timing, data layers, interactable elements, and PageFingerprint. On repeat visits, also returns a `changes` diff.
+*(Deprecated — use `acquire`)* Raw structured extraction. Returns products (title, price, stock, CTA, description, B2B/B2C signals, trust signals), facets/filters, sort options, B2B mode + conflict score, page metadata, performance timing, data layers, interactable elements, and PageFingerprint. On repeat visits, also returns a `changes` diff.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
@@ -251,7 +287,7 @@ Execute one or more search/click actions in sequence, then extract the resulting
 
 ### ask_page
 
-Scrape + AI Q&A. The model sees full product data, facets, performance, and a screenshot.
+Scrape + AI Q&A. The model sees full product data, facets, performance, and a screenshot. Supports Anthropic (Haiku), Gemini, and OpenAI-compatible providers.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
@@ -262,7 +298,7 @@ Scrape + AI Q&A. The model sees full product data, facets, performance, and a sc
 
 ### merch_roundtable
 
-Multi-persona analysis with moderator synthesis. Each persona result is streamed as a `notifications/message` as it completes — clients don't have to wait for all five.
+Multi-persona analysis with moderator synthesis. Floor Walker, Auditor, and Scout run in parallel — each result is streamed as a `notifications/message` as it completes. B2B Auditor auto-substitutes for Auditor when B2B signals are detected.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
@@ -294,7 +330,7 @@ Reset cookies and cached page data for a domain.
 
 ### save_eval
 
-Persist the most recent roundtable or audit run as a structured eval record. Reads from the session persona cache — no data round-trip through the model. Must call `merch_roundtable` or `audit_storefront` on the same URL first.
+Persist the most recent roundtable or audit run as a structured eval record. Reads from the session persona cache — no data round-trip through the model. Must call `merch_roundtable` on the same URL first.
 
 | Parameter | Required | Description |
 |-----------|:---:|-------------|
@@ -325,10 +361,16 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.1 — Model alias fix + full multi-provider ask_page
+
+- **MCP-013**: Replaced retired `claude-3-5-sonnet-latest` alias with `claude-sonnet-4-6` across all Anthropic calls — fixes `ask_page`, `merch_roundtable`, and all persona analysis tools that were returning 404 errors
+- **ask_page multi-provider**: Added full Gemini and OpenAI-compatible implementations (were placeholder stubs). Anthropic path now uses Haiku-class model for fast, cost-effective Q&A; all persona analysis continues to use Sonnet.
+- **MCP-015 docs**: `FIRECRAWL_API_KEY` documented in README and CLAUDE.md; configuration example updated with env passthrough pattern
+
 ### v2.0.0 — acquire tool: one-pass v2 architecture
 
-- **New `acquire` tool**: Single call replaces the 6–8 step `scrape_page` + `audit_storefront` workflow — returns products, facets, screenshots, performance, trust signals, PDP samples, analytics, dataQuality, and `warnings[]` in one payload
-- **Firecrawl integration**: LLM extraction via Firecrawl as primary scraper with automatic Puppeteer fallback; `scraperMeta` field reports which path was used and any fallback reason
+- **New `acquire` tool**: Single call replaces the 6–8 step `scrape_page` + analysis workflow — returns products, facets, screenshots, performance, trust signals, navigation, data quality, PDP samples, analytics, and `warnings[]` in one payload
+- **Firecrawl integration**: LLM extraction via Firecrawl as primary scraper with automatic Puppeteer fallback; `scraper` field reports which path was used and any fallback reason
 - **`audit_storefront` retired**: Returns a hard error directing callers to `acquire`; `scrape_page` marked deprecated with log warning
 - **Protocol tests updated**: 34/34 passing; `acquire` in tool list, `audit_storefront` absent, `scrape_page` deprecation asserted
 
@@ -405,7 +447,7 @@ Complete rewrite — lean MCP server replacing the original React + Express UI. 
 
 ### v1.0.0
 
-Original React + Express application with Gemini-powered analysis.
+Original React + Express application with Gemini-powered merchandising analysis.
 
 ---
 

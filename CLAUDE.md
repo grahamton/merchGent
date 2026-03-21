@@ -87,6 +87,7 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 | `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms (default: 120000) |
 | `AUDIT_TIMEOUT_MS` | No | Timeout for `audit_storefront` specifically (default: 240000) |
 | `OPENAI_VISION` | No | Set `"true"` to enable screenshots for OpenAI-compatible models |
+| `FIRECRAWL_API_KEY` | No | Enables Firecrawl as primary scraper in `acquire`; falls back to Puppeteer if absent. Bypasses bot detection (e.g. Ferguson/Akamai). |
 | `MERCH_LOG_FILE` | No | Path to NDJSON log file. Every `sendLog` call appends a structured line. |
 
 Provider is auto-detected from available API keys: Anthropic → Gemini → OpenAI. Scraping tools (`scrape_page`, `interact_with_page`) work without any API key.

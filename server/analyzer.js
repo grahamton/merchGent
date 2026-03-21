@@ -288,7 +288,7 @@ const normalize = (raw) => ({
 async function callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = getModelName('anthropic', 'claude-3-5-sonnet-latest');
+  const model = getModelName('anthropic', 'claude-sonnet-4-6');
 
   const userContent = [{ type: 'text', text: contextText }];
   if (screenshot) {
@@ -693,17 +693,49 @@ const PAGE_QA_SYSTEM = `You are a merchandising expert. Answer the user's questi
 export async function askPage(pageData, question, screenshot = null) {
   const provider = detectProvider();
   const context = `URL: ${pageData.url}\nProducts: ${JSON.stringify(pageData.products.slice(0, 10))}\nQuestion: ${question}`;
-  
+
   if (provider === 'anthropic') {
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const userContent = [{ type: 'text', text: context }];
+    if (screenshot) {
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: screenshot.toString('base64') } });
+    }
     const response = await client.messages.create({
-      model: getModelName('anthropic', 'claude-3-5-sonnet-latest'),
+      model: getModelName('anthropic', 'claude-haiku-4-5-20251001'),
       max_tokens: 2048,
       system: PAGE_QA_SYSTEM,
-      messages: [{ role: 'user', content: context }],
+      messages: [{ role: 'user', content: userContent }],
     });
     return response.content[0].text;
   }
-  return "QA result placeholder (OpenAI/Gemini support pending)";
+
+  if (provider === 'gemini') {
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const parts = [{ text: context }];
+    if (screenshot) parts.push({ inlineData: { data: screenshot.toString('base64'), mimeType: 'image/jpeg' } });
+    const response = await ai.models.generateContent({
+      model: getModelName('gemini', 'gemini-2.0-flash-exp'),
+      contents: parts,
+      config: { systemInstruction: PAGE_QA_SYSTEM },
+    });
+    return response.text || '';
+  }
+
+  // openai-compatible
+  const { default: OpenAI } = await import('openai');
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
+  const model = getModelName('openai', null);
+  if (!model) throw new Error('MODEL_NAME is required for the openai provider.');
+  const useVision = process.env.OPENAI_VISION === 'true' && !!screenshot;
+  const userContent = useVision
+    ? [{ type: 'text', text: context }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${screenshot.toString('base64')}` } }]
+    : context;
+  const response = await client.chat.completions.create({
+    model,
+    max_tokens: 2048,
+    messages: [{ role: 'system', content: PAGE_QA_SYSTEM }, { role: 'user', content: userContent }],
+  });
+  return response.choices[0]?.message?.content || '';
 }
