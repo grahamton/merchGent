@@ -139,7 +139,7 @@ export function generateWarnings(payload, meta = {}) {
     warnings.push({
       code: 'LOW_CARD_CONFIDENCE',
       message: `Card selector confidence is ${meta.structureConfidence} — possible template mismatch. Products may be navigation tiles, not product listings.`,
-      severity: 'high',
+      severity: 'error',
     });
   }
 
@@ -147,7 +147,7 @@ export function generateWarnings(payload, meta = {}) {
     warnings.push({
       code: 'MOBILE_RENDER_FAILED',
       message: 'Mobile screenshot returned blank or failed. UA detection or redirect likely.',
-      severity: 'medium',
+      severity: 'warn',
     });
   }
 
@@ -155,7 +155,7 @@ export function generateWarnings(payload, meta = {}) {
     warnings.push({
       code: 'FCP_ZERO',
       message: 'First Contentful Paint returned 0 — SPA timing issue, metric unreliable.',
-      severity: 'low',
+      severity: 'warn',
     });
   }
 
@@ -164,7 +164,7 @@ export function generateWarnings(payload, meta = {}) {
     warnings.push({
       code: 'ECOMMERCE_TRACKING_GAP',
       message: 'GTM present but productImpressions not detected on category page.',
-      severity: 'medium',
+      severity: 'warn',
     });
   }
 
@@ -172,7 +172,7 @@ export function generateWarnings(payload, meta = {}) {
     warnings.push({
       code: 'NO_PRODUCTS_FOUND',
       message: 'No product cards detected on this page. URL may not be a category/listing page.',
-      severity: 'high',
+      severity: 'error',
     });
   }
 
@@ -181,7 +181,7 @@ export function generateWarnings(payload, meta = {}) {
     warnings.push({
       code: 'LOW_DESCRIPTION_FILL',
       message: `Only ${Math.round(dq.descriptionFillRate * 100)}% of products have real descriptions (threshold: 30%).`,
-      severity: 'medium',
+      severity: 'warn',
     });
   }
 
@@ -227,7 +227,7 @@ function aggregateTrustSignals(products, returnPolicyVisible = false) {
 
   return {
     ratingsOnCards: products.some(p => p.rating != null),
-    avgRatingAcrossProducts: avgRating,
+    avgRating: avgRating,
     reviewsOnCards: products.some(p => (p.reviewCount ?? 0) > 0),
     freeShippingPromised: products.some(p => (p.b2cIndicators || []).some(i => /free\s*(shipping|returns)/i.test(i))),
     returnPolicyVisible,
@@ -517,7 +517,7 @@ export async function handleAcquire(args, sessionOps) {
     payload.warnings.unshift({
       code: 'FIRECRAWL_FAILED',
       message: `Firecrawl timed out or errored — fell back to Puppeteer. Error: ${scraperMeta.firecrawlError}`,
-      severity: 'medium',
+      severity: 'warn',
     });
   }
 
