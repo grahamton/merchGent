@@ -84,10 +84,20 @@ async function runProtocolTests() {
   else {
     pass(`tools/list (${toolsResp.result.tools.length} tools)`);
     const names = toolsResp.result.tools.map((t) => t.name);
-    const expected = ['audit_storefront', 'scrape_page', 'scrape_pdp', 'get_category_sample', 'interact_with_page', 'compare_storefronts', 'ask_page', 'site_memory', 'merch_roundtable', 'clear_session', 'save_eval', 'list_evals', 'get_logs'];
+    // v2: acquire is the new primary tool; audit_storefront is retired (not in tools/list)
+    const expected = ['acquire', 'scrape_page', 'scrape_pdp', 'get_category_sample', 'interact_with_page', 'compare_storefronts', 'ask_page', 'site_memory', 'merch_roundtable', 'clear_session', 'save_eval', 'list_evals', 'get_logs'];
     for (const t of expected) {
       names.includes(t) ? pass(`  tool: ${t}`) : fail(`  tool: ${t}`, 'missing');
     }
+    // audit_storefront should be retired from the tool list
+    !names.includes('audit_storefront')
+      ? pass('  audit_storefront retired from tools/list')
+      : fail('  audit_storefront retired', 'still present in tools/list — should have been removed in v2');
+    // scrape_page should be deprecated (description contains DEPRECATED)
+    const scrapePageTool = toolsResp.result.tools.find(t => t.name === 'scrape_page');
+    scrapePageTool?.description?.includes('DEPRECATED')
+      ? pass('  scrape_page has DEPRECATED in description')
+      : fail('  scrape_page deprecation', 'description does not contain DEPRECATED');
   }
 
   // 3. Prompts
