@@ -579,6 +579,42 @@ export async function runRoundtable(pageData, screenshot = null, memory = {}, on
   return { ...partialResult, debate };
 }
 
+export function validatePriceBuckets(pageData) {
+  const priceFacet = (pageData.facets || []).find((f) => /price/i.test(f.name) && f.options?.length > 0);
+  if (!priceFacet) return null;
+
+  const buckets = priceFacet.options.map((o) => {
+    const range = /\$?([\d,]+)\s*[-–]\s*\$?([\d,]+)/i.exec(o.label);
+    const under = /under\s*\$?([\d,]+)/i.exec(o.label);
+    const over  = /\$?([\d,]+)\s*\+/i.exec(o.label);
+    const min = range ? parseFloat(range[1].replace(/,/g, '')) : under ? 0 : over ? parseFloat(over[1].replace(/,/g, '')) : null;
+    const max = range ? parseFloat(range[2].replace(/,/g, '')) : under ? parseFloat(under[1].replace(/,/g, '')) : over ? Infinity : null;
+    return { label: o.label, min, max, parseable: min !== null && max !== null };
+  });
+
+  const parseableProducts = pageData.products
+    .map((p) => ({ title: p.title, price: parseFloat(String(p.price || '').replace(/[^0-9.]/g, '')) }))
+    .filter((p) => !isNaN(p.price) && p.price > 0);
+
+  const parseableBuckets = buckets.filter((b) => b.parseable);
+  if (parseableBuckets.length === 0 || parseableProducts.length === 0) return null;
+
+  const unmatched = parseableProducts.filter(
+    (p) => !parseableBuckets.some((b) => p.price >= b.min && p.price <= b.max)
+  );
+  const empty = parseableBuckets.filter(
+    (b) => !parseableProducts.some((p) => p.price >= b.min && p.price <= b.max)
+  );
+
+  return {
+    facetName: priceFacet.name,
+    buckets,
+    unmatchedProducts: unmatched.map((p) => ({ title: p.title, price: p.price })),
+    emptyBuckets: empty.map((b) => b.label),
+    valid: unmatched.length === 0 && empty.length === 0,
+  };
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export function compareStorefronts(pageDataA, pageDataB) {
