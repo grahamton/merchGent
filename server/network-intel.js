@@ -1183,6 +1183,83 @@ function extractGenericFacets(body) {
 // ─── Scoring algorithm ────────────────────────────────────────────────────────
 
 /**
+ * Generic facet extraction — tries common body shapes regardless of platform.
+ * Used as a fallback when no platform fingerprint matched.
+ */
+function extractFacetsGeneric(body) {
+  if (!body || typeof body !== 'object') return [];
+
+  // Try common root keys that hold facet arrays
+  const candidates = [
+    body.facets, body.Facets, body.filters, body.refinements,
+    body.facetGroups, body.filterGroups,
+  ];
+  for (const arr of candidates) {
+    if (!Array.isArray(arr) || arr.length === 0) continue;
+    const first = arr[0];
+    if (!first || typeof first !== 'object') continue;
+    const hasName = first.name || first.label || first.displayName || first.title;
+    const opts = first.options || first.values || first.buckets || first.items || first.children;
+    if (hasName && Array.isArray(opts)) {
+      return arr.map((f) => {
+        const name = f.name || f.label || f.displayName || f.title || 'Unknown';
+        const options = (f.options || f.values || f.buckets || f.items || f.children || [])
+          .map((o) => ({
+            label: String(o.label || o.name || o.value || o.displayName || o.text || '').trim(),
+            count: o.count || o.doc_count || o.productCount || null,
+            selected: o.selected || o.isSelected || false,
+          }))
+          .filter((o) => o.label);
+        return options.length > 0 ? { name, type: 'list', options } : null;
+      }).filter(Boolean);
+    }
+  }
+
+  // Solr facet_fields: { fieldName: [val, count, val, count, ...] }
+  const solrFields = body.facet_counts?.facet_fields;
+  if (solrFields && typeof solrFields === 'object' && !Array.isArray(solrFields)) {
+    return Object.entries(solrFields)
+      .map(([name, arr]) => {
+        if (!Array.isArray(arr) || arr.length < 2) return null;
+        const options = [];
+        for (let i = 0; i < arr.length - 1; i += 2) {
+          const label = String(arr[i]).trim();
+          const count = typeof arr[i + 1] === 'number' ? arr[i + 1] : null;
+          if (label) options.push({ label, count, selected: false });
+        }
+        return options.length > 0 ? { name, type: 'list', options } : null;
+      })
+      .filter(Boolean);
+  }
+
+  // Elasticsearch aggregations: { aggName: { buckets: [{ key, doc_count }] } }
+  const aggs = body.aggregations;
+  if (aggs && typeof aggs === 'object' && !Array.isArray(aggs)) {
+    const facets = Object.entries(aggs)
+      .map(([name, agg]) => {
+        const buckets = agg?.buckets;
+        if (!Array.isArray(buckets) || buckets.length === 0) return null;
+        const options = buckets
+          .map((b) => ({ label: String(b.key || b.key_as_string || '').trim(), count: b.doc_count || null, selected: false }))
+          .filter((o) => o.label);
+        return options.length > 0 ? { name, type: 'list', options } : null;
+      })
+      .filter(Boolean);
+    if (facets.length > 0) return facets;
+  }
+
+  // Try nested wrappers: response.*, data.*, searchResults.* etc.
+  for (const key of ['response', 'data', 'result', 'searchResults', 'categoryResponse']) {
+    if (body[key] && typeof body[key] === 'object' && !Array.isArray(body[key])) {
+      const nested = extractFacetsGeneric(body[key]);
+      if (nested.length > 0) return nested;
+    }
+  }
+
+  return [];
+}
+
+/**
  * Score a network response for "product data richness" — returns 0-100.
  */
 export function scoreResponse(response) {
@@ -1489,6 +1566,11 @@ export function extractFromBestApi(analyzed, pageType = 'plp') {
     } catch {
       facets = [];
     }
+  }
+
+  // Generic fallback: if platform-specific extraction found no facets, try body-shape heuristics
+  if (facets.length === 0) {
+    facets = extractFacetsGeneric(body);
   }
 
   // Extract total count

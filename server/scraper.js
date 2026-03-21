@@ -849,6 +849,7 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
         }
         await mobilePage.goto(url, { waitUntil: 'networkidle2', timeout: 20000 }).catch(() => {});
         // Dismiss common consent modals (OneTrust, Cookiebot, TrustArc, generic accept buttons)
+        // On mobile these often render as full-screen overlays that blank the viewport (MCP-005)
         await mobilePage.evaluate(() => {
           const selectors = [
             '#onetrust-accept-btn-handler',
@@ -858,18 +859,18 @@ export async function scrapePage(url, cookies = [], depth = 1, maxProducts = 10,
             'button[data-cookiebanner="accept_button"]',
             '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
             '.truste_overlay .truste_popframe',
-            'button[aria-label*="Accept"][aria-label*="cookie" i]',
             'button[aria-label*="Accept all" i]',
+            'button[aria-label*="Accept"][aria-label*="cookie" i]',
           ];
           for (const sel of selectors) {
             try { document.querySelector(sel)?.click(); } catch { /* ignore */ }
           }
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 1200));
         const buf = await mobilePage.screenshot({ type: 'jpeg', quality: 70 });
-        // Reject blank white images — sample pixels from the center of the buffer
-        // JPEG white is 0xFF 0xD8 ... with high-value bytes; check raw buffer isn't trivially small
-        mobileScreenshotBuffer = buf && buf.length > 2000 ? buf : null;
+        // Reject blank white images — a real page at 390x844 quality:70 should exceed 20KB;
+        // a pure-white or consent-blocked frame is typically under 5KB
+        mobileScreenshotBuffer = buf && buf.length > 20000 ? buf : null;
       } catch { /* non-fatal — mobile screenshot is best-effort */ }
       finally {
         if (mobilePage) await mobilePage.close().catch(() => {});
