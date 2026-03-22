@@ -361,6 +361,12 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.9 — Bot-block resilience: blocked/blockType/fallbackSuggestions
+
+- **`acquire` now surfaces block state explicitly**: top-level `blocked` (bool) and `blockType` (`WAF` | `TIMEOUT` | `EMPTY_RENDER`) are set whenever `FIRECRAWL_FAILED`, `LOW_CARD_CONFIDENCE`, or `NO_PRODUCTS_FOUND` warnings are present — skill layer can branch without parsing `warnings[]`
+- **`fallbackSuggestions[]`**: three pre-computed search strings (`site:`, keyword, `cache:`) derived from the input URL, ready to pass to a search fallback workflow
+- **Blocked responses skip the cache** — retries after stealth changes or a different entry point always get a fresh scrape attempt
+
 ### v2.0.8 — MCP-002: facet extraction for Shopify/Allbirds filter patterns
 
 - **Strategy 2 expanded**: candidate selector list now includes `form[action*="filter"]`, `[class*="FilterPanel"]`, `[class*="filter-panel"]` and similar patterns that Headless Shopify storefronts use — previously missed because filters weren't inside `aside`/`nav`/`sidebar` elements
