@@ -147,13 +147,30 @@ function getClient() {
  * @param {string} url
  * @returns {Promise<object>}
  */
-export async function scrapePdpWithFirecrawl(url) {
+export async function scrapePdpWithFirecrawl(url, options = {}) {
+  const { signal } = options;
   const client = getClient();
-  const result = await client.scrapeUrl(url, {
+  const scrapePromise = client.scrapeUrl(url, {
     formats: ['extract'],
     extract: { schema: PDP_EXTRACT_SCHEMA },
     timeout: 30000,
   });
+
+  // If an AbortSignal is provided, race the scrape against it
+  const result = signal
+    ? await Promise.race([
+        scrapePromise,
+        new Promise((_, reject) => {
+          if (signal.aborted) {
+            reject(new DOMException('PDP scrape aborted', 'AbortError'));
+          } else {
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('PDP scrape aborted', 'AbortError')),
+            { once: true });
+          }
+        }),
+      ])
+    : await scrapePromise;
 
   if (!result.success) {
     throw new Error(`Firecrawl PDP scrape failed: ${result.error || 'unknown error'}`);

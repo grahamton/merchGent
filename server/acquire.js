@@ -332,13 +332,16 @@ function normalizeProduct(p) {
 
 // ─── Pro/Trade CTA detection ──────────────────────────────────────────────────
 
-const PRO_TRADE_PATTERN = /pro\s*pric|trade\s*account|contractor\s*login|pro\s*account|get\s*pro|trade\s*pric|pro\s*rewards|trade\s*program/i;
+const PRO_TRADE_PATTERN = /pro\s*pric|trade\s*account|contractor\s*login|pro\s*account|get\s*pro|trade\s*pric|pro\s*rewards|trade\s*program|are\s+you\s+a\s+pro|pro\s*login|pro\s*sign[\s-]?in|become\s+a\s+pro/i;
 
 function hasProTradeCta(scrapeResult) {
   const interactables = scrapeResult.interactables || [];
   const findings = scrapeResult.findings || [];
   return interactables.some(i => PRO_TRADE_PATTERN.test(i.text || '')) ||
-    findings.some(f => PRO_TRADE_PATTERN.test(f.text || '') || PRO_TRADE_PATTERN.test(f.title || ''));
+    findings.some(f => PRO_TRADE_PATTERN.test(f.text || '') || PRO_TRADE_PATTERN.test(f.title || '')) ||
+    PRO_TRADE_PATTERN.test(scrapeResult.pageText || '') ||
+    PRO_TRADE_PATTERN.test(scrapeResult.page?.h1 || '') ||
+    PRO_TRADE_PATTERN.test(scrapeResult.page?.title || '');
 }
 
 // ─── Puppeteer → acquire payload ──────────────────────────────────────────────
@@ -446,12 +449,13 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
   const trustSignals = aggregateTrustSignals(products);
   const nav = raw.navigation || {};
 
-  // Upgrade B2C to Hybrid when Pro/Trade CTAs appear in nav items
+  // Upgrade B2C to Hybrid when Pro/Trade CTAs appear in nav items or full page content
   const rawCommerce = raw.commerce || {};
   const navItems = nav.topNavItems || [];
-  const commerceMode = (rawCommerce.mode === 'B2C' && navItems.some(i => PRO_TRADE_PATTERN.test(i)))
-    ? 'Hybrid'
-    : (rawCommerce.mode || 'B2C');
+  const commerceMode = (rawCommerce.mode === 'B2C' && (
+    navItems.some(i => PRO_TRADE_PATTERN.test(i)) ||
+    PRO_TRADE_PATTERN.test(raw.content || '')
+  )) ? 'Hybrid' : (rawCommerce.mode || 'B2C');
 
   return {
     url: raw.url,
@@ -537,7 +541,8 @@ export async function handleAcquire(args, sessionOps) {
       if (pdpUrls.length) log('info', `Sampling ${pdpUrls.length} PDP(s) via Firecrawl`);
       const pdpSamples = await Promise.all(pdpUrls.map(async u => {
         try {
-          const raw = await scrapePdpWithFirecrawl(u);
+          const signal = AbortSignal.timeout(12000); // 12s per PDP — keep total under 60s
+          const raw = await scrapePdpWithFirecrawl(u, { signal });
           return mapRawPdpToAcquireShape(u, raw);
         } catch {
           // Firecrawl PDP failed — try Puppeteer as last resort
