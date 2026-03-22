@@ -87,6 +87,7 @@ You only need an API key for AI-powered tools (`ask_page`, `merch_roundtable`). 
 | Tool | Description | Needs AI key? |
 |------|-------------|:---:|
 | `acquire` | **Primary tool.** One-pass audit payload — products, facets, screenshots, performance, trust signals, navigation, data quality, analytics, and PDP samples in a single call | No |
+| `scrape_pdp` | Scrape a single product detail page — description fill rate, image count, reviews, spec table, cross-sell modules, CTA text, price | No |
 | `scrape_page` | *(Deprecated — use `acquire`)* Raw structured extraction from any category page | No |
 | `interact_with_page` | Execute one or more search/click actions in sequence, then extract the result | No |
 | `compare_storefronts` | Structured side-by-side diff of two URLs: facet gaps, trust signals, sort options, B2B mode, performance | No |
