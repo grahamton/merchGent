@@ -361,6 +361,10 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.12 — MCP-026: stabilize Firecrawl product description extraction
+
+- **MCP-026**: `description` field in Firecrawl `EXTRACT_SCHEMA` now carries a JSON Schema annotation explaining what to look for (subtitle text, attribute summaries, model/color/finish specs visible on the card); `acquireWithFirecrawl()` also passes an explicit `prompt` to the extract call — eliminates non-deterministic empty-description runs caused by the LLM not knowing category cards carry spec text rather than marketing copy
+
 ### v2.0.11 — MCP-020/023/024/025: breadcrumb heuristic, Hybrid detection, star rating guard, PDP timeout
 
 - **MCP-024**: `starRating` guard added — values above 5 are discarded (review count bleed); `ratingEl` now prefers `content` attribute (schema.org) before falling back to `aria-label`/`innerText`

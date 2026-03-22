@@ -48,7 +48,7 @@ const EXTRACT_SCHEMA = {
           imageCount: { type: 'number' },
           rating: { type: 'number' },
           reviewCount: { type: 'number' },
-          description: { type: 'string' },
+          description: { type: 'string', description: 'Any subtitle, attribute summary, spec text, or short descriptive text visible on the product card below the title (e.g. "Color: Matte Black. Model: T2692EPBL."). Include model numbers, color variants, finish specs if visible.' },
           badges: { type: 'array', items: { type: 'string' } },
           b2bIndicators: { type: 'array', items: { type: 'string' } },
           b2cIndicators: { type: 'array', items: { type: 'string' } },
@@ -204,7 +204,10 @@ export async function acquireWithFirecrawl(url) {
   // Primary scrape: structured extraction + desktop screenshot
   const desktopResult = await client.scrapeUrl(url, {
     formats: ['extract', 'screenshot'],
-    extract: { schema: EXTRACT_SCHEMA },
+    extract: {
+      schema: EXTRACT_SCHEMA,
+      prompt: 'For each product card, populate description with any subtitle, attribute summary, or spec text visible below the product title. If the card shows color, model number, or finish details, include those. Do not leave description empty if any non-title text is visible on the card.',
+    },
     timeout: 60000,
   });
 
