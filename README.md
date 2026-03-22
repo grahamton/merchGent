@@ -361,6 +361,13 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.11 — MCP-020/023/024/025: breadcrumb heuristic, Hybrid detection, star rating guard, PDP timeout
+
+- **MCP-024**: `starRating` guard added — values above 5 are discarded (review count bleed); `ratingEl` now prefers `content` attribute (schema.org) before falling back to `aria-label`/`innerText`
+- **MCP-020**: `getBreadcrumb()` gets two new fallback passes — `data-testid` breadcrumb variants (React/Next.js), then a URL-depth heuristic over `nav a`/`header a` elements to recover multi-level paths like Ferguson's 4-level hierarchy
+- **MCP-023**: `PRO_TRADE_PATTERN` extended with `are you a pro`, `pro login`, `become a pro`; `hasProTradeCta()` now checks `pageText`, `page.h1`, and `page.title`; Firecrawl path falls back to testing full `raw.content` when nav items are sparse
+- **MCP-025**: Per-PDP `AbortSignal.timeout(12000)` added to Firecrawl PDP path — 12s cap per PDP keeps total `acquire` wall time under 60s (Claude Desktop client limit); timed-out PDPs fall through to Puppeteer fallback
+
 ### v2.0.10 — MCP-017–023: data extraction gaps and Firecrawl routing
 
 - **MCP-017**: PDP sub-scrapes now route through Firecrawl first (bypasses WAF/Akamai); fall back to Puppeteer per-URL; `PDP_SAMPLES_BLOCKED` warning emitted when all PDPs fail
