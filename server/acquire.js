@@ -534,6 +534,35 @@ export async function handleAcquire(args, sessionOps) {
     });
   }
 
+  // ── Block detection ──────────────────────────────────────────────────────────
+  const warnCodes = new Set(payload.warnings.map(w => w.code));
+  const BLOCK_TRIGGERS = ['FIRECRAWL_FAILED', 'LOW_CARD_CONFIDENCE', 'NO_PRODUCTS_FOUND'];
+  payload.blocked = BLOCK_TRIGGERS.some(c => warnCodes.has(c));
+
+  if (payload.blocked) {
+    if (warnCodes.has('FIRECRAWL_FAILED')) {
+      payload.blockType = 'WAF';
+    } else if (warnCodes.has('NO_PRODUCTS_FOUND') && warnCodes.has('FCP_ZERO')) {
+      payload.blockType = 'TIMEOUT';
+    } else if (warnCodes.has('NO_PRODUCTS_FOUND')) {
+      payload.blockType = 'EMPTY_RENDER';
+    } else {
+      payload.blockType = 'WAF'; // LOW_CARD_CONFIDENCE alone
+    }
+
+    try {
+      const u = new URL(url);
+      const slug = u.pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') ?? '';
+      payload.fallbackSuggestions = [
+        `site:${u.hostname}${u.pathname}`,
+        `${u.hostname} ${slug} brand add to cart`.trim(),
+        `cache:${u.hostname}${u.pathname}`,
+      ];
+    } catch { /* non-fatal */ }
+  } else {
+    payload.blocked = false;
+  }
+
   // Site memory + change detection (non-fatal)
   try {
     // Build a synthetic scrape result shape for site-memory functions
@@ -558,12 +587,14 @@ export async function handleAcquire(args, sessionOps) {
     }
   } catch { /* non-fatal */ }
 
-  // Cache the completed payload for same-session reuse
-  try {
-    const cacheEntry = getCachedPage(url) || {};
-    cacheEntry._acquirePayload = payload;
-    setCachedPage(payload.url, cacheEntry);
-  } catch { /* non-fatal */ }
+  // Cache the completed payload for same-session reuse — skip if blocked
+  if (!payload.blocked) {
+    try {
+      const cacheEntry = getCachedPage(url) || {};
+      cacheEntry._acquirePayload = payload;
+      setCachedPage(payload.url, cacheEntry);
+    } catch { /* non-fatal */ }
+  }
 
   return payload;
 }
