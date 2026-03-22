@@ -361,6 +361,18 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.10 — MCP-017–023: data extraction gaps and Firecrawl routing
+
+- **MCP-017**: PDP sub-scrapes now route through Firecrawl first (bypasses WAF/Akamai); fall back to Puppeteer per-URL; `PDP_SAMPLES_BLOCKED` warning emitted when all PDPs fail
+- **MCP-018/023**: `freeShippingPromised` now checks `trustBadges[]` in addition to `b2cIndicators`; `commerce.mode` upgraded B2C→Hybrid when Pro/Trade pricing CTAs are detected in page interactables or nav items
+- **MCP-019/021**: New warnings — `FACETS_INCOMPLETE` when Firecrawl returns fewer than 4 facets; `PERFORMANCE_UNAVAILABLE` (info) when Firecrawl is active scraper
+- **MCP-020/022**: Breadcrumb selector expanded to capture `span`/`li`/schema.org elements with dedup + separator filtering; `ratingFillRate` now requires `rating > 0` (zero-star no longer counted as filled)
+
+### v2.0.9 — Bot-block resilience: blocked/blockType/fallbackSuggestions in acquire
+
+- `acquire` now returns `blocked: true`, `blockType` (`WAF`/`TIMEOUT`/`EMPTY_RENDER`), and `fallbackSuggestions[]` when Akamai or other WAF blocks both scrapers
+- Blocked responses are no longer cached — retries get a fresh attempt
+
 ### v2.0.8 — MCP-002: facet extraction for Shopify/Allbirds filter patterns
 
 - **Strategy 2 expanded**: candidate selector list now includes `form[action*="filter"]`, `[class*="FilterPanel"]`, `[class*="filter-panel"]` and similar patterns that Headless Shopify storefronts use — previously missed because filters weren't inside `aside`/`nav`/`sidebar` elements

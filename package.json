@@ -1,6 +1,6 @@
 {
   "name": "merch-connector",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "description": "MCP server that gives merchandising agents eyes on any storefront — scrape, audit, compare, roundtable analysis, and eval tracking via 11 tools.",
   "type": "module",
   "bin": {
