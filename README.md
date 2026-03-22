@@ -361,6 +361,12 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.3 — MCP-013 API key fix + user config fallback
+
+- **MCP-013 root cause**: `plugin.json` was explicitly setting `ANTHROPIC_API_KEY=""` and `FIRECRAWL_API_KEY=""`, overriding system env vars before they reached the server — fixed in plugin v0.5.1
+- **User config fallback**: Server now loads `~/.merch-connector/.env` as a fallback for any env var that is absent or empty, so API keys survive npx cache clears and work regardless of how the launcher passes env vars
+- **Deduped imports**: Merged `fs` import consolidation in `index.js` startup block
+
 ### v2.0.2 — MCP-014 acquire field fixes
 
 - **`trustSignals.avgRating`**: Renamed from `avgRatingAcrossProducts` to match the field name the plugin audit command expects — was causing silent scoring failures on every acquire call

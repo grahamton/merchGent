@@ -16,8 +16,22 @@
  * Connect via stdio (Claude Desktop, Claude Code MCP config, etc.)
  */
 import { config as loadEnv } from 'dotenv';
+import { homedir } from 'os';
+import { join } from 'path';
+import { existsSync, readFileSync, appendFileSync } from 'fs';
 loadEnv({ path: new URL('../.env', import.meta.url), quiet: true });
-import { readFileSync, appendFileSync } from 'fs';
+// Fallback: load user-level config from ~/.merch-connector/.env (survives npx cache clears).
+// Only fills in vars that are absent or empty — plugin launchers sometimes explicitly set "" which
+// blocks normal env inheritance, so we treat "" the same as missing.
+{
+  const userEnvPath = join(homedir(), '.merch-connector', '.env');
+  if (existsSync(userEnvPath)) {
+    const parsed = loadEnv({ path: userEnvPath, processEnv: {} }).parsed || {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (!process.env[k]) process.env[k] = v;
+    }
+  }
+}
 const { version: PKG_VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
