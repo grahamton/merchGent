@@ -361,6 +361,11 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.4 — Fix acquire field truncation
+
+- **Root cause of missing fields**: Screenshot base64 was included in the JSON text payload AND as a separate image content item — the duplicate filled the MCP token budget before `performance`, `trustSignals`, `analytics`, `navigation`, `dataQuality`, `pdpSamples`, and `warnings` appeared in the serialized output
+- **Fix**: Screenshots are now stripped from the JSON text and sent only as image content items; all 7 structured fields are now fully visible to the MCP client on every acquire call
+
 ### v2.0.3 — MCP-013 API key fix + user config fallback
 
 - **MCP-013 root cause**: `plugin.json` was explicitly setting `ANTHROPIC_API_KEY=""` and `FIRECRAWL_API_KEY=""`, overriding system env vars before they reached the server — fixed in plugin v0.5.1

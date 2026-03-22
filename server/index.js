@@ -1222,9 +1222,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
           'acquire',
           AUDIT_TIMEOUT_MS,
         );
-        const content = [{ type: 'text', text: JSON.stringify(result, null, 2) }];
-        if (result.screenshots?.desktop) {
-          content.push({ type: 'image', data: result.screenshots.desktop, mimeType: 'image/jpeg' });
+        // Strip screenshot base64 from JSON text — they're sent as separate image content items
+        // below. Including them in the text fills the MCP token budget before the structured
+        // fields (performance, trustSignals, analytics, etc.) appear in the serialized output.
+        const { screenshots, ...resultForText } = result;
+        const content = [{ type: 'text', text: JSON.stringify(resultForText, null, 2) }];
+        if (screenshots?.desktop) {
+          content.push({ type: 'image', data: screenshots.desktop, mimeType: 'image/jpeg' });
         }
         return { content };
       }
