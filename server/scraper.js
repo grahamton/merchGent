@@ -222,7 +222,22 @@ const extractFacets = async (page) => {
     // Strategy 2: heuristic — find sidebar/nav with repeated checkboxes or link groups.
     // Uses heading-to-heading tree walking so obfuscated-class sites (Zappos, etc.) are
     // segmented correctly instead of collapsing all filter labels into one fake facet.
-    const candidates = document.querySelectorAll('aside, nav, [role="navigation"], [class*="sidebar"], [class*="left-nav"]');
+    // Candidate list also covers Shopify filter forms (form > details) and generic filter
+    // containers that lack aside/nav/sidebar class names (Allbirds, many Headless Shopify sites).
+    const candidates = document.querySelectorAll([
+      'aside',
+      'nav',
+      '[role="navigation"]',
+      '[class*="sidebar"]',
+      '[class*="left-nav"]',
+      'form[action*="filter"]',
+      'form[id*="filter"]',
+      'form[class*="filter"]',
+      '[class*="FilterPanel"]',
+      '[class*="filter-panel"]',
+      '[class*="facet-panel"]',
+      '[class*="FacetPanel"]',
+    ].join(', '));
     for (const sidebar of candidates) {
       const headings = Array.from(sidebar.querySelectorAll('h2, h3, h4, legend, summary'));
       if (headings.length < 2) continue; // single heading → not a filter sidebar
@@ -271,6 +286,32 @@ const extractFacets = async (page) => {
         }
       });
       if (facets.length > 0) break; // first productive sidebar wins
+    }
+
+    // Strategy 3: Shopify <details> filter groups (Allbirds, many Headless Shopify storefronts).
+    // Each filter group is a standalone <details> element with a <summary> label and
+    // <input type="checkbox"> / <label> children — no shared sidebar container needed.
+    if (facets.length === 0) {
+      const detailsGroups = Array.from(document.querySelectorAll('details')).filter((d) => {
+        const inputs = d.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+        return inputs.length >= 2;
+      });
+      for (const details of detailsGroups) {
+        const summary = details.querySelector('summary');
+        const name = summary?.innerText?.trim() || details.getAttribute('aria-label') || '';
+        if (!name || name.length > 60) continue;
+        const inputs = Array.from(details.querySelectorAll('input[type="checkbox"], input[type="radio"]'));
+        const options = inputs.slice(0, 15).map((inp) => {
+          const label = inp.closest('label') || document.querySelector(`label[for="${inp.id}"]`);
+          return {
+            label: (label?.innerText || inp.getAttribute('aria-label') || inp.value || '').trim().slice(0, 60),
+            selected: inp.checked,
+          };
+        }).filter((o) => o.label.length > 0 && o.label !== name);
+        if (options.length >= 2) {
+          facets.push({ name, type: 'list', optionCount: options.length, options, selectedCount: options.filter((o) => o.selected).length });
+        }
+      }
     }
 
     return facets;

@@ -361,6 +361,11 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.8 — MCP-002: facet extraction for Shopify/Allbirds filter patterns
+
+- **Strategy 2 expanded**: candidate selector list now includes `form[action*="filter"]`, `[class*="FilterPanel"]`, `[class*="filter-panel"]` and similar patterns that Headless Shopify storefronts use — previously missed because filters weren't inside `aside`/`nav`/`sidebar` elements
+- **Strategy 3 added**: dedicated `<details>`-based extractor for Shopify filter groups (Allbirds and similar) where each facet is a standalone `<details>` with a `<summary>` label and checkbox inputs — no shared sidebar container required
+
 ### v2.0.7 — MCP-016: acquire silent timeout fix + progress logging
 
 - **Silent hang fixed**: Firecrawl mobile screenshot call had no timeout — bot-blocked URLs caused the entire `acquire` handler to freeze indefinitely with zero log output; added `timeout: 30000` to the mobile scrape call
