@@ -1218,7 +1218,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     switch (name) {
       case 'acquire': {
         const result = await withTimeout(
-          handleAcquire(args, { getSessionCookies, saveSessionCookies, getCachedPage, setCachedPage }),
+          handleAcquire(args, { getSessionCookies, saveSessionCookies, getCachedPage, setCachedPage, sendLog }),
           'acquire',
           AUDIT_TIMEOUT_MS,
         );

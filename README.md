@@ -361,6 +361,12 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.7 — MCP-016: acquire silent timeout fix + progress logging
+
+- **Silent hang fixed**: Firecrawl mobile screenshot call had no timeout — bot-blocked URLs caused the entire `acquire` handler to freeze indefinitely with zero log output; added `timeout: 30000` to the mobile scrape call
+- **Progress logging**: `acquire` now emits `sendLog` entries at every major step (Firecrawl start/complete, Puppeteer start/complete, PDP sampling start/complete, cache hit) so timeouts are diagnosable from `get_logs`
+- **`sendLog` wired into acquire**: passed via `sessionOps` from `index.js` — no circular dependency, no architectural change
+
 ### v2.0.6 — Fix acquire screenshot crash when using Firecrawl
 
 - **Root cause**: Firecrawl returns `screenshot` as a CDN URL, not base64; the MCP SDK's base64 validator rejected it, crashing every `acquire` call when `FIRECRAWL_API_KEY` is set

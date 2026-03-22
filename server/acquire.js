@@ -444,7 +444,8 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
  */
 export async function handleAcquire(args, sessionOps) {
   const { url, pdp_sample = 2 } = args;
-  const { getSessionCookies, saveSessionCookies, getCachedPage, setCachedPage } = sessionOps;
+  const { getSessionCookies, saveSessionCookies, getCachedPage, setCachedPage, sendLog } = sessionOps;
+  const log = (level, msg, data) => sendLog?.(level, msg, { tool: 'acquire', url, ...data });
 
   if (!isValidHttpUrl(url)) {
     throw Object.assign(new Error('Invalid URL — must be http or https.'), { isValidationError: true });
@@ -455,27 +456,35 @@ export async function handleAcquire(args, sessionOps) {
 
   // Check page cache — reuse if fresh (same TTL as scrape_page)
   const cached = getCachedPage(url);
-  if (cached?._acquirePayload) return cached._acquirePayload;
+  if (cached?._acquirePayload) {
+    log('debug', 'Returning cached acquire payload');
+    return cached._acquirePayload;
+  }
 
   let payload;
   let scraperMeta = {};
 
   if (process.env.FIRECRAWL_API_KEY) {
     // ── Firecrawl path (with Puppeteer fallback on runtime failure) ───────────
+    log('info', 'Starting Firecrawl scrape');
     let fcResult = null;
     try {
       fcResult = await acquireWithFirecrawl(url);
+      log('info', `Firecrawl scrape complete — ${(fcResult.products || []).length} products`);
     } catch (fcErr) {
       // Fall back to Puppeteer and note the failure in warnings
       fcResult = null;
       scraperMeta._firecrawlError = fcErr.message || String(fcErr);
+      log('warn', `Firecrawl failed, falling back to Puppeteer: ${scraperMeta._firecrawlError}`);
     }
 
     if (fcResult) {
       // PDP sampling uses Puppeteer (Firecrawl extract works poorly on PDPs without a schema tuned for them)
       const cookies = getSessionCookies(url);
       const pdpUrls = selectPdpSamples(fcResult.products || [], pdpCount);
+      if (pdpUrls.length) log('info', `Sampling ${pdpUrls.length} PDP(s) via Puppeteer`);
       const pdpSamples = await Promise.all(pdpUrls.map(u => scrapePdpForAcquire(u, cookies).catch(() => null))).then(r => r.filter(Boolean));
+      if (pdpUrls.length) log('info', `PDP sampling complete — ${pdpSamples.length}/${pdpUrls.length} succeeded`);
 
       payload = mapFirecrawlToAcquirePayload(fcResult, pdpSamples);
       scraperMeta = { scraper: 'firecrawl' };
@@ -488,13 +497,17 @@ export async function handleAcquire(args, sessionOps) {
   if (!payload) {
 
     // ── Puppeteer path ──────────────────────────────────────────────────────
+    log('info', 'Starting Puppeteer scrape');
     const cookies = getSessionCookies(url);
     const scrapeResult = await scrapePage(url, cookies, 1, 50, true);
     saveSessionCookies(url, scrapeResult.cookies);
+    log('info', `Puppeteer scrape complete — ${(scrapeResult.products || []).length} products`);
 
     const pdpUrls = selectPdpSamples(scrapeResult.products || [], pdpCount);
     const pdpCookies = getSessionCookies(url); // refreshed after scrape
+    if (pdpUrls.length) log('info', `Sampling ${pdpUrls.length} PDP(s)`);
     const pdpSamples = await Promise.all(pdpUrls.map(u => scrapePdpForAcquire(u, pdpCookies).catch(() => null))).then(r => r.filter(Boolean));
+    if (pdpUrls.length) log('info', `PDP sampling complete — ${pdpSamples.length}/${pdpUrls.length} succeeded`);
 
     scraperMeta = {
       scraper: 'puppeteer',

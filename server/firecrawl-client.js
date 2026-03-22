@@ -135,6 +135,7 @@ export async function acquireWithFirecrawl(url) {
     const mobileResult = await client.scrapeUrl(url, {
       formats: ['screenshot'],
       mobile: true,
+      timeout: 30000,
     });
     if (mobileResult.success && mobileResult.screenshot) {
       mobileScreenshotB64 = mobileResult.screenshot;
