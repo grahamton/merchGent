@@ -361,6 +361,13 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.10 — MCP-017–023: data extraction gaps and Firecrawl routing
+
+- **MCP-017**: PDP sub-scrapes now route through Firecrawl first (bypasses WAF/Akamai); fall back to Puppeteer per-URL; `PDP_SAMPLES_BLOCKED` warning emitted when all PDPs fail
+- **MCP-018/023**: `freeShippingPromised` now checks `trustBadges[]` in addition to `b2cIndicators`; `commerce.mode` upgraded B2C→Hybrid when Pro/Trade pricing CTAs are detected in page interactables or nav items
+- **MCP-019/021**: New warnings — `FACETS_INCOMPLETE` when Firecrawl returns fewer than 4 facets; `PERFORMANCE_UNAVAILABLE` (info) when Firecrawl is active scraper
+- **MCP-020/022**: Breadcrumb selector expanded to capture `span`/`li`/schema.org elements with dedup + separator filtering; `ratingFillRate` now requires `rating > 0` (zero-star no longer counted as filled)
+
 ### v2.0.9 — Bot-block resilience: blocked/blockType/fallbackSuggestions
 
 - **`acquire` now surfaces block state explicitly**: top-level `blocked` (bool) and `blockType` (`WAF` | `TIMEOUT` | `EMPTY_RENDER`) are set whenever `FIRECRAWL_FAILED`, `LOW_CARD_CONFIDENCE`, or `NO_PRODUCTS_FOUND` warnings are present — skill layer can branch without parsing `warnings[]`

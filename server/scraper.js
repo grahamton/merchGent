@@ -597,8 +597,23 @@ const extractPageData = async (page, maxProducts = 10) => {
     };
 
     const getBreadcrumb = () => {
-      const items = document.querySelectorAll('[aria-label="breadcrumb"] a, .breadcrumb a, [class*="breadcrumb"] a, nav ol li a, nav ol li span');
-      return Array.from(items).map(el => el.innerText.trim()).filter(Boolean).slice(0, 8);
+      const items = document.querySelectorAll(
+        '[aria-label="breadcrumb"] a, [aria-label="breadcrumb"] span, [aria-label="breadcrumb"] li, ' +
+        '.breadcrumb a, .breadcrumb span, .breadcrumb li, ' +
+        '[class*="breadcrumb"] a, [class*="breadcrumb"] span, ' +
+        '[itemtype*="BreadcrumbList"] [itemprop="name"], ' +
+        'nav ol li a, nav ol li span'
+      );
+      const separators = /^[>\/\\|»›\-–·•]+$/;
+      const seen = new Set();
+      const result = [];
+      for (const el of items) {
+        const text = el.innerText.trim();
+        if (!text || separators.test(text) || seen.has(text)) continue;
+        seen.add(text);
+        result.push(text);
+      }
+      return result.slice(0, 8);
     };
     const getReturnPolicyVisible = () =>
       /free returns|return policy|easy returns|30.?day return/i.test(document.body.innerText);
