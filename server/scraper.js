@@ -613,6 +613,66 @@ const extractPageData = async (page, maxProducts = 10) => {
         seen.add(text);
         result.push(text);
       }
+      // Pass 1 — data-testid breadcrumb patterns (React/Next.js)
+      if (result.length < 3) {
+        const testIdItems = document.querySelectorAll(
+          '[data-testid*="breadcrumb"] a, [data-testid*="breadcrumb"] span, ' +
+          '[data-testid*="Breadcrumb"] a, [data-testid*="Breadcrumb"] span'
+        );
+        for (const el of testIdItems) {
+          const text = el.innerText.trim();
+          if (!text || separators.test(text) || seen.has(text)) continue;
+          seen.add(text);
+          result.push(text);
+        }
+      }
+
+      // Pass 2 — URL-depth heuristic (last resort): nav/header anchors sorted by path depth
+      if (result.length < 3) {
+        const currentPath = window.location.pathname;
+        const navAnchors = Array.from(document.querySelectorAll('nav a, header a'));
+        const candidates = navAnchors
+          .filter((a) => {
+            const href = a.getAttribute('href');
+            if (!href || !href.startsWith('/')) return false;
+            if (href === currentPath) return false;
+            const text = a.innerText.trim();
+            return text.length > 0 && text.length < 80 && !separators.test(text);
+          })
+          .map((a) => ({ text: a.innerText.trim(), href: a.getAttribute('href') }));
+
+        // Deduplicate by text, sort by ascending depth (fewest '/' segments first)
+        const dedupedByText = new Map();
+        for (const c of candidates) {
+          if (!dedupedByText.has(c.text)) dedupedByText.set(c.text, c);
+        }
+        const sorted = Array.from(dedupedByText.values()).sort(
+          (a, b) => (a.href.split('/').length - 1) - (b.href.split('/').length - 1)
+        );
+
+        // Keep only items where each href is a prefix of (or equal to) the next,
+        // forming a plausible path hierarchy — take up to 5
+        const chain = [];
+        for (const item of sorted) {
+          if (chain.length === 0) {
+            chain.push(item);
+          } else {
+            const prev = chain[chain.length - 1];
+            if (item.href.startsWith(prev.href) || prev.href.startsWith(item.href)) {
+              chain.push(item);
+            }
+          }
+          if (chain.length >= 5) break;
+        }
+
+        for (const item of chain) {
+          if (!seen.has(item.text)) {
+            seen.add(item.text);
+            result.push(item.text);
+          }
+        }
+      }
+
       return result.slice(0, 8);
     };
     const getReturnPolicyVisible = () =>
@@ -669,7 +729,7 @@ const extractPageData = async (page, maxProducts = 10) => {
       );
       let starRating = null;
       if (ratingEl) {
-        const ratingText = ratingEl.getAttribute('aria-label') || ratingEl.innerText || '';
+        const ratingText = ratingEl.getAttribute('content') || ratingEl.getAttribute('aria-label') || ratingEl.innerText || '';
         const ratingMatch = ratingText.match(/(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*\d+|(\d+(?:\.\d+)?)\s*star/i);
         if (ratingMatch) {
           starRating = parseFloat(ratingMatch[1] ?? ratingMatch[2]);
@@ -678,6 +738,7 @@ const extractPageData = async (page, maxProducts = 10) => {
           if (numMatch) starRating = parseFloat(numMatch[0]);
         }
       }
+      if (starRating !== null && starRating > 5) starRating = null;
 
       const reviewEl = el.querySelector('[class*="review"], [class*="rating-count"], [itemprop="reviewCount"]');
       let reviewCount = null;
