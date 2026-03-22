@@ -14,7 +14,7 @@
 import { scrapePage, scrapePdp, isValidHttpUrl } from './scraper.js';
 import { computePageFingerprint } from './analyzer.js';
 import { learnFromScrape, takeSnapshot, diffSnapshot, loadMemory } from './site-memory.js';
-import { acquireWithFirecrawl } from './firecrawl-client.js';
+import { acquireWithFirecrawl, scrapePdpWithFirecrawl } from './firecrawl-client.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,10 +97,9 @@ export function selectPdpSamples(products, count) {
 }
 
 /**
- * Scrape a single PDP and map the result to the spec's pdpSamples[] shape.
+ * Map a raw scrapePdp() result (from Puppeteer or Firecrawl) to the pdpSamples[] shape.
  */
-export async function scrapePdpForAcquire(url, cookies = []) {
-  const raw = await scrapePdp(url, cookies);
+function mapRawPdpToAcquireShape(url, raw) {
   const price = parsePrice(raw.pricePrimary);
   const descriptionWordCount = raw.description ? raw.description.split(/\s+/).filter(Boolean).length : 0;
   return {
@@ -123,6 +122,14 @@ export async function scrapePdpForAcquire(url, cookies = []) {
     badges: raw.badges || [],
     ctaText: raw.ctaText || '',
   };
+}
+
+/**
+ * Scrape a single PDP via Puppeteer and map to pdpSamples[] shape.
+ */
+export async function scrapePdpForAcquire(url, cookies = []) {
+  const raw = await scrapePdp(url, cookies);
+  return mapRawPdpToAcquireShape(url, raw);
 }
 
 // ─── Warning generation ───────────────────────────────────────────────────────
@@ -176,6 +183,30 @@ export function generateWarnings(payload, meta = {}) {
     });
   }
 
+  if (meta.scraper === 'firecrawl' && (payload.performance?.fcp == null)) {
+    warnings.push({
+      code: 'PERFORMANCE_UNAVAILABLE',
+      message: 'Performance metrics unavailable — Firecrawl does not capture browser timing. FCP/LCP/CLS will be null.',
+      severity: 'info',
+    });
+  }
+
+  if (meta.scraper === 'firecrawl' && (payload.facets?.length ?? 0) > 0 && (payload.facets?.length ?? 0) < 4) {
+    warnings.push({
+      code: 'FACETS_INCOMPLETE',
+      message: `Only ${payload.facets.length} facet(s) detected — collapsed filter panels cannot be expanded by Firecrawl. Actual facet count may be higher.`,
+      severity: 'warn',
+    });
+  }
+
+  if ((meta.pdpUrlCount ?? 0) > 0 && (payload.pdpSamples?.length ?? 0) === 0) {
+    warnings.push({
+      code: 'PDP_SAMPLES_BLOCKED',
+      message: 'All PDP sample requests failed — bot protection likely blocking product page access. PDP content quality cannot be assessed.',
+      severity: 'warn',
+    });
+  }
+
   const dq = payload.dataQuality;
   if (dq && dq.productCount > 0 && dq.descriptionFillRate < 0.3) {
     warnings.push({
@@ -196,7 +227,7 @@ function computeDataQuality(products) {
     return { productCount: 0, productsWithRealDescriptions: 0, descriptionFillRate: 0, productsWithRatings: 0, ratingFillRate: 0, productsWithPrices: 0, priceFillRate: 0, productsWithUrls: 0, urlFillRate: 0, productsWithImages: 0, imageFillRate: 0 };
   }
   const withDesc = products.filter(p => p.description && p.description !== p.title && p.description.length > 30).length;
-  const withRatings = products.filter(p => p.rating != null).length;
+  const withRatings = products.filter(p => p.rating != null && p.rating > 0).length;
   const withPrices = products.filter(p => p.price != null).length;
   const withUrls = products.filter(p => p.url && isValidHttpUrl(p.url)).length;
   const withImages = products.filter(p => p.imageSrc || (p.imageCount && p.imageCount > 0)).length;
@@ -205,7 +236,7 @@ function computeDataQuality(products) {
     productCount: total,
     productsWithRealDescriptions: withDesc,
     descriptionFillRate: r(withDesc),
-    productsWithRatings: withRatings,
+    productsWithRealRatings: withRatings,
     ratingFillRate: r(withRatings),
     productsWithPrices: withPrices,
     priceFillRate: r(withPrices),
@@ -225,11 +256,14 @@ function aggregateTrustSignals(products, returnPolicyVisible = false) {
   const allBadges = [...new Set(products.flatMap(p => p.badges || []))];
   const urgency = [...new Set(products.map(p => p.stockWarning).filter(Boolean))];
 
+  const freeShippingInIndicators = products.some(p => (p.b2cIndicators || []).some(i => /free\s*(shipping|returns)/i.test(i)));
+  const freeShippingInBadges = allBadges.some(b => /free\s*(shipping|returns|delivery)/i.test(b));
+
   return {
     ratingsOnCards: products.some(p => p.rating != null),
     avgRating: avgRating,
     reviewsOnCards: products.some(p => (p.reviewCount ?? 0) > 0),
-    freeShippingPromised: products.some(p => (p.b2cIndicators || []).some(i => /free\s*(shipping|returns)/i.test(i))),
+    freeShippingPromised: freeShippingInIndicators || freeShippingInBadges,
     returnPolicyVisible,
     trustBadges: allBadges.slice(0, 10),
     urgencyMessaging: urgency,
@@ -296,13 +330,24 @@ function normalizeProduct(p) {
   };
 }
 
+// ─── Pro/Trade CTA detection ──────────────────────────────────────────────────
+
+const PRO_TRADE_PATTERN = /pro\s*pric|trade\s*account|contractor\s*login|pro\s*account|get\s*pro|trade\s*pric|pro\s*rewards|trade\s*program/i;
+
+function hasProTradeCta(scrapeResult) {
+  const interactables = scrapeResult.interactables || [];
+  const findings = scrapeResult.findings || [];
+  return interactables.some(i => PRO_TRADE_PATTERN.test(i.text || '')) ||
+    findings.some(f => PRO_TRADE_PATTERN.test(f.text || '') || PRO_TRADE_PATTERN.test(f.title || ''));
+}
+
 // ─── Puppeteer → acquire payload ──────────────────────────────────────────────
 
 function mapPuppeteerToAcquirePayload(scrapeResult, pdpSamples, url) {
   const fp = computePageFingerprint(scrapeResult);
   const products = (scrapeResult.products || []).map(normalizeProduct);
 
-  // Commerce mode
+  // Commerce mode — upgrade B2C to Hybrid when Pro/Trade CTAs are present
   const loginRequired = products.some(p => p.b2bIndicators.some(i => /login.*pric|login.*see/i.test(i)));
 
   // Sort options → simplified shape
@@ -358,7 +403,7 @@ function mapPuppeteerToAcquirePayload(scrapeResult, pdpSamples, url) {
       aboveTheFoldContent: null,
     },
     commerce: {
-      mode: scrapeResult.b2bMode || 'B2C',
+      mode: (scrapeResult.b2bMode === 'B2C' && hasProTradeCta(scrapeResult)) ? 'Hybrid' : (scrapeResult.b2bMode || 'B2C'),
       platform: (scrapeResult.networkIntel?.platforms || [])[0]?.name || null,
       priceTransparency: fp.priceTransparency || 'public',
       loginRequired,
@@ -401,12 +446,19 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
   const trustSignals = aggregateTrustSignals(products);
   const nav = raw.navigation || {};
 
+  // Upgrade B2C to Hybrid when Pro/Trade CTAs appear in nav items
+  const rawCommerce = raw.commerce || {};
+  const navItems = nav.topNavItems || [];
+  const commerceMode = (rawCommerce.mode === 'B2C' && navItems.some(i => PRO_TRADE_PATTERN.test(i)))
+    ? 'Hybrid'
+    : (rawCommerce.mode || 'B2C');
+
   return {
     url: raw.url,
     acquiredAt: new Date().toISOString(),
     scraper: 'firecrawl',
     page: raw.page || {},
-    commerce: raw.commerce || {},
+    commerce: { ...rawCommerce, mode: commerceMode },
     products,
     facets: raw.facets || [],
     sort: raw.sort || null,
@@ -479,15 +531,23 @@ export async function handleAcquire(args, sessionOps) {
     }
 
     if (fcResult) {
-      // PDP sampling uses Puppeteer (Firecrawl extract works poorly on PDPs without a schema tuned for them)
+      // PDP sampling: try Firecrawl first (bypasses WAF); fall back to Puppeteer per-URL
       const cookies = getSessionCookies(url);
       const pdpUrls = selectPdpSamples(fcResult.products || [], pdpCount);
-      if (pdpUrls.length) log('info', `Sampling ${pdpUrls.length} PDP(s) via Puppeteer`);
-      const pdpSamples = await Promise.all(pdpUrls.map(u => scrapePdpForAcquire(u, cookies).catch(() => null))).then(r => r.filter(Boolean));
+      if (pdpUrls.length) log('info', `Sampling ${pdpUrls.length} PDP(s) via Firecrawl`);
+      const pdpSamples = await Promise.all(pdpUrls.map(async u => {
+        try {
+          const raw = await scrapePdpWithFirecrawl(u);
+          return mapRawPdpToAcquireShape(u, raw);
+        } catch {
+          // Firecrawl PDP failed — try Puppeteer as last resort
+          return scrapePdpForAcquire(u, cookies).catch(() => null);
+        }
+      })).then(r => r.filter(Boolean));
       if (pdpUrls.length) log('info', `PDP sampling complete — ${pdpSamples.length}/${pdpUrls.length} succeeded`);
 
       payload = mapFirecrawlToAcquirePayload(fcResult, pdpSamples);
-      scraperMeta = { scraper: 'firecrawl' };
+      scraperMeta = { scraper: 'firecrawl', pdpUrlCount: pdpUrls.length };
     } else {
       // Firecrawl failed at runtime — fall through to Puppeteer path below
       // (scraperMeta._firecrawlError is set above)
@@ -512,6 +572,7 @@ export async function handleAcquire(args, sessionOps) {
     scraperMeta = {
       scraper: 'puppeteer',
       structureConfidence: scrapeResult.structure?.confidence ?? null,
+      pdpUrlCount: pdpUrls.length,
       ...(scraperMeta._firecrawlError ? { firecrawlFallback: true, firecrawlError: scraperMeta._firecrawlError } : {}),
     };
     payload = mapPuppeteerToAcquirePayload(scrapeResult, pdpSamples, url);

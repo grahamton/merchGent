@@ -99,6 +99,31 @@ const EXTRACT_SCHEMA = {
   },
 };
 
+const PDP_EXTRACT_SCHEMA = {
+  type: 'object',
+  properties: {
+    title: { type: 'string' },
+    description: { type: 'string' },
+    pricePrimary: { type: 'number' },
+    priceOriginal: { type: 'number' },
+    imageCount: { type: 'number' },
+    hasVideo: { type: 'boolean' },
+    rating: { type: 'number' },
+    reviewCount: { type: 'number' },
+    hasReviews: { type: 'boolean' },
+    specTable: {
+      type: 'object',
+      properties: { present: { type: 'boolean' } },
+    },
+    specFields: { type: 'array', items: { type: 'string' } },
+    crossSellModules: { type: 'boolean' },
+    crossSellLabel: { type: 'string' },
+    crossSellProductCount: { type: 'number' },
+    ctaText: { type: 'string' },
+    badges: { type: 'array', items: { type: 'string' } },
+  },
+};
+
 let _client = null;
 function getClient() {
   if (!_client) {
@@ -115,6 +140,47 @@ function getClient() {
  * @param {string} url
  * @returns {Promise<object>}
  */
+/**
+ * Scrape a PDP via Firecrawl LLM extraction.
+ * Returns the same shape as scrapePdp() in scraper.js so scrapePdpForAcquire() can consume it.
+ *
+ * @param {string} url
+ * @returns {Promise<object>}
+ */
+export async function scrapePdpWithFirecrawl(url) {
+  const client = getClient();
+  const result = await client.scrapeUrl(url, {
+    formats: ['extract'],
+    extract: { schema: PDP_EXTRACT_SCHEMA },
+    timeout: 30000,
+  });
+
+  if (!result.success) {
+    throw new Error(`Firecrawl PDP scrape failed: ${result.error || 'unknown error'}`);
+  }
+
+  const e = result.extract || {};
+  return {
+    title: e.title || '',
+    description: e.description || null,
+    pricePrimary: e.pricePrimary || null,
+    priceOriginal: e.priceOriginal || null,
+    imageCount: e.imageCount || 0,
+    hasVideo: e.hasVideo || false,
+    rating: e.rating || null,
+    reviewCount: e.reviewCount || 0,
+    hasReviews: e.hasReviews || (e.reviewCount > 0),
+    hasReviewSchema: false,
+    specTable: e.specTable || { present: false },
+    specFields: e.specFields || [],
+    crossSellModules: e.crossSellModules || false,
+    crossSellLabel: e.crossSellLabel || null,
+    crossSellProductCount: e.crossSellProductCount || null,
+    ctaText: e.ctaText || '',
+    badges: e.badges || [],
+  };
+}
+
 export async function acquireWithFirecrawl(url) {
   const client = getClient();
 
