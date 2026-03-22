@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.9] — 2026-03-22
+
+### Added
+- `acquire` now returns top-level `blocked` (boolean), `blockType` (`WAF` | `TIMEOUT` | `EMPTY_RENDER`), and `fallbackSuggestions[]` (3 pre-computed search strings) when warning codes `FIRECRAWL_FAILED`, `LOW_CARD_CONFIDENCE`, or `NO_PRODUCTS_FOUND` are present — gives the skill layer a trivial branch condition instead of requiring warning array parsing
+- `blockType` is derived from warning combination: `FIRECRAWL_FAILED` → `WAF`; `NO_PRODUCTS_FOUND` + `FCP_ZERO` → `TIMEOUT`; `NO_PRODUCTS_FOUND` alone → `EMPTY_RENDER`; `LOW_CARD_CONFIDENCE` alone → `WAF`
+
+### Changed
+- Blocked responses are no longer cached — a retry after stealth changes or a different entry point always gets a fresh scrape attempt
+
 ## [2.0.2] — 2026-03-21
 
 ### Fixed
