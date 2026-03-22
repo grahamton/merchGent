@@ -26,7 +26,7 @@ loadEnv({ path: new URL('../.env', import.meta.url), quiet: true });
 {
   const userEnvPath = join(homedir(), '.merch-connector', '.env');
   if (existsSync(userEnvPath)) {
-    const parsed = loadEnv({ path: userEnvPath, processEnv: {} }).parsed || {};
+    const parsed = loadEnv({ path: userEnvPath, processEnv: {}, quiet: true }).parsed || {};
     for (const [k, v] of Object.entries(parsed)) {
       if (!process.env[k]) process.env[k] = v;
     }

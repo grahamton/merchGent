@@ -361,6 +361,11 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.5 — Fix dotenv stdout corruption on startup
+
+- **MCP JSON-RPC broken by dotenv v17**: dotenv v17.3+ prints a `[dotenv@17.x]` banner to stdout by default; on a stdio transport this corrupted the JSON-RPC stream before the first message was parsed
+- **Fix**: Added `quiet: true` to the user config fallback `loadEnv` call in `index.js` — both dotenv calls are now silent on startup
+
 ### v2.0.4 — Fix acquire field truncation
 
 - **Root cause of missing fields**: Screenshot base64 was included in the JSON text payload AND as a separate image content item — the duplicate filled the MCP token budget before `performance`, `trustSignals`, `analytics`, `navigation`, `dataQuality`, `pdpSamples`, and `warnings` appeared in the serialized output
