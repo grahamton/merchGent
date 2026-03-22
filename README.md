@@ -361,6 +361,11 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.6 — Fix acquire screenshot crash when using Firecrawl
+
+- **Root cause**: Firecrawl returns `screenshot` as a CDN URL, not base64; the MCP SDK's base64 validator rejected it, crashing every `acquire` call when `FIRECRAWL_API_KEY` is set
+- **Fix**: `acquire` handler now detects URL-format screenshots, fetches and converts to base64 before sending as MCP image content items
+
 ### v2.0.5 — Fix dotenv stdout corruption on startup
 
 - **MCP JSON-RPC broken by dotenv v17**: dotenv v17.3+ prints a `[dotenv@17.x]` banner to stdout by default; on a stdio transport this corrupted the JSON-RPC stream before the first message was parsed

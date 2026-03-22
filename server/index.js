@@ -1228,7 +1228,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         const { screenshots, ...resultForText } = result;
         const content = [{ type: 'text', text: JSON.stringify(resultForText, null, 2) }];
         if (screenshots?.desktop) {
-          content.push({ type: 'image', data: screenshots.desktop, mimeType: 'image/jpeg' });
+          // Firecrawl returns a URL; Puppeteer returns raw base64. Normalise to base64.
+          let desktopB64 = screenshots.desktop;
+          if (typeof desktopB64 === 'string' && desktopB64.startsWith('http')) {
+            try {
+              const res = await fetch(desktopB64);
+              const buf = await res.arrayBuffer();
+              desktopB64 = Buffer.from(buf).toString('base64');
+            } catch { desktopB64 = null; }
+          }
+          if (desktopB64) content.push({ type: 'image', data: desktopB64, mimeType: 'image/jpeg' });
         }
         return { content };
       }
