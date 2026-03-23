@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 - `generateWarnings()` uses commerce-mode-aware thresholds (`B2C`, `B2B`, `Hybrid`) for data quality warnings.
 - Firecrawl extraction schema refined: `description` renamed to `cardSubtitle` internally with few-shot examples to improve extraction consistency.
 
+### Fixed
+- **`extractionConfidence` false positive**: Puppeteer path now falls back to product-count + priceFillRate signals when `structureConfidence` is null (the common case), preventing spurious `EXTRACTION_CONFIDENCE_LOW` warnings on every Puppeteer scrape.
+- **Indentation bug** in `mapFirecrawlToAcquirePayload`: `trustSignals` properties were missing their 2-space indent inside the returned product object.
+
 ## [2.0.9] — 2026-03-22
 
 ### Added
