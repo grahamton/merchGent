@@ -362,6 +362,13 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.13 — Layered data quality model + Firecrawl schema refinement
+
+- **Data quality model**: `acquire` now returns `dataQuality.overall.usabilityTier` (`full`/`degraded`/`minimal`/`failed`) and `dataQuality.dimensions` with graded description tiers (`empty`, `spec`, `thin`, `rich`), separating extraction confidence from site quality
+- **Commerce-mode-aware warnings**: `generateWarnings()` uses B2C/B2B/Hybrid threshold maps; new codes: `LOW_DESCRIPTION_FILL_CRITICAL`, `DESCRIPTIONS_SPEC_ONLY`, `RATINGS_ABSENT`, `PRICING_INCONSISTENT`, `EXTRACTION_CONFIDENCE_LOW`, `FACETS_MINIMAL`
+- **Firecrawl schema**: `description` → `cardSubtitle` internally with visual hierarchy cues + few-shot examples; remapped back to `description` in the payload (no breaking change)
+- **Fixed**: Puppeteer `extractionConfidence` false positive when `structureConfidence` is null — now falls back to product-count + priceFillRate signals
+
 ### v2.0.12 — MCP-026: stabilize Firecrawl product description extraction
 
 - **MCP-026**: `description` field in Firecrawl `EXTRACT_SCHEMA` now carries a JSON Schema annotation explaining what to look for (subtitle text, attribute summaries, model/color/finish specs visible on the card); `acquireWithFirecrawl()` also passes an explicit `prompt` to the extract call — eliminates non-deterministic empty-description runs caused by the LLM not knowing category cards carry spec text rather than marketing copy
