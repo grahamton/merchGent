@@ -598,6 +598,7 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
   };
   });
 
+  const rawCommerce = raw.commerce || {};
   const dataQuality = computeDataQuality(products, {
     scraper: 'firecrawl',
     commerceMode: rawCommerce.mode || 'B2C',
@@ -606,7 +607,6 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
   const nav = raw.navigation || {};
 
   // Upgrade B2C to Hybrid when Pro/Trade CTAs appear in nav items or full page content
-  const rawCommerce = raw.commerce || {};
   const navItems = nav.topNavItems || [];
   const commerceMode = (rawCommerce.mode === 'B2C' && (
     navItems.some(i => PRO_TRADE_PATTERN.test(i)) ||
