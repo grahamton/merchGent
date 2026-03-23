@@ -50,7 +50,9 @@ if (flag('acquire')) {
   console.log(`  Warnings:    ${payload.warnings.length > 0 ? payload.warnings.map(w => w.code).join(', ') : 'none'}`);
   console.log(`  Screenshots: desktop=${!!payload.screenshots.desktop}, mobile=${!!payload.screenshots.mobile}`);
   console.log(`  Commerce:    mode=${payload.commerce.mode}, platform=${payload.commerce.platform || 'unknown'}`);
-  console.log(`  DataQuality: descFillRate=${payload.dataQuality.descriptionFillRate}, ratingFillRate=${payload.dataQuality.ratingFillRate}`);
+  console.log(`  DataQuality: tier=${payload.dataQuality.overall.usabilityTier}, conf=${payload.dataQuality.overall.extractionConfidence}`);
+  console.log(`               descFillRate=${payload.dataQuality.dimensions.descriptions.fillRate}, siteQuality=${payload.dataQuality.dimensions.descriptions.siteQualityAssessment}`);
+  console.log(`               ratingFillRate=${payload.dataQuality.dimensions.ratings.fillRate}, priceFillRate=${payload.dataQuality.dimensions.pricing.fillRate}`);
   if (payload.pdpSamples.length > 0) {
     console.log(`\n  PDP samples:`);
     for (const pdp of payload.pdpSamples) {
