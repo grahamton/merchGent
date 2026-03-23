@@ -345,9 +345,13 @@ export function computeDataQuality(products, options = {}) {
   if (scraper === 'firecrawl') {
     if (total >= 5 && priceFillRate >= 0.8) extractionConfidence = 'high';
     else if (total >= 3) extractionConfidence = 'medium';
-  } else {
+  } else if (structureConfidence != null) {
     if (structureConfidence >= 60) extractionConfidence = 'high';
     else if (structureConfidence >= 40) extractionConfidence = 'medium';
+  } else {
+    // structureConfidence unavailable — fall back to product/price signals
+    if (total >= 5 && priceFillRate >= 0.8) extractionConfidence = 'high';
+    else if (total >= 3) extractionConfidence = 'medium';
   }
 
   // usabilityTier
@@ -585,17 +589,17 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
       description: desc,
       descriptionIsTitle: !desc || desc === p.title,
       trustSignals: {
-      starRating: p.rating || null,
-      reviewCount: p.reviewCount || null,
-      bestSeller: (p.badges || []).some(b => /best\s*seller/i.test(b)),
-      isNew: (p.badges || []).some(b => /^\s*new\s*$/i.test(b)),
-      onSale: p.onSale || false,
-      saleText: p.salePercent ? `${p.salePercent}% off` : null,
-      stockWarning: p.stockWarning || null,
-      sustainabilityLabel: null,
-      badges: p.badges || [],
-    },
-  };
+        starRating: p.rating || null,
+        reviewCount: p.reviewCount || null,
+        bestSeller: (p.badges || []).some(b => /best\s*seller/i.test(b)),
+        isNew: (p.badges || []).some(b => /^\s*new\s*$/i.test(b)),
+        onSale: p.onSale || false,
+        saleText: p.salePercent ? `${p.salePercent}% off` : null,
+        stockWarning: p.stockWarning || null,
+        sustainabilityLabel: null,
+        badges: p.badges || [],
+      },
+    };
   });
 
   const rawCommerce = raw.commerce || {};
