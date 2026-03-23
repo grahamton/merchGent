@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "workspace": {
+    "name": "merchGent",
+    "createdAt": 1774240378845,
+    "preset": "starter"
+  },
+  "authorizedRoots": [
+    "C:\\dev\\merchGent"
+  ]
+}
