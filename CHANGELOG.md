@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.13] — 2026-03-22
+
+### Changed
+- **Data Quality Model**: `acquire` tool now returns a layered quality model in `dataQuality` separating extraction confidence from site quality.
+- `dataQuality.overall.usabilityTier` classifies the page as `full`, `degraded`, `minimal`, or `failed`.
+- `dataQuality.dimensions.descriptions` provides a graded tier distribution (`empty`, `spec`, `thin`, `rich`) and a `siteQualityAssessment`.
+- `generateWarnings()` uses commerce-mode-aware thresholds (`B2C`, `B2B`, `Hybrid`) for data quality warnings.
+- Firecrawl extraction schema refined: `description` renamed to `cardSubtitle` internally with few-shot examples to improve extraction consistency.
+
 ## [2.0.9] — 2026-03-22
 
 ### Added

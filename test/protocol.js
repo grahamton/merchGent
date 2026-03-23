@@ -10,6 +10,7 @@
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { computeDataQuality } from '../server/acquire.js';
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), '../../');
 const SERVER = path.join(ROOT, 'bin', 'merch-connector.js');
@@ -163,6 +164,40 @@ async function runProtocolTests() {
     badRead?.error
       ? pass('resources/read: unknown domain returns error')
       : fail('resources/read: unknown domain', 'expected error, got none');
+  }
+
+  // 5. Data Quality Model (Unit Test)
+  console.log('\n--- Data Quality Model ---');
+  try {
+    const mockProducts = [
+      { title: 'Product 1', description: 'A very long description that exceeds the forty character limit for spec and goes into thin or rich territory.', price: 10, url: 'http://example.com/1', rating: 4 },
+      { title: 'Product 2', description: 'Short spec', price: 20, url: 'http://example.com/2' },
+      { title: 'Product 3', description: '', price: 30, url: 'http://example.com/3' }
+    ];
+    const dq = computeDataQuality(mockProducts, { scraper: 'puppeteer', structureConfidence: 80 });
+    
+    const validTiers = ['full', 'degraded', 'minimal', 'failed'];
+    validTiers.includes(dq.overall?.usabilityTier)
+      ? pass('dataQuality.overall.usabilityTier is valid')
+      : fail('dataQuality.overall.usabilityTier', `got ${dq.overall?.usabilityTier}`);
+      
+    dq.dimensions?.descriptions?.fillRate !== undefined
+      ? pass('dataQuality.dimensions.descriptions has fillRate')
+      : fail('dataQuality.dimensions.descriptions', 'missing fillRate');
+      
+    dq.dimensions?.descriptions?.qualityDistribution
+      ? pass('dataQuality.dimensions.descriptions has qualityDistribution')
+      : fail('dataQuality.dimensions.descriptions', 'missing qualityDistribution');
+      
+    dq.dimensions?.descriptions?.siteQualityAssessment
+      ? pass('dataQuality.dimensions.descriptions has siteQualityAssessment')
+      : fail('dataQuality.dimensions.descriptions', 'missing siteQualityAssessment');
+      
+    (dq.descriptionFillRate !== undefined && dq.priceFillRate !== undefined)
+      ? pass('dataQuality retains existing flat fields')
+      : fail('dataQuality flat fields', 'missing descriptionFillRate or priceFillRate');
+  } catch (err) {
+    fail('Data Quality Model', err.message);
   }
 
   server.stdin.end();

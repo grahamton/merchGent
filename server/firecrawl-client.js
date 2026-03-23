@@ -48,8 +48,28 @@ const EXTRACT_SCHEMA = {
           imageCount: { type: 'number' },
           rating: { type: 'number' },
           reviewCount: { type: 'number' },
-          description: { type: 'string', description: 'Any subtitle, attribute summary, spec text, or short descriptive text visible on the product card below the title (e.g. "Color: Matte Black. Model: T2692EPBL."). Include model numbers, color variants, finish specs if visible.' },
-          badges: { type: 'array', items: { type: 'string' } },
+          cardSubtitle: {
+            type: 'string',
+            description: `Text directly below title in smaller/secondary font. Extract exactly as displayed.
+
+EXAMPLES:
+- "Model T2692EPBL | Matte Black" → "Model T2692EPBL | Matte Black"
+- "Waterproof • Bluetooth 5.0" → "Waterproof • Bluetooth 5.0"
+- "Brushed Nickel Finish" → "Brushed Nickel Finish"
+- Only title + price visible → ""
+
+Preserve all punctuation. Empty string if no subtitle present.`
+          },
+          badges: {
+            type: 'array',
+            items: { type: 'string' },
+            description: `Visually distinct labels or tags on the product card.
+
+EXAMPLES:
+- "Best Seller" → ["Best Seller"]
+- "New", "Clearance" → ["New", "Clearance"]
+- No labels visible → []`
+          },
           b2bIndicators: { type: 'array', items: { type: 'string' } },
           b2cIndicators: { type: 'array', items: { type: 'string' } },
         },
@@ -206,7 +226,19 @@ export async function acquireWithFirecrawl(url) {
     formats: ['extract', 'screenshot'],
     extract: {
       schema: EXTRACT_SCHEMA,
-      prompt: 'For each product card, populate description with any subtitle, attribute summary, or spec text visible below the product title. If the card shows color, model number, or finish details, include those. Do not leave description empty if any non-title text is visible on the card.',
+      prompt: `Extract structured data from this e-commerce category page.
+
+LAYOUT: Products appear as cards in a grid. Each card contains: image (top), title (bold),
+optional subtitle below title, price, rating (optional), badges (optional).
+
+RULES:
+1. For cardSubtitle: Copy text exactly as shown. Do not paraphrase.
+2. For badges: Only visually distinct labels (colored styling).
+3. For facets: Visible options only, no inference.
+4. If field absent: use null (numbers) or "" (text) or [] (arrays).
+
+Follow the examples in the schema.`,
+      systemPrompt: 'Output valid JSON matching schema. Extract only what is literally present on the page. Do not generate or infer content.',
     },
     timeout: 60000,
   });

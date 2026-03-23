@@ -134,6 +134,12 @@ export async function scrapePdpForAcquire(url, cookies = []) {
 
 // ─── Warning generation ───────────────────────────────────────────────────────
 
+const QUALITY_THRESHOLDS = {
+  B2C: { descCritical: 0.30, specOnly: 0.70, facetMinimal: 4, priceMissing: 0.20 },
+  B2B: { descCritical: 0.20, specOnly: 0.95, facetMinimal: 6, priceMissing: 0.30 },
+  Hybrid: { descCritical: 0.25, specOnly: 0.80, facetMinimal: 5, priceMissing: 0.25 },
+};
+
 /**
  * Generate warnings[] from the nearly-complete payload + scraper metadata.
  * @param {object} payload - Acquire payload (without warnings)
@@ -141,6 +147,9 @@ export async function scrapePdpForAcquire(url, cookies = []) {
  */
 export function generateWarnings(payload, meta = {}) {
   const warnings = [];
+  const dq = payload.dataQuality;
+  const commerceMode = payload.commerce?.mode || 'B2C';
+  const thresholds = QUALITY_THRESHOLDS[commerceMode] || QUALITY_THRESHOLDS.B2C;
 
   if (meta.scraper !== 'firecrawl' && meta.structureConfidence != null && meta.structureConfidence < 40) {
     warnings.push({
@@ -191,9 +200,9 @@ export function generateWarnings(payload, meta = {}) {
     });
   }
 
-  if (meta.scraper === 'firecrawl' && (payload.facets?.length ?? 0) > 0 && (payload.facets?.length ?? 0) < 4) {
+  if (meta.scraper === 'firecrawl' && (payload.facets?.length ?? 0) > 0 && (payload.facets?.length ?? 0) < thresholds.facetMinimal) {
     warnings.push({
-      code: 'FACETS_INCOMPLETE',
+      code: 'FACETS_MINIMAL',
       message: `Only ${payload.facets.length} facet(s) detected — collapsed filter panels cannot be expanded by Firecrawl. Actual facet count may be higher.`,
       severity: 'warn',
     });
@@ -207,13 +216,59 @@ export function generateWarnings(payload, meta = {}) {
     });
   }
 
-  const dq = payload.dataQuality;
-  if (dq && dq.productCount > 0 && dq.descriptionFillRate < 0.3) {
-    warnings.push({
-      code: 'LOW_DESCRIPTION_FILL',
-      message: `Only ${Math.round(dq.descriptionFillRate * 100)}% of products have real descriptions (threshold: 30%).`,
-      severity: 'warn',
-    });
+  if (dq && dq.productCount > 0) {
+    // Keep LOW_DESCRIPTION_FILL for one release for backward compat
+    if (dq.descriptionFillRate < 0.3) {
+      warnings.push({
+        code: 'LOW_DESCRIPTION_FILL',
+        message: `Only ${Math.round(dq.descriptionFillRate * 100)}% of products have real descriptions (threshold: 30%).`,
+        severity: 'warn',
+      });
+    }
+
+    const descFill = dq.dimensions?.descriptions?.fillRate ?? 0;
+    if (descFill < thresholds.descCritical) {
+      warnings.push({
+        code: 'LOW_DESCRIPTION_FILL_CRITICAL',
+        message: `Only ${Math.round(descFill * 100)}% of products have any description text (threshold: ${Math.round(thresholds.descCritical * 100)}%).`,
+        severity: 'warn',
+      });
+    }
+
+    const specPct = dq.dimensions?.descriptions?.qualityDistribution?.spec ?? 0;
+    if (specPct > thresholds.specOnly && dq.overall?.extractionConfidence === 'high') {
+      warnings.push({
+        code: 'DESCRIPTIONS_SPEC_ONLY',
+        message: `Descriptions are heavily spec-driven (${Math.round(specPct * 100)}% of cards).`,
+        severity: 'info',
+      });
+    }
+
+    const ratingFill = dq.dimensions?.ratings?.fillRate ?? 0;
+    if (ratingFill === 0 && dq.overall?.extractionConfidence === 'high') {
+      warnings.push({
+        code: 'RATINGS_ABSENT',
+        message: 'No product ratings detected on cards.',
+        severity: 'info',
+      });
+    }
+
+    const priceFill = dq.dimensions?.pricing?.fillRate ?? 0;
+    if (priceFill < (1 - thresholds.priceMissing) && dq.overall?.extractionConfidence === 'high') {
+      warnings.push({
+        code: 'PRICING_INCONSISTENT',
+        message: `Pricing is missing on ${Math.round((1 - priceFill) * 100)}% of products.`,
+        severity: 'warn',
+      });
+    }
+
+    if (dq.overall?.extractionConfidence === 'low') {
+      warnings.push({
+        code: 'EXTRACTION_CONFIDENCE_LOW',
+        message: 'Extraction confidence is low. Data quality metrics may be unreliable.',
+        severity: 'info',
+      });
+    }
   }
 
   return warnings;
@@ -221,29 +276,119 @@ export function generateWarnings(payload, meta = {}) {
 
 // ─── Data quality computation ─────────────────────────────────────────────────
 
-function computeDataQuality(products) {
+function classifyDescriptionTier(desc) {
+  if (!desc || desc.length === 0) return 'empty';
+  if (desc.length <= 40) return 'spec';
+  if (desc.length <= 100) return 'thin';
+  return 'rich';
+}
+
+export function computeDataQuality(products, options = {}) {
+  const { scraper = 'puppeteer', commerceMode = 'B2C', structureConfidence = null } = options;
   const total = products.length;
   if (total === 0) {
-    return { productCount: 0, productsWithRealDescriptions: 0, descriptionFillRate: 0, productsWithRatings: 0, ratingFillRate: 0, productsWithPrices: 0, priceFillRate: 0, productsWithUrls: 0, urlFillRate: 0, productsWithImages: 0, imageFillRate: 0 };
+    return { 
+      productCount: 0, productsWithRealDescriptions: 0, descriptionFillRate: 0, 
+      productsWithRealRatings: 0, ratingFillRate: 0, productsWithPrices: 0, priceFillRate: 0, 
+      productsWithUrls: 0, urlFillRate: 0, productsWithImages: 0, imageFillRate: 0,
+      dimensions: {
+        descriptions: { fillRate: 0, qualityDistribution: { empty: 0, spec: 0, thin: 0, rich: 0 }, siteQualityAssessment: 'absent' },
+        ratings: { fillRate: 0, siteQualityAssessment: 'ratings-absent' },
+        pricing: { fillRate: 0, siteQualityAssessment: 'pricing-hidden' },
+      },
+      overall: { usabilityTier: 'failed', extractionConfidence: 'low' }
+    };
   }
+
   const withDesc = products.filter(p => p.description && p.description !== p.title && p.description.length > 30).length;
   const withRatings = products.filter(p => p.rating != null && p.rating > 0).length;
   const withPrices = products.filter(p => p.price != null).length;
   const withUrls = products.filter(p => p.url && isValidHttpUrl(p.url)).length;
   const withImages = products.filter(p => p.imageSrc || (p.imageCount && p.imageCount > 0)).length;
   const r = (n) => Math.round((n / total) * 100) / 100;
+
+  // New: graded quality model
+  const descTiers = { empty: 0, spec: 0, thin: 0, rich: 0 };
+  let anyDescCount = 0;
+  for (const p of products) {
+    const desc = p.description && p.description !== p.title ? p.description : '';
+    const tier = classifyDescriptionTier(desc);
+    descTiers[tier]++;
+    if (tier !== 'empty') anyDescCount++;
+  }
+
+  const descFillRate = r(anyDescCount);
+  const qualityDistribution = {
+    empty: r(descTiers.empty),
+    spec: r(descTiers.spec),
+    thin: r(descTiers.thin),
+    rich: r(descTiers.rich),
+  };
+
+  let descSiteQuality = 'absent';
+  if (descFillRate > 0) {
+    if (qualityDistribution.rich > 0.3) descSiteQuality = 'rich-copy';
+    else if (qualityDistribution.spec > 0.5) descSiteQuality = 'spec-heavy';
+    else descSiteQuality = 'thin-copy';
+  }
+
+  const ratingFillRate = r(withRatings);
+  const ratingSiteQuality = ratingFillRate > 0 ? 'ratings-present' : 'ratings-absent';
+
+  const priceFillRate = r(withPrices);
+  let pricingSiteQuality = 'pricing-hidden';
+  if (priceFillRate >= 0.9) pricingSiteQuality = 'pricing-public';
+  else if (priceFillRate > 0) pricingSiteQuality = 'pricing-mixed';
+
+  // extractionConfidence
+  let extractionConfidence = 'low';
+  if (scraper === 'firecrawl') {
+    if (total >= 5 && priceFillRate >= 0.8) extractionConfidence = 'high';
+    else if (total >= 3) extractionConfidence = 'medium';
+  } else {
+    if (structureConfidence >= 60) extractionConfidence = 'high';
+    else if (structureConfidence >= 40) extractionConfidence = 'medium';
+  }
+
+  // usabilityTier
+  let usabilityTier = 'minimal';
+  if (total >= 5 && priceFillRate >= 0.9 && descFillRate >= 0.5) {
+    usabilityTier = 'full';
+  } else if ((total >= 3 && priceFillRate >= 0.7) || extractionConfidence === 'medium') {
+    usabilityTier = 'degraded';
+  }
+
   return {
     productCount: total,
     productsWithRealDescriptions: withDesc,
     descriptionFillRate: r(withDesc),
     productsWithRealRatings: withRatings,
-    ratingFillRate: r(withRatings),
+    ratingFillRate,
     productsWithPrices: withPrices,
-    priceFillRate: r(withPrices),
+    priceFillRate,
     productsWithUrls: withUrls,
     urlFillRate: r(withUrls),
     productsWithImages: withImages,
     imageFillRate: r(withImages),
+    dimensions: {
+      descriptions: {
+        fillRate: descFillRate,
+        qualityDistribution,
+        siteQualityAssessment: descSiteQuality,
+      },
+      ratings: {
+        fillRate: ratingFillRate,
+        siteQualityAssessment: ratingSiteQuality,
+      },
+      pricing: {
+        fillRate: priceFillRate,
+        siteQualityAssessment: pricingSiteQuality,
+      },
+    },
+    overall: {
+      usabilityTier,
+      extractionConfidence,
+    },
   };
 }
 
@@ -377,7 +522,11 @@ function mapPuppeteerToAcquirePayload(scrapeResult, pdpSamples, url) {
   const analytics = mapAnalytics(scrapeResult.networkIntel);
 
   // Data quality (uses raw products before normalization for description check)
-  const dataQuality = computeDataQuality(products);
+  const dataQuality = computeDataQuality(products, {
+    scraper: 'puppeteer',
+    commerceMode: scrapeResult.b2bMode || 'B2C',
+    structureConfidence: scrapeResult.structure?.confidence ?? null,
+  });
 
   // Trust signals aggregate
   const trustSignals = aggregateTrustSignals(products, scrapeResult.returnPolicyVisible || false);
@@ -429,10 +578,13 @@ function mapPuppeteerToAcquirePayload(scrapeResult, pdpSamples, url) {
 
 function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
   const raw = fcResult;
-  const products = (raw.products || []).map(p => ({
-    ...p,
-    descriptionIsTitle: !p.description || p.description === p.title,
-    trustSignals: {
+  const products = (raw.products || []).map(p => {
+    const desc = p.cardSubtitle || p.description || null;
+    return {
+      ...p,
+      description: desc,
+      descriptionIsTitle: !desc || desc === p.title,
+      trustSignals: {
       starRating: p.rating || null,
       reviewCount: p.reviewCount || null,
       bestSeller: (p.badges || []).some(b => /best\s*seller/i.test(b)),
@@ -443,9 +595,13 @@ function mapFirecrawlToAcquirePayload(fcResult, pdpSamples) {
       sustainabilityLabel: null,
       badges: p.badges || [],
     },
-  }));
+  };
+  });
 
-  const dataQuality = computeDataQuality(products);
+  const dataQuality = computeDataQuality(products, {
+    scraper: 'firecrawl',
+    commerceMode: rawCommerce.mode || 'B2C',
+  });
   const trustSignals = aggregateTrustSignals(products);
   const nav = raw.navigation || {};
 
