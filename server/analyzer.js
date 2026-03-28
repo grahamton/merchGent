@@ -345,10 +345,7 @@ async function callGeminiGeneric(systemPrompt, contextText, screenshot, geminiSc
 
 async function callOpenAIGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL,
-  });
+  const client = new OpenAI(getOpenAIClientConfig());
   const model = getModelName('openai', null);
   if (!model) throw new Error('MODEL_NAME is required for the openai provider.');
 
@@ -396,11 +393,25 @@ async function callOpenAIGeneric(systemPrompt, contextText, screenshot, outputSc
 
 function detectProvider() {
   const explicit = process.env.MODEL_PROVIDER?.toLowerCase();
+  if (explicit === 'ollama') return 'openai'; // Ollama uses OpenAI-compatible API
   if (explicit === 'anthropic' || explicit === 'gemini' || explicit === 'openai') return explicit;
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   if (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) return 'gemini';
   if (process.env.OPENAI_API_KEY || process.env.OPENAI_BASE_URL) return 'openai';
-  throw new Error('No AI API key found.');
+  return null;
+}
+
+export function hasProvider() {
+  return detectProvider() !== null;
+}
+
+// Returns the apiKey + baseURL for the OpenAI client, handling Ollama's no-key setup.
+function getOpenAIClientConfig() {
+  const isOllama = process.env.MODEL_PROVIDER?.toLowerCase() === 'ollama';
+  return {
+    apiKey: process.env.OPENAI_API_KEY || (isOllama ? 'ollama' : undefined),
+    baseURL: process.env.OPENAI_BASE_URL || (isOllama ? 'http://localhost:11434/v1' : undefined),
+  };
 }
 
 /**
@@ -447,6 +458,7 @@ function toGeminiSchema(jsonSchema, Type) {
  */
 async function callWithPersona(systemPrompt, contextText, screenshot, outputSchema, toolName) {
   const provider = detectProvider();
+  if (provider === null) throw new Error('NO_AI_PROVIDER');
   if (provider === 'anthropic') {
     return callAnthropicGeneric(systemPrompt, contextText, screenshot, outputSchema, toolName);
   } else if (provider === 'openai') {
@@ -676,6 +688,7 @@ export function selectPersonas(fingerprint) {
 export async function analyzePage(pageData, screenshot = null) {
   if (!pageData.products?.length) return { siteMode: 'Unknown', diagnosisTitle: 'No Products Found' };
   const provider = detectProvider();
+  if (provider === null) throw new Error('NO_AI_PROVIDER');
   const contextText = `Audit this storefront page:\n${JSON.stringify(pageData.products.slice(0, 10))}`;
   
   let raw;
@@ -692,6 +705,7 @@ const PAGE_QA_SYSTEM = `You are a merchandising expert. Answer the user's questi
 
 export async function askPage(pageData, question, screenshot = null) {
   const provider = detectProvider();
+  if (provider === null) throw new Error('NO_AI_PROVIDER');
   const context = `URL: ${pageData.url}\nProducts: ${JSON.stringify(pageData.products.slice(0, 10))}\nQuestion: ${question}`;
 
   if (provider === 'anthropic') {
@@ -725,7 +739,7 @@ export async function askPage(pageData, question, screenshot = null) {
 
   // openai-compatible
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
+  const client = new OpenAI(getOpenAIClientConfig());
   const model = getModelName('openai', null);
   if (!model) throw new Error('MODEL_NAME is required for the openai provider.');
   const useVision = process.env.OPENAI_VISION === 'true' && !!screenshot;

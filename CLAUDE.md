@@ -82,7 +82,7 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 | `OPENAI_API_KEY` | One of these three | OpenAI-compatible API key |
 | `OPENAI_BASE_URL` | No | Optional; defaults to `https://api.openai.com/v1` |
 | `MODEL_PROVIDER` | No | Force: `"anthropic"`, `"gemini"`, or `"openai"` |
-| `MODEL_NAME` | No | Override default model |
+| `MODEL_NAME` | No | Override default model; **required** when `MODEL_PROVIDER=ollama` |
 | `MERCH_CONNECTOR_DATA_DIR` | No | Custom path for site memory files |
 | `TOOL_TIMEOUT_MS` | No | AI tool timeout in ms (default: 120000) |
 | `AUDIT_TIMEOUT_MS` | No | Timeout for `audit_storefront` specifically (default: 240000) |
@@ -90,7 +90,7 @@ npx @modelcontextprotocol/inspector -- node bin/merch-connector.js
 | `FIRECRAWL_API_KEY` | No | Enables Firecrawl as primary scraper in `acquire`; falls back to Puppeteer if absent. Bypasses bot detection (e.g. Ferguson/Akamai). |
 | `MERCH_LOG_FILE` | No | Path to NDJSON log file. Every `sendLog` call appends a structured line. |
 
-Provider is auto-detected from available API keys: Anthropic → Gemini → OpenAI. Scraping tools (`scrape_page`, `interact_with_page`) work without any API key.
+Provider is auto-detected from available API keys: Anthropic → Gemini → OpenAI. Set `MODEL_PROVIDER=ollama` to use a local Ollama instance with no API key (uses OpenAI-compatible API at `http://localhost:11434/v1` by default). AI analysis tools degrade gracefully when no provider is configured — they return raw scrape data instead of erroring.
 
 ---
 

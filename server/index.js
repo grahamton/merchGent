@@ -44,7 +44,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { scrapePage, interactWithPage, scrapePdp, fetchPageSpeed, isValidHttpUrl } from './scraper.js';
-import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, analyzeAsConversionArchitect, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas } from './analyzer.js';
+import { analyzePage, askPage, analyzeAsFloorWalker, analyzeAsAuditor, analyzeAsAuditorB2B, analyzeAsScout, analyzeAsConversionArchitect, runRoundtable, validatePriceBuckets, compareStorefronts, computePageFingerprint, selectPersonas, hasProvider } from './analyzer.js';
 import { loadMemory, saveMemory, learnFromScrape, listMemories, deleteMemory, takeSnapshot, diffSnapshot } from './site-memory.js';
 import { saveEvalRun, listEvalRuns, getEvalRun, listEvalDomains } from './eval-store.js';
 import { handleAcquire } from './acquire.js';
@@ -823,6 +823,12 @@ async function handleAskPage({ url, question, depth = 1, max_products = 10 }) {
     sendLog('debug', `Using cached page data for ${url}`, { tool: 'ask_page' });
   }
 
+  if (!hasProvider()) {
+    const hint = 'No AI provider configured. Set MODEL_PROVIDER=ollama and MODEL_NAME=<model> in your .env to use a local Ollama instance, or add an ANTHROPIC_API_KEY / GEMINI_API_KEY for cloud AI.\n\n';
+    const raw = JSON.stringify({ url: result.url, products: result.products?.slice(0, 10), facets: result.facets }, null, 2);
+    return [{ type: 'text', text: `${hint}Raw page data (scrape only):\n${raw}` }];
+  }
+
   const answer = await askPage(result, question, result.screenshotBuffer);
   return [{ type: 'text', text: answer }];
 }
@@ -921,6 +927,12 @@ async function handleRoundtable({ url, depth = 1, max_products = 10 }, extra) {
   // so a retry or follow-up audit_storefront call gets the cached result even if the
   // MCP client timeout fires before handleRoundtable fully completes.
   const onPersonaCached = (personaName, data) => setCachedPersona(url, personaName, data);
+
+  if (!hasProvider()) {
+    const hint = 'No AI provider configured. Set MODEL_PROVIDER=ollama and MODEL_NAME=<model> in your .env to use a local Ollama instance, or add an ANTHROPIC_API_KEY / GEMINI_API_KEY for cloud AI.\n\n';
+    const raw = JSON.stringify({ url: pageData.url, products: pageData.products?.slice(0, 10), facets: pageData.facets, fingerprint: pageData.fingerprint }, null, 2);
+    return { error: 'no_ai_provider', message: hint, pageData: raw };
+  }
 
   // Cap products sent to AI to reduce prompt size and inference time (MCP-009)
   const aiPageData = pageData.products?.length > 20
