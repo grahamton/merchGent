@@ -362,6 +362,13 @@ Retrieve recent server log entries from the in-memory circular buffer (500 entri
 
 ## History
 
+### v2.0.14 — Ollama local provider support + graceful no-AI degradation
+
+- **Ollama support**: `MODEL_PROVIDER=ollama` routes through the OpenAI-compatible API at `http://localhost:11434/v1` — no API key required; `MODEL_NAME` selects the local model
+- **Graceful degradation**: `ask_page` and `merch_roundtable` now return raw scrape data + a setup hint when no AI provider is configured, instead of throwing
+- **`hasProvider()` export**: callers can gate on AI availability before invoking analysis
+- **Docs**: `.env.example` and `CLAUDE.md` updated with Ollama configuration examples
+
 ### v2.0.13 — Layered data quality model + Firecrawl schema refinement
 
 - **Data quality model**: `acquire` now returns `dataQuality.overall.usabilityTier` (`full`/`degraded`/`minimal`/`failed`) and `dataQuality.dimensions` with graded description tiers (`empty`, `spec`, `thin`, `rich`), separating extraction confidence from site quality
